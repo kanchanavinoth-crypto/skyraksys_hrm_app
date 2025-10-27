@@ -1,0 +1,1 @@
+const axios = require('axios'); async function test() { try { const res = await axios.get('http://localhost:5000/api/health'); console.log('✅ API OK:', res.data); } catch (e) { console.log('❌', e.message); } } test();  

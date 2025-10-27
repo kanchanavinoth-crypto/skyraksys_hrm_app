@@ -1,0 +1,59 @@
+{
+  "timestamp": "2025-08-09T19:07:32.034Z",
+  "testCases": [],
+  "createdData": {
+    "employees": [],
+    "leaveRequests": [],
+    "timesheets": [],
+    "payslips": []
+  },
+  "workflows": {
+    "employeeLifecycle": {
+      "passed": 0,
+      "total": 3
+    },
+    "leaveManagement": {
+      "passed": 0,
+      "total": 0
+    },
+    "timesheetWorkflow": {
+      "passed": 0,
+      "total": 0
+    },
+    "payrollProcess": {
+      "passed": 1,
+      "total": 2
+    },
+    "hrOperations": {
+      "passed": 3,
+      "total": 4
+    }
+  },
+  "businessScenarios": [
+    {
+      "name": "New Employee Onboarding",
+      "description": "Complete process from hire to active status",
+      "status": "FAILED"
+    },
+    {
+      "name": "Leave Request & Approval Chain",
+      "description": "Employee requests leave, manager/HR reviews",
+      "status": "FAILED"
+    },
+    {
+      "name": "Daily Timesheet Submission",
+      "description": "Employee logs daily work hours",
+      "status": "FAILED"
+    },
+    {
+      "name": "Monthly Payroll Processing",
+      "description": "HR generates and processes payslips",
+      "status": "FUNCTIONAL"
+    },
+    {
+      "name": "HR Reporting & Analytics",
+      "description": "Management accesses workforce analytics",
+      "status": "PASSED"
+    }
+  ]
+}

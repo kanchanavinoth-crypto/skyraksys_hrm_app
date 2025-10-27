@@ -1,0 +1,58 @@
+
+🚀 Starting Fixed API Test Suite for HRM System...
+
+[2025-09-04T02:12:26.078Z] ℹ️ Testing System Health...
+[2025-09-04T02:12:26.117Z] ✅ Health Check (OK)
+[2025-09-04T02:12:26.117Z] ℹ️ Testing Authentication...
+[2025-09-04T02:12:26.508Z] ✅ Login as admin (User ID: 9c05e43c...)
+[2025-09-04T02:12:26.892Z] ✅ Login as hr (User ID: 43e8fb0b...)
+[2025-09-04T02:12:27.280Z] ✅ Login as manager (User ID: 43e8fb0b...)
+[2025-09-04T02:12:27.658Z] ✅ Login as employee (User ID: f5015242...)
+[2025-09-04T02:12:27.659Z] ℹ️ Testing Employee Workflows...
+[2025-09-04T02:12:27.666Z] ✅ Get Departments
+[2025-09-04T02:12:27.675Z] ✅ Get Positions
+Attempting to create employee with data: {
+  "firstName": "Test",
+  "lastName": "Employee",
+  "email": "test1756951947675@company.com",
+  "phone": "1234567890",
+  "departmentId": "b6388c05-8f76-44c9-9a91-a1b79883a0b5",
+  "positionId": "32361b9c-e91a-4ecb-ae33-b4e79cac3fbd",
+  "hireDate": "2024-01-01",
+  "address": "123 Test St",
+  "dateOfBirth": "1990-01-01"
+}
+[2025-09-04T02:12:28.074Z] ✅ Create Employee (Admin)
+[2025-09-04T02:12:28.082Z] ✅ Block Unauthorized Employee Creation
+[2025-09-04T02:12:28.092Z] ✅ List Employees (HR) (Count: 9)
+[2025-09-04T02:12:28.092Z] ℹ️ Testing Timesheet Workflows...
+[2025-09-04T02:12:28.097Z] ✅ Get Projects
+[2025-09-04T02:12:28.104Z] ✅ Get Tasks
+[2025-09-04T02:12:28.113Z] ❌ Create Timesheet Failed: Failed to create timesheet entry.
+[2025-09-04T02:12:28.126Z] ✅ List Timesheets (Manager)
+[2025-09-04T02:12:28.126Z] ℹ️ Testing Leave Workflows...
+[2025-09-04T02:12:28.131Z] ✅ Get Leave Types
+[2025-09-04T02:12:28.140Z] ✅ Get Leave Balance
+[2025-09-04T02:12:28.151Z] ✅ Create Leave Request (Employee)
+[2025-09-04T02:12:28.159Z] ✅ List Leave Requests (Manager)
+[2025-09-04T02:12:28.159Z] ℹ️ Testing Payroll Workflows...
+[2025-09-04T02:12:28.169Z] ✅ Create Payroll (Admin)
+[2025-09-04T02:12:28.176Z] ✅ List Payrolls (HR)
+[2025-09-04T02:12:28.183Z] ✅ Employee Payroll Access (Limited)
+[2025-09-04T02:12:28.183Z] ℹ️ Testing Role-Based Access Control...
+[2025-09-04T02:12:28.194Z] ✅ Admin Employee Access
+[2025-09-04T02:12:28.204Z] ✅ HR Employee Access
+[2025-09-04T02:12:28.213Z] ✅ Manager Timesheet Access
+[2025-09-04T02:12:28.218Z] ✅ Employee Profile Access
+[2025-09-04T02:12:28.218Z] ℹ️ Testing Error Handling...
+[2025-09-04T02:12:28.220Z] ✅ Invalid Token Rejection
+[2025-09-04T02:12:28.227Z] ✅ Non-Existent Resource (404)
+[2025-09-04T02:12:28.237Z] ✅ Data Validation
+
+📊 Fixed Test Results:
+   Total Tests: 23
+   Passed: 22
+   Failed: 1
+   Success Rate: 95.7%
+   Duration: 2.159s
+[2025-09-04T02:12:28.237Z] ⚠️ Some tests failed. Check the output above for details.

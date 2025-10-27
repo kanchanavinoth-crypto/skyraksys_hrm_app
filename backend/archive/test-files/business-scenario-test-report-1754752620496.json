@@ -1,0 +1,152 @@
+{
+  "timestamp": "2025-08-09T15:17:00.496Z",
+  "duration": 1.282,
+  "scenarios": {
+    "newEmployeeOnboarding": {
+      "passed": 0,
+      "failed": 0,
+      "details": []
+    },
+    "leaveRequestApproval": {
+      "passed": 0,
+      "failed": 1,
+      "details": [
+        "Leave workflow failed: Employee login failed"
+      ]
+    },
+    "timesheetManagement": {
+      "passed": 0,
+      "failed": 1,
+      "details": [
+        "Timesheet workflow failed: Employee login failed"
+      ]
+    },
+    "payrollProcessing": {
+      "passed": 0,
+      "failed": 0,
+      "details": []
+    },
+    "employeeSelfService": {
+      "passed": 0,
+      "failed": 1,
+      "details": [
+        "Self-service workflow failed: Employee login failed"
+      ]
+    },
+    "managerDashboard": {
+      "passed": 0,
+      "failed": 1,
+      "details": [
+        "Manager workflow failed: Manager login failed"
+      ]
+    }
+  },
+  "summary": {
+    "total": 6,
+    "passed": 0,
+    "failed": 6,
+    "successRate": "0.0"
+  },
+  "businessScenarios": {
+    "newEmployeeOnboarding": {
+      "name": "New Employee Onboarding Process",
+      "roles": [
+        "admin",
+        "hr"
+      ],
+      "description": "Complete workflow for adding a new employee to the system",
+      "steps": [
+        "Login as HR/Admin",
+        "Create employee record with full details",
+        "Verify employee appears in employee list",
+        "Create user account for employee",
+        "Assign role and department",
+        "Generate initial leave balance",
+        "Send welcome notification (if applicable)"
+      ]
+    },
+    "leaveRequestApproval": {
+      "name": "Leave Request & Approval Workflow",
+      "roles": [
+        "employee",
+        "manager",
+        "admin",
+        "hr"
+      ],
+      "description": "Employee requests leave, manager/admin approves",
+      "steps": [
+        "Employee logs in and checks leave balance",
+        "Employee submits leave request",
+        "Manager/Admin reviews pending leaves",
+        "Manager/Admin approves/rejects request",
+        "Employee views updated leave status",
+        "Leave balance is automatically updated"
+      ]
+    },
+    "timesheetManagement": {
+      "name": "Weekly Timesheet Submission & Approval",
+      "roles": [
+        "employee",
+        "manager"
+      ],
+      "description": "Employee submits weekly timesheets for manager approval",
+      "steps": [
+        "Employee creates daily timesheet entries",
+        "Employee submits complete week timesheet",
+        "Manager reviews submitted timesheets",
+        "Manager approves/rejects timesheets",
+        "Timesheet data flows to payroll calculation"
+      ]
+    },
+    "payrollProcessing": {
+      "name": "Monthly Payroll Generation",
+      "roles": [
+        "admin",
+        "hr"
+      ],
+      "description": "Generate monthly payroll for all employees",
+      "steps": [
+        "HR accesses payroll dashboard",
+        "Review employee timesheet approvals",
+        "Generate monthly payroll for all employees",
+        "Review payroll calculations",
+        "Process payroll and generate payslips",
+        "Employees can download payslips"
+      ]
+    },
+    "employeeSelfService": {
+      "name": "Employee Self-Service Portal",
+      "roles": [
+        "employee"
+      ],
+      "description": "Employee manages their own information and requests",
+      "steps": [
+        "Login and view dashboard",
+        "Update personal profile information",
+        "View current leave balance",
+        "Submit new leave request",
+        "View timesheet history",
+        "Create new timesheet entries",
+        "Download payslips",
+        "View employment history"
+      ]
+    },
+    "managerDashboard": {
+      "name": "Manager Team Management",
+      "roles": [
+        "manager"
+      ],
+      "description": "Manager oversees team operations and approvals",
+      "steps": [
+        "Login and view team dashboard",
+        "Review team leave requests",
+        "Approve/reject pending leave requests",
+        "Review team timesheets",
+        "Approve/reject submitted timesheets",
+        "View team performance metrics",
+        "Access team member profiles"
+      ]
+    }
+  },
+  "successRate": 0
+}

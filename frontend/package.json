@@ -1,0 +1,65 @@
+{
+  "name": "skyraksys-hrm-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.0",
+    "@mui/material": "^5.15.0",
+    "@mui/x-data-grid": "^6.18.0",
+    "axios": "^1.11.0",
+    "bootstrap": "^5.3.7",
+    "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
+    "notistack": "^3.0.0",
+    "react": "^18.3.1",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.48.0",
+    "react-query": "^3.39.0",
+    "react-router-dom": "^6.25.1",
+    "react-scripts": "5.0.1",
+    "recharts": "^2.8.0",
+    "web-vitals": "^2.1.4"
+  },
+  "devDependencies": {
+    "webpack-bundle-analyzer": "^4.10.2"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "build:analyze": "react-scripts build && npx serve -s build",
+    "analyze": "npm run build && npx webpack-bundle-analyzer build/static/js/*.js",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "performance:test": "npm run build && npx lighthouse http://localhost:3000 --output=html --output-path=./performance-report.html",
+    "test:coverage": "react-scripts test --coverage --watchAll=false",
+    "test:watch": "react-scripts test --watch",
+    "clean:build": "rimraf build",
+    "serve:prod": "npx serve -s build",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "security-check": "npm audit && npm outdated",
+    "type-check": "tsc --noEmit"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "proxy": "http://localhost:5000"
+}

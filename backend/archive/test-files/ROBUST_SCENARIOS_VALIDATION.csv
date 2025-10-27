@@ -1,0 +1,12 @@
+Category,Test,Status,Details,Timestamp
+"Authentication","Valid Admin Login",PASS,"Token received",2025-09-05T12:43:58.906Z
+"Authentication","Invalid Login Rejection",PASS,"401 Unauthorized",2025-09-05T12:44:00.601Z
+"Authentication","Profile Access",PASS,"Profile retrieved",2025-09-05T12:44:01.630Z
+"Security","Unauthorized Access Prevention",PASS,"401 Unauthorized",2025-09-05T12:44:02.641Z
+"Employee Management","Get All Employees",RATE_LIMITED,"Too many requests",2025-09-05T12:44:03.673Z
+"Department Management","Get All Departments",PASS,"3 departments",2025-09-05T12:44:05.703Z
+"Salary Management","Get All Salary Structures",PASS,"41 structures",2025-09-05T12:44:07.761Z
+"Performance","Employees Response Time",RATE_LIMITED,"Too many requests",2025-09-05T12:44:09.795Z
+"Performance","Departments Response Time",PASS,"16ms",2025-09-05T12:44:12.829Z
+"Performance","Salary Structures Response Time",PASS,"17ms",2025-09-05T12:44:15.850Z
+"Data Validation","Invalid Email Rejection",RATE_LIMITED,"Too many requests",2025-09-05T12:44:18.881Z

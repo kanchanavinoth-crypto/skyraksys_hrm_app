@@ -1,0 +1,545 @@
+{
+  "timestamp": "2025-08-09T18:53:40.277Z",
+  "title": "Frontend API Integration Analysis",
+  "summary": {
+    "totalAPIs": 47,
+    "workingAPIs": 9,
+    "missingAPIs": 10,
+    "needsFixing": 5
+  },
+  "categories": {
+    "Authentication": {
+      "total": 6,
+      "working": 1,
+      "missing": 1,
+      "needsFixing": 1,
+      "untested": 3,
+      "apis": [
+        {
+          "endpoint": "POST /auth/login",
+          "component": "Login",
+          "status": "WORKING",
+          "priority": "CRITICAL"
+        },
+        {
+          "endpoint": "GET /auth/me",
+          "component": "AuthContext",
+          "status": "NEEDS_FIX",
+          "priority": "CRITICAL",
+          "issue": "400 error"
+        },
+        {
+          "endpoint": "POST /auth/register",
+          "component": "AuthService",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "PUT /auth/change-password",
+          "component": "AuthService",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "POST /auth/refresh",
+          "component": "http-common",
+          "status": "MISSING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "POST /auth/logout",
+          "component": "AuthService",
+          "status": "UNTESTED",
+          "priority": "LOW"
+        }
+      ]
+    },
+    "Employee Management": {
+      "total": 10,
+      "working": 4,
+      "missing": 1,
+      "needsFixing": 2,
+      "untested": 3,
+      "apis": [
+        {
+          "endpoint": "GET /employees",
+          "component": "ModernEmployeesList",
+          "status": "WORKING",
+          "priority": "CRITICAL"
+        },
+        {
+          "endpoint": "GET /employees/:id",
+          "component": "ModernEditEmployee",
+          "status": "WORKING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "POST /employees",
+          "component": "SimplifiedAddEmployee",
+          "status": "NEEDS_FIX",
+          "priority": "HIGH",
+          "issue": "Validation errors"
+        },
+        {
+          "endpoint": "PUT /employees/:id",
+          "component": "ModernEditEmployee",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "DELETE /employees/:id",
+          "component": "ModernEmployeesList",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "GET /employees/meta/departments",
+          "component": "Dashboard, AddEmployee",
+          "status": "WORKING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /employees/meta/positions",
+          "component": "Dashboard, AddEmployee",
+          "status": "WORKING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /employees/meta/dashboard",
+          "component": "Dashboard",
+          "status": "NEEDS_FIX",
+          "priority": "HIGH",
+          "issue": "400 error"
+        },
+        {
+          "endpoint": "GET /employees/statistics",
+          "component": "Dashboard",
+          "status": "MISSING",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "GET /employees/search",
+          "component": "ModernEmployeesList",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        }
+      ]
+    },
+    "Leave Management": {
+      "total": 12,
+      "working": 1,
+      "missing": 4,
+      "needsFixing": 1,
+      "untested": 6,
+      "apis": [
+        {
+          "endpoint": "GET /leaves",
+          "component": "ModernLeaveManagement",
+          "status": "WORKING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /leaves/:id",
+          "component": "LeaveDetails",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "POST /leaves",
+          "component": "ModernLeaveSubmission",
+          "status": "NEEDS_FIX",
+          "priority": "HIGH",
+          "issue": "Validation errors"
+        },
+        {
+          "endpoint": "PUT /leaves/:id",
+          "component": "LeaveApproval",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "DELETE /leaves/:id",
+          "component": "LeaveManagement",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "GET /leaves/types",
+          "component": "ModernLeaveSubmission",
+          "status": "MISSING",
+          "priority": "CRITICAL",
+          "issue": "404 error"
+        },
+        {
+          "endpoint": "GET /leaves/balance",
+          "component": "EmployeeLeaveRequests",
+          "status": "MISSING",
+          "priority": "HIGH",
+          "issue": "404 error"
+        },
+        {
+          "endpoint": "GET /leaves/balance/:employeeId",
+          "component": "LeaveBalancesList",
+          "status": "MISSING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "PUT /leaves/:id/status",
+          "component": "LeaveApproval",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /leaves/statistics",
+          "component": "Dashboard",
+          "status": "MISSING",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "PUT /leaves/:id/approve",
+          "component": "LeaveApproval",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "PUT /leaves/:id/reject",
+          "component": "LeaveApproval",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        }
+      ]
+    },
+    "Timesheet Management": {
+      "total": 11,
+      "working": 2,
+      "missing": 2,
+      "needsFixing": 1,
+      "untested": 6,
+      "apis": [
+        {
+          "endpoint": "GET /timesheets",
+          "component": "ModernTimesheetManagement",
+          "status": "WORKING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /timesheets/:id",
+          "component": "TimesheetDetails",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "POST /timesheets",
+          "component": "ModernTimesheetSubmission",
+          "status": "NEEDS_FIX",
+          "priority": "HIGH",
+          "issue": "Validation errors"
+        },
+        {
+          "endpoint": "PUT /timesheets/:id",
+          "component": "TimesheetEdit",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "DELETE /timesheets/:id",
+          "component": "TimesheetManagement",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "GET /timesheets/meta/projects",
+          "component": "ModernTimesheetSubmission",
+          "status": "WORKING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /timesheets/meta/projects/:id/tasks",
+          "component": "TimesheetForm",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "PUT /timesheets/:id/submit",
+          "component": "TimesheetSubmission",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "PUT /timesheets/:id/status",
+          "component": "TimesheetApproval",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /timesheets/summary",
+          "component": "Dashboard",
+          "status": "MISSING",
+          "priority": "MEDIUM",
+          "issue": "404 error"
+        },
+        {
+          "endpoint": "GET /timesheets/summary/:employeeId",
+          "component": "EmployeeDashboard",
+          "status": "MISSING",
+          "priority": "MEDIUM"
+        }
+      ]
+    },
+    "Payroll Management": {
+      "total": 8,
+      "working": 1,
+      "missing": 2,
+      "needsFixing": 0,
+      "untested": 5,
+      "apis": [
+        {
+          "endpoint": "GET /payslips",
+          "component": "ModernPayrollManagement",
+          "status": "WORKING",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /payslips/:id",
+          "component": "PayslipDetails",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "POST /payslips/generate",
+          "component": "ModernPayslipGeneration",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "PUT /payslips/:id/status",
+          "component": "PayrollApproval",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "GET /payslips/meta/dashboard",
+          "component": "Dashboard",
+          "status": "MISSING",
+          "priority": "MEDIUM",
+          "issue": "400 error"
+        },
+        {
+          "endpoint": "GET /payslips/employee/:id/summary",
+          "component": "EmployeePayslips",
+          "status": "UNTESTED",
+          "priority": "HIGH"
+        },
+        {
+          "endpoint": "GET /payslips/:id/pdf",
+          "component": "PayslipDownload",
+          "status": "UNTESTED",
+          "priority": "MEDIUM"
+        },
+        {
+          "endpoint": "GET /payslips/statistics",
+          "component": "Dashboard",
+          "status": "MISSING",
+          "priority": "MEDIUM"
+        }
+      ]
+    }
+  },
+  "missingEndpoints": [
+    {
+      "endpoint": "GET /auth/me",
+      "category": "Authentication",
+      "component": "AuthContext",
+      "priority": "CRITICAL",
+      "status": "NEEDS_FIX",
+      "issue": "400 error"
+    },
+    {
+      "endpoint": "POST /auth/refresh",
+      "category": "Authentication",
+      "component": "http-common",
+      "priority": "HIGH",
+      "status": "MISSING",
+      "issue": "Not implemented"
+    },
+    {
+      "endpoint": "POST /employees",
+      "category": "Employee Management",
+      "component": "SimplifiedAddEmployee",
+      "priority": "HIGH",
+      "status": "NEEDS_FIX",
+      "issue": "Validation errors"
+    },
+    {
+      "endpoint": "GET /employees/meta/dashboard",
+      "category": "Employee Management",
+      "component": "Dashboard",
+      "priority": "HIGH",
+      "status": "NEEDS_FIX",
+      "issue": "400 error"
+    },
+    {
+      "endpoint": "GET /employees/statistics",
+      "category": "Employee Management",
+      "component": "Dashboard",
+      "priority": "MEDIUM",
+      "status": "MISSING",
+      "issue": "Not implemented"
+    },
+    {
+      "endpoint": "POST /leaves",
+      "category": "Leave Management",
+      "component": "ModernLeaveSubmission",
+      "priority": "HIGH",
+      "status": "NEEDS_FIX",
+      "issue": "Validation errors"
+    },
+    {
+      "endpoint": "GET /leaves/types",
+      "category": "Leave Management",
+      "component": "ModernLeaveSubmission",
+      "priority": "CRITICAL",
+      "status": "MISSING",
+      "issue": "404 error"
+    },
+    {
+      "endpoint": "GET /leaves/balance",
+      "category": "Leave Management",
+      "component": "EmployeeLeaveRequests",
+      "priority": "HIGH",
+      "status": "MISSING",
+      "issue": "404 error"
+    },
+    {
+      "endpoint": "GET /leaves/balance/:employeeId",
+      "category": "Leave Management",
+      "component": "LeaveBalancesList",
+      "priority": "HIGH",
+      "status": "MISSING",
+      "issue": "Not implemented"
+    },
+    {
+      "endpoint": "GET /leaves/statistics",
+      "category": "Leave Management",
+      "component": "Dashboard",
+      "priority": "MEDIUM",
+      "status": "MISSING",
+      "issue": "Not implemented"
+    },
+    {
+      "endpoint": "POST /timesheets",
+      "category": "Timesheet Management",
+      "component": "ModernTimesheetSubmission",
+      "priority": "HIGH",
+      "status": "NEEDS_FIX",
+      "issue": "Validation errors"
+    },
+    {
+      "endpoint": "GET /timesheets/summary",
+      "category": "Timesheet Management",
+      "component": "Dashboard",
+      "priority": "MEDIUM",
+      "status": "MISSING",
+      "issue": "404 error"
+    },
+    {
+      "endpoint": "GET /timesheets/summary/:employeeId",
+      "category": "Timesheet Management",
+      "component": "EmployeeDashboard",
+      "priority": "MEDIUM",
+      "status": "MISSING",
+      "issue": "Not implemented"
+    },
+    {
+      "endpoint": "GET /payslips/meta/dashboard",
+      "category": "Payroll Management",
+      "component": "Dashboard",
+      "priority": "MEDIUM",
+      "status": "MISSING",
+      "issue": "400 error"
+    },
+    {
+      "endpoint": "GET /payslips/statistics",
+      "category": "Payroll Management",
+      "component": "Dashboard",
+      "priority": "MEDIUM",
+      "status": "MISSING",
+      "issue": "Not implemented"
+    }
+  ],
+  "recommendations": [
+    {
+      "category": "Immediate Fixes (Critical)",
+      "priority": "CRITICAL",
+      "items": [
+        "Fix GET /auth/me endpoint (currently returning 400)",
+        "Implement GET /leaves/types endpoint (currently 404)",
+        "Fix POST /employees validation schema",
+        "Fix POST /leaves validation schema"
+      ]
+    },
+    {
+      "category": "High Priority APIs",
+      "priority": "HIGH",
+      "items": [
+        "Implement GET /leaves/balance endpoint",
+        "Implement dashboard statistics endpoints",
+        "Fix employee and leave creation workflows",
+        "Add proper leave approval endpoints",
+        "Add timesheet submission and approval endpoints"
+      ]
+    },
+    {
+      "category": "Medium Priority Enhancements",
+      "priority": "MEDIUM",
+      "items": [
+        "Add search functionality for employees",
+        "Implement payslip generation and PDF download",
+        "Add timesheet summary and reporting endpoints",
+        "Implement proper error handling across all endpoints"
+      ]
+    },
+    {
+      "category": "Frontend Integration Improvements",
+      "priority": "MEDIUM",
+      "items": [
+        "Add loading states for all API calls",
+        "Implement proper error handling in components",
+        "Add retry mechanisms for failed API calls",
+        "Implement offline capability where appropriate"
+      ]
+    }
+  ],
+  "criticalIssues": [
+    {
+      "issue": "GET /auth/me returns 400 error",
+      "impact": "Users cannot retrieve their profile, breaking dashboard and user context",
+      "priority": "CRITICAL",
+      "solution": "Fix user profile endpoint to handle authentication tokens properly"
+    },
+    {
+      "issue": "GET /leaves/types missing (404)",
+      "impact": "Users cannot create leave requests without leave types",
+      "priority": "CRITICAL",
+      "solution": "Implement leave types endpoint or fix routing"
+    },
+    {
+      "issue": "Employee creation validation errors",
+      "impact": "Cannot add new employees to the system",
+      "priority": "HIGH",
+      "solution": "Fix validation schema in employee creation endpoint"
+    },
+    {
+      "issue": "Leave creation validation errors",
+      "impact": "Users cannot submit leave requests",
+      "priority": "HIGH",
+      "solution": "Fix validation schema in leave request creation"
+    },
+    {
+      "issue": "Missing dashboard data endpoints",
+      "impact": "Dashboard shows no real data, poor user experience",
+      "priority": "HIGH",
+      "solution": "Implement statistics and summary endpoints for dashboard"
+    }
+  ]
+}

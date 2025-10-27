@@ -1,0 +1,173 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install backend dependencies
+        run: |
+          cd backend
+          npm ci
+      
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+      
+      - name: Install E2E test dependencies
+        run: |
+          cd frontend/e2e
+          npm ci
+      
+      - name: Install Playwright Browsers
+        run: |
+          cd frontend/e2e
+          npx playwright install --with-deps ${{ matrix.browser }}
+      
+      - name: Start PostgreSQL
+        uses: supercharge/postgresql-action@v1
+        with:
+          postgresql version: '14'
+          postgresql db: 'hrm_test'
+          postgresql user: 'postgres'
+          postgresql password: 'postgres'
+      
+      - name: Setup Database
+        run: |
+          cd backend
+          npm run migrate
+          npm run seed
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hrm_test
+      
+      - name: Start Backend Server
+        run: |
+          cd backend
+          npm start &
+          sleep 10
+        env:
+          PORT: 5000
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hrm_test
+      
+      - name: Start Frontend Server
+        run: |
+          cd frontend
+          npm start &
+          sleep 30
+        env:
+          PORT: 3000
+          REACT_APP_API_URL: http://localhost:5000
+      
+      - name: Run E2E Tests
+        run: |
+          cd frontend/e2e
+          npx playwright test --project=${{ matrix.browser }}
+        env:
+          CI: true
+          REACT_APP_API_URL: http://localhost:3000
+          API_BASE_URL: http://localhost:5000
+      
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: frontend/e2e/playwright-report/
+          retention-days: 30
+      
+      - name: Upload Test Videos
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-videos-${{ matrix.browser }}
+          path: frontend/e2e/test-results/
+          retention-days: 7
+      
+      - name: Upload Test Traces
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-traces-${{ matrix.browser }}
+          path: frontend/e2e/test-results/**/*.zip
+          retention-days: 7
+
+  smoke-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: |
+          cd frontend/e2e
+          npm ci
+      
+      - name: Install Playwright Browsers
+        run: |
+          cd frontend/e2e
+          npx playwright install chromium
+      
+      - name: Setup services
+        run: |
+          # Start backend and frontend (same as above)
+          cd backend && npm start &
+          cd frontend && npm start &
+          sleep 30
+      
+      - name: Run Smoke Tests
+        run: |
+          cd frontend/e2e
+          npm run test:smoke
+      
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: smoke-test-report
+          path: frontend/e2e/playwright-report/
+
+  publish-report:
+    needs: [test]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+      
+      - name: Publish HTML Report
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./playwright-report-chromium
+          destination_dir: test-reports/${{ github.run_number }}

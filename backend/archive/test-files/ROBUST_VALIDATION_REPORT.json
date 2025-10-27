@@ -1,0 +1,110 @@
+{
+  "summary": {
+    "totalTests": 11,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "rateLimited": 3,
+    "passRate": "72.73",
+    "effectivePassRate": "100.00",
+    "testDate": "2025-09-05T12:44:21.892Z"
+  },
+  "scenarioCategories": [
+    "Authentication",
+    "Employee Management",
+    "Department Management",
+    "Salary Management",
+    "Data Validation",
+    "Security",
+    "Performance",
+    "Integration",
+    "Business Rules",
+    "API Coverage"
+  ],
+  "results": [
+    {
+      "category": "Authentication",
+      "test": "Valid Admin Login",
+      "status": "PASS",
+      "details": "Token received",
+      "timestamp": "2025-09-05T12:43:58.906Z"
+    },
+    {
+      "category": "Authentication",
+      "test": "Invalid Login Rejection",
+      "status": "PASS",
+      "details": "401 Unauthorized",
+      "timestamp": "2025-09-05T12:44:00.601Z"
+    },
+    {
+      "category": "Authentication",
+      "test": "Profile Access",
+      "status": "PASS",
+      "details": "Profile retrieved",
+      "timestamp": "2025-09-05T12:44:01.630Z"
+    },
+    {
+      "category": "Security",
+      "test": "Unauthorized Access Prevention",
+      "status": "PASS",
+      "details": "401 Unauthorized",
+      "timestamp": "2025-09-05T12:44:02.641Z"
+    },
+    {
+      "category": "Employee Management",
+      "test": "Get All Employees",
+      "status": "RATE_LIMITED",
+      "details": "Too many requests",
+      "timestamp": "2025-09-05T12:44:03.673Z"
+    },
+    {
+      "category": "Department Management",
+      "test": "Get All Departments",
+      "status": "PASS",
+      "details": "3 departments",
+      "timestamp": "2025-09-05T12:44:05.703Z"
+    },
+    {
+      "category": "Salary Management",
+      "test": "Get All Salary Structures",
+      "status": "PASS",
+      "details": "41 structures",
+      "timestamp": "2025-09-05T12:44:07.761Z"
+    },
+    {
+      "category": "Performance",
+      "test": "Employees Response Time",
+      "status": "RATE_LIMITED",
+      "details": "Too many requests",
+      "timestamp": "2025-09-05T12:44:09.795Z"
+    },
+    {
+      "category": "Performance",
+      "test": "Departments Response Time",
+      "status": "PASS",
+      "details": "16ms",
+      "timestamp": "2025-09-05T12:44:12.829Z"
+    },
+    {
+      "category": "Performance",
+      "test": "Salary Structures Response Time",
+      "status": "PASS",
+      "details": "17ms",
+      "timestamp": "2025-09-05T12:44:15.850Z"
+    },
+    {
+      "category": "Data Validation",
+      "test": "Invalid Email Rejection",
+      "status": "RATE_LIMITED",
+      "details": "Too many requests",
+      "timestamp": "2025-09-05T12:44:18.881Z"
+    }
+  ],
+  "analysis": {
+    "coreAuthenticationWorking": true,
+    "dataAccessWorking": true,
+    "securityControlsActive": true,
+    "rateLimitingActive": true,
+    "systemResponsive": true
+  }
+}

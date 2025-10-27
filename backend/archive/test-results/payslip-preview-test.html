@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payslip Preview Test - EMP005</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            color: #1976d2;
+            margin-bottom: 30px;
+        }
+        .payslip-preview {
+            border: 2px solid #1976d2;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f8f9fa;
+        }
+        .section {
+            margin: 15px 0;
+        }
+        .section h3 {
+            color: #1976d2;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .total-row {
+            font-weight: bold;
+            background: #e3f2fd;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .button {
+            background: #1976d2;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background: #1565c0;
+        }
+        .employee-info {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧾 Payslip Preview Test</h1>
+            <h2>EMP005 - Mike Wilson</h2>
+        </div>
+
+        <div class="employee-info">
+            <h3>Employee Information</h3>
+            <p><strong>Employee ID:</strong> EMP005</p>
+            <p><strong>Name:</strong> Mike Wilson</p>
+            <p><strong>Position:</strong> Senior Software Developer</p>
+            <p><strong>Department:</strong> Information Technology</p>
+            <p><strong>Basic Salary:</strong> ₹55,000</p>
+        </div>
+
+        <button class="button" onclick="generatePayslipPreview()">🔄 Generate Payslip Preview</button>
+        <button class="button" onclick="testCalculations()">🧮 Test Calculations</button>
+
+        <div id="preview-container"></div>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Mock payslip calculation engine (simplified version)
+        class PayslipCalculationEngine {
+            constructor() {
+                this.template = {
+                    companyName: "Skyraksys Technologies",
+                    companyAddress: "Mumbai, Maharashtra, India"
+                };
+            }
+
+            calculateHRA(basicSalary) {
+                return basicSalary * 0.5; // 50% of basic salary
+            }
+
+            calculatePF(basicSalary) {
+                return Math.min(basicSalary * 0.12, 1800); // 12% or max 1800
+            }
+
+            calculateESIC(grossSalary) {
+                return grossSalary <= 21000 ? grossSalary * 0.0075 : 0; // 0.75% if gross <= 21000
+            }
+
+            calculateProfessionalTax(grossSalary) {
+                if (grossSalary <= 10000) return 0;
+                if (grossSalary <= 15000) return 150;
+                if (grossSalary <= 25000) return 200;
+                return 300;
+            }
+
+            calculateIncomeTax(grossSalary) {
+                // Simplified IT calculation
+                const annualSalary = grossSalary * 12;
+                if (annualSalary <= 500000) return 0;
+                if (annualSalary <= 1000000) return (annualSalary - 500000) * 0.2 / 12;
+                return ((annualSalary - 1000000) * 0.3 + 100000) / 12;
+            }
+
+            numberToWords(amount) {
+                const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+                const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+                const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+                
+                const convertHundreds = (num) => {
+                    let result = '';
+                    if (num > 99) {
+                        result += ones[Math.floor(num / 100)] + ' Hundred ';
+                        num %= 100;
+                    }
+                    if (num > 19) {
+                        result += tens[Math.floor(num / 10)] + ' ';
+                        num %= 10;
+                    } else if (num > 9) {
+                        result += teens[num - 10] + ' ';
+                        return result;
+                    }
+                    if (num > 0) {
+                        result += ones[num] + ' ';
+                    }
+                    return result;
+                };
+
+                if (amount === 0) return 'Zero Rupees Only';
+                
+                const crores = Math.floor(amount / 10000000);
+                const lakhs = Math.floor((amount % 10000000) / 100000);
+                const thousands = Math.floor((amount % 100000) / 1000);
+                const hundreds = Math.floor(amount % 1000);
+                
+                let result = '';
+                if (crores > 0) result += convertHundreds(crores) + 'Crore ';
+                if (lakhs > 0) result += convertHundreds(lakhs) + 'Lakh ';
+                if (thousands > 0) result += convertHundreds(thousands) + 'Thousand ';
+                if (hundreds > 0) result += convertHundreds(hundreds);
+                
+                return result.trim() + ' Rupees Only';
+            }
+
+            calculatePayslip(employeeData, payrollData) {
+                const basicSalary = payrollData.basicSalary || 55000;
+                const totalWorkingDays = payrollData.totalWorkingDays || 22;
+                const presentDays = payrollData.presentDays || 22;
+                const lopDays = payrollData.lopDays || 0;
+                const paidDays = presentDays - lopDays;
+
+                // Calculate earnings
+                const earnings = {
+                    basicSalary: (basicSalary * paidDays) / totalWorkingDays,
+                    houseRentAllowance: payrollData.houseRentAllowance || this.calculateHRA(basicSalary),
+                    medicalAllowance: payrollData.medicalAllowance || 15000,
+                    transportAllowance: payrollData.transportAllowance || 3200,
+                    specialAllowance: payrollData.specialAllowance || 25000,
+                    managementAllowance: payrollData.managementAllowance || 11000,
+                    performanceBonus: payrollData.performanceBonus || 8000
+                };
+
+                const grossSalary = Object.values(earnings).reduce((sum, val) => sum + val, 0);
+
+                // Calculate deductions
+                const deductions = {
+                    providentFund: payrollData.providentFund || this.calculatePF(basicSalary),
+                    employeeStateInsurance: payrollData.employeeStateInsurance || this.calculateESIC(grossSalary),
+                    professionalTax: payrollData.professionalTax || this.calculateProfessionalTax(grossSalary),
+                    incomeTax: payrollData.incomeTax || this.calculateIncomeTax(grossSalary),
+                    loanDeduction: payrollData.loanDeduction || 0,
+                    advanceDeduction: payrollData.advanceDeduction || 0
+                };
+
+                const totalDeductions = Object.values(deductions).reduce((sum, val) => sum + val, 0);
+                const netPay = grossSalary - totalDeductions;
+
+                return {
+                    employee: employeeData,
+                    payPeriod: payrollData.payPeriod || 'September 2024',
+                    earnings,
+                    deductions,
+                    attendance: {
+                        totalWorkingDays,
+                        presentDays,
+                        lopDays,
+                        paidDays,
+                        overtimeHours: payrollData.overtimeHours || 0
+                    },
+                    grossSalary,
+                    totalDeductions,
+                    netPay,
+                    netPayInWords: this.numberToWords(Math.round(netPay))
+                };
+            }
+        }
+
+        // Initialize calculator
+        const payslipCalculator = new PayslipCalculationEngine();
+
+        // Sample data for EMP005
+        const employeeData = {
+            employeeId: 'EMP005',
+            firstName: 'Mike',
+            lastName: 'Wilson',
+            email: 'mike.wilson@skyraksys.com',
+            position: 'Senior Software Developer',
+            department: 'Information Technology'
+        };
+
+        const payrollData = {
+            basicSalary: 55000,
+            totalWorkingDays: 22,
+            presentDays: 22,
+            lopDays: 0,
+            overtimeHours: 0,
+            houseRentAllowance: 27500,
+            medicalAllowance: 15000,
+            transportAllowance: 3200,
+            specialAllowance: 25000,
+            managementAllowance: 11000,
+            performanceBonus: 8000,
+            payPeriod: 'September 2024'
+        };
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                minimumFractionDigits: 2
+            }).format(amount || 0);
+        }
+
+        function generatePayslipPreview() {
+            try {
+                const payslipData = payslipCalculator.calculatePayslip(employeeData, payrollData);
+                
+                const previewHtml = `
+                    <div class="payslip-preview">
+                        <div class="section">
+                            <h3>🏢 Company Information</h3>
+                            <div class="row">
+                                <span>Company:</span>
+                                <span>Skyraksys Technologies</span>
+                            </div>
+                            <div class="row">
+                                <span>Address:</span>
+                                <span>Mumbai, Maharashtra, India</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>👤 Employee Information</h3>
+                            <div class="row">
+                                <span>Employee ID:</span>
+                                <span>${payslipData.employee.employeeId}</span>
+                            </div>
+                            <div class="row">
+                                <span>Name:</span>
+                                <span>${payslipData.employee.firstName} ${payslipData.employee.lastName}</span>
+                            </div>
+                            <div class="row">
+                                <span>Position:</span>
+                                <span>${payslipData.employee.position}</span>
+                            </div>
+                            <div class="row">
+                                <span>Department:</span>
+                                <span>${payslipData.employee.department}</span>
+                            </div>
+                            <div class="row">
+                                <span>Pay Period:</span>
+                                <span>${payslipData.payPeriod}</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>📅 Attendance Information</h3>
+                            <div class="row">
+                                <span>Total Working Days:</span>
+                                <span>${payslipData.attendance.totalWorkingDays}</span>
+                            </div>
+                            <div class="row">
+                                <span>Present Days:</span>
+                                <span>${payslipData.attendance.presentDays}</span>
+                            </div>
+                            <div class="row">
+                                <span>LOP Days:</span>
+                                <span>${payslipData.attendance.lopDays}</span>
+                            </div>
+                            <div class="row">
+                                <span>Paid Days:</span>
+                                <span>${payslipData.attendance.paidDays}</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>💰 Earnings</h3>
+                            <div class="row">
+                                <span>Basic Salary:</span>
+                                <span>${formatCurrency(payslipData.earnings.basicSalary)}</span>
+                            </div>
+                            <div class="row">
+                                <span>House Rent Allowance:</span>
+                                <span>${formatCurrency(payslipData.earnings.houseRentAllowance)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Medical Allowance:</span>
+                                <span>${formatCurrency(payslipData.earnings.medicalAllowance)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Transport Allowance:</span>
+                                <span>${formatCurrency(payslipData.earnings.transportAllowance)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Special Allowance:</span>
+                                <span>${formatCurrency(payslipData.earnings.specialAllowance)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Management Allowance:</span>
+                                <span>${formatCurrency(payslipData.earnings.managementAllowance)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Performance Bonus:</span>
+                                <span>${formatCurrency(payslipData.earnings.performanceBonus)}</span>
+                            </div>
+                            <div class="total-row row">
+                                <span><strong>Gross Salary:</strong></span>
+                                <span><strong>${formatCurrency(payslipData.grossSalary)}</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>📉 Deductions</h3>
+                            <div class="row">
+                                <span>Provident Fund:</span>
+                                <span>${formatCurrency(payslipData.deductions.providentFund)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Employee State Insurance:</span>
+                                <span>${formatCurrency(payslipData.deductions.employeeStateInsurance)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Professional Tax:</span>
+                                <span>${formatCurrency(payslipData.deductions.professionalTax)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Income Tax:</span>
+                                <span>${formatCurrency(payslipData.deductions.incomeTax)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Loan Deduction:</span>
+                                <span>${formatCurrency(payslipData.deductions.loanDeduction)}</span>
+                            </div>
+                            <div class="row">
+                                <span>Advance Deduction:</span>
+                                <span>${formatCurrency(payslipData.deductions.advanceDeduction)}</span>
+                            </div>
+                            <div class="total-row row">
+                                <span><strong>Total Deductions:</strong></span>
+                                <span><strong>${formatCurrency(payslipData.totalDeductions)}</strong></span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <h3>💵 Net Pay</h3>
+                            <div class="total-row row" style="background: #c8e6c9; font-size: 1.2em;">
+                                <span><strong>Net Pay:</strong></span>
+                                <span><strong>${formatCurrency(payslipData.netPay)}</strong></span>
+                            </div>
+                            <div class="row">
+                                <span><strong>Amount in Words:</strong></span>
+                                <span><em>${payslipData.netPayInWords}</em></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('preview-container').innerHTML = previewHtml;
+                console.log('✅ Payslip preview generated successfully!');
+                console.log('Payslip Data:', payslipData);
+
+            } catch (error) {
+                document.getElementById('preview-container').innerHTML = `
+                    <div style="color: red; padding: 20px; border: 1px solid red; background: #ffe6e6;">
+                        <h3>❌ Error generating preview:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                console.error('❌ Error:', error);
+            }
+        }
+
+        function testCalculations() {
+            try {
+                const results = [];
+                
+                // Test individual calculations
+                results.push(`HRA Calculation: ${formatCurrency(payslipCalculator.calculateHRA(55000))}`);
+                results.push(`PF Calculation: ${formatCurrency(payslipCalculator.calculatePF(55000))}`);
+                results.push(`ESIC Calculation: ${formatCurrency(payslipCalculator.calculateESIC(145700))}`);
+                results.push(`Professional Tax: ${formatCurrency(payslipCalculator.calculateProfessionalTax(145700))}`);
+                results.push(`Income Tax: ${formatCurrency(payslipCalculator.calculateIncomeTax(145700))}`);
+                
+                // Test number to words
+                results.push(`Number to Words (130700): ${payslipCalculator.numberToWords(130700)}`);
+
+                const resultsHtml = `
+                    <div class="payslip-preview">
+                        <h3>🧮 Calculation Tests</h3>
+                        ${results.map(result => `<div class="row"><span>${result}</span></div>`).join('')}
+                    </div>
+                `;
+
+                document.getElementById('test-results').innerHTML = resultsHtml;
+                console.log('✅ Calculation tests completed!');
+
+            } catch (error) {
+                document.getElementById('test-results').innerHTML = `
+                    <div style="color: red; padding: 20px; border: 1px solid red; background: #ffe6e6;">
+                        <h3>❌ Error in calculations:</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                console.error('❌ Calculation Error:', error);
+            }
+        }
+
+        // Auto-generate preview on page load
+        window.onload = function() {
+            console.log('🚀 Page loaded - Auto-generating payslip preview for EMP005');
+            generatePayslipPreview();
+        };
+    </script>
+</body>
+</html>

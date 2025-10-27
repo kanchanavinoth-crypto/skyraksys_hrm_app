@@ -1,0 +1,345 @@
+/**
+ * Enhanced Field-Level Access Control with Role-Based Permissions
+ * Implements granular field access control based on user roles
+ */
+
+const FIELD_PERMISSIONS = {
+  admin: {
+    view: ['*'], // Can view all fields
+    edit: ['*'], // Can edit all fields
+    sensitive: true // Can access sensitive data
+  },
+  hr: {
+    view: [
+      // Personal Information
+      'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender',
+      'maritalStatus', 'nationality', 'address', 'city', 'state', 'pinCode',
+      'photoUrl',
+      
+      // Employment Information
+      'employeeId', 'hireDate', 'joiningDate', 'confirmationDate', 'departmentId',
+      'positionId', 'managerId', 'employmentType', 'workLocation', 'status',
+      'probationPeriod', 'noticePeriod', 'resignationDate', 'lastWorkingDate',
+      
+      // Contact Information
+      'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
+      
+      // Statutory Information
+      'aadhaarNumber', 'panNumber', 'uanNumber', 'pfNumber', 'esiNumber',
+      
+      // Banking Information
+      'bankName', 'bankAccountNumber', 'ifscCode', 'bankBranch', 'accountHolderName',
+      
+      // Salary Information
+      'salary', 'salaryStructure'
+    ],
+    edit: [
+      'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender',
+      'maritalStatus', 'nationality', 'hireDate', 'departmentId',
+      'positionId', 'managerId', 'employmentType', 'workLocation', 'status',
+      'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
+      'address', 'city', 'state', 'pinCode', 'aadhaarNumber', 'panNumber',
+      'bankName', 'bankAccountNumber', 'ifscCode', 'bankBranch', 'accountHolderName',
+      'joiningDate', 'confirmationDate', 'resignationDate', 'lastWorkingDate'
+    ],
+    sensitive: true
+  },
+  manager: {
+    view: [
+      // Basic Information
+      'firstName', 'lastName', 'email', 'phone', 'employeeId',
+      'hireDate', 'departmentId', 'positionId', 'employmentType', 'workLocation',
+      'status', 'photoUrl',
+      
+      // Contact Information (for emergencies)
+      'emergencyContactName', 'emergencyContactPhone',
+      
+      // Work-related address
+      'workLocation', 'address', 'city', 'state'
+    ],
+    edit: [
+      'departmentId', 'positionId', 'workLocation', 'status'
+    ],
+    sensitive: false
+  },
+  employee: {
+    view: [
+      // Own basic information
+      'firstName', 'lastName', 'email', 'phone', 'employeeId',
+      'hireDate', 'departmentId', 'positionId', 'employmentType',
+      'address', 'city', 'state', 'pinCode', 'photoUrl',
+      'dateOfBirth', 'gender', 'maritalStatus', 'nationality',
+      'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
+      'bankName', 'ifscCode', 'bankBranch' // Can see bank name but not account number
+    ],
+    edit: [
+      'phone', 'address', 'city', 'state', 'pinCode',
+      'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation'
+    ],
+    sensitive: false
+  }
+};
+
+const SENSITIVE_FIELDS = [
+  'aadhaarNumber',
+  'panNumber',
+  'bankAccountNumber',
+  'salary',
+  'salaryStructure',
+  'uanNumber',
+  'pfNumber',
+  'esiNumber'
+];
+
+const AUDIT_REQUIRED_FIELDS = [
+  'status',
+  'departmentId',
+  'positionId',
+  'managerId',
+  'salary',
+  'salaryStructure',
+  'aadhaarNumber',
+  'panNumber',
+  'bankAccountNumber'
+];
+
+/**
+ * Check if user has permission to view a specific field
+ */
+function canViewField(userRole, fieldName, isOwnRecord = false) {
+  const permissions = FIELD_PERMISSIONS[userRole];
+  if (!permissions) return false;
+  
+  // Admin can view everything
+  if (permissions.view.includes('*')) return true;
+  
+  // Check if field is explicitly allowed
+  if (permissions.view.includes(fieldName)) return true;
+  
+  // Special case: employees can only view their own sensitive data
+  if (isOwnRecord && userRole === 'employee') {
+    return permissions.view.includes(fieldName);
+  }
+  
+  // Check for wildcard patterns (e.g., 'emergencyContact*')
+  const wildcardMatch = permissions.view.find(pattern => {
+    if (pattern.endsWith('*')) {
+      const basePattern = pattern.slice(0, -1);
+      return fieldName.startsWith(basePattern);
+    }
+    return false;
+  });
+  
+  return !!wildcardMatch;
+}
+
+/**
+ * Check if user has permission to edit a specific field
+ */
+function canEditField(userRole, fieldName, isOwnRecord = false) {
+  const permissions = FIELD_PERMISSIONS[userRole];
+  if (!permissions) return false;
+  
+  // Admin can edit everything
+  if (permissions.edit.includes('*')) return true;
+  
+  // Check if field is explicitly allowed for editing
+  if (permissions.edit.includes(fieldName)) return true;
+  
+  // Special case: employees can only edit their own allowed fields
+  if (isOwnRecord && userRole === 'employee') {
+    return permissions.edit.includes(fieldName);
+  }
+  
+  return false;
+}
+
+/**
+ * Check if user can access sensitive data
+ */
+function canAccessSensitiveData(userRole) {
+  const permissions = FIELD_PERMISSIONS[userRole];
+  return permissions?.sensitive || false;
+}
+
+/**
+ * Filter employee data based on user permissions
+ */
+function filterEmployeeData(employeeData, userRole, userId, isOwnRecord = false) {
+  if (!employeeData) return null;
+  
+  const filteredData = {};
+  
+  Object.keys(employeeData).forEach(field => {
+    // Special handling for nested objects (department, position, manager)
+    if (field === 'department' && employeeData[field]) {
+      if (canViewField(userRole, 'departmentId', isOwnRecord)) {
+        filteredData[field] = employeeData[field];
+      }
+      return;
+    }
+    
+    if (field === 'position' && employeeData[field]) {
+      if (canViewField(userRole, 'positionId', isOwnRecord)) {
+        filteredData[field] = employeeData[field];
+      }
+      return;
+    }
+    
+    if (field === 'manager' && employeeData[field]) {
+      if (canViewField(userRole, 'managerId', isOwnRecord)) {
+        filteredData[field] = employeeData[field];
+      }
+      return;
+    }
+    
+    // Check if user can view this field
+    if (canViewField(userRole, field, isOwnRecord)) {
+      // Additional check for sensitive fields
+      if (SENSITIVE_FIELDS.includes(field)) {
+        if (canAccessSensitiveData(userRole) || isOwnRecord) {
+          filteredData[field] = employeeData[field];
+        } else {
+          filteredData[field] = '***RESTRICTED***';
+        }
+      } else {
+        filteredData[field] = employeeData[field];
+      }
+    }
+  });
+  
+  return filteredData;
+}
+
+/**
+ * Validate edit permissions for update data
+ */
+function validateEditPermissions(updateData, userRole, isOwnRecord = false) {
+  const errors = [];
+  
+  Object.keys(updateData).forEach(field => {
+    if (!canEditField(userRole, field, isOwnRecord)) {
+      errors.push(`You don't have permission to edit field: ${field}`);
+    }
+  });
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Create audit log entry for sensitive operations
+ */
+function createAuditLog(action, employeeId, fieldName, oldValue, newValue, userId, userRole) {
+  // Only log changes to audit-required fields
+  if (!AUDIT_REQUIRED_FIELDS.includes(fieldName)) return null;
+  
+  return {
+    action,
+    employeeId,
+    fieldName,
+    oldValue: SENSITIVE_FIELDS.includes(fieldName) ? '***MASKED***' : oldValue,
+    newValue: SENSITIVE_FIELDS.includes(fieldName) ? '***MASKED***' : newValue,
+    userId,
+    userRole,
+    timestamp: new Date(),
+    ipAddress: null, // To be set by middleware
+    userAgent: null  // To be set by middleware
+  };
+}
+
+/**
+ * Enhanced middleware for field-level access control
+ */
+function enhancedFieldAccessControl(options = {}) {
+  return (req, res, next) => {
+    // Add field permission checking functions to request
+    req.canViewField = (fieldName, isOwnRecord = false) => 
+      canViewField(req.userRole, fieldName, isOwnRecord);
+    
+    req.canEditField = (fieldName, isOwnRecord = false) => 
+      canEditField(req.userRole, fieldName, isOwnRecord);
+    
+    req.canAccessSensitiveData = () => 
+      canAccessSensitiveData(req.userRole);
+    
+    req.filterEmployeeData = (employeeData, isOwnRecord = false) => 
+      filterEmployeeData(employeeData, req.userRole, req.userId, isOwnRecord);
+    
+    req.validateEditPermissions = (updateData, isOwnRecord = false) => 
+      validateEditPermissions(updateData, req.userRole, isOwnRecord);
+    
+    req.createAuditLog = (action, employeeId, fieldName, oldValue, newValue) => 
+      createAuditLog(action, employeeId, fieldName, oldValue, newValue, req.userId, req.userRole);
+    
+    next();
+  };
+}
+
+/**
+ * File upload security validation
+ */
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const ALLOWED_DOCUMENT_TYPES = [
+  'application/pdf', 
+  'image/jpeg', 
+  'image/png',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
+
+const MAX_PHOTO_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
+
+function validateFileUpload(file, type = 'photo') {
+  const errors = [];
+  
+  if (!file) {
+    errors.push('No file provided');
+    return { isValid: false, errors };
+  }
+  
+  // Check file type
+  const allowedTypes = type === 'photo' ? ALLOWED_PHOTO_TYPES : ALLOWED_DOCUMENT_TYPES;
+  if (!allowedTypes.includes(file.mimetype)) {
+    errors.push(`Invalid file type. Allowed: ${allowedTypes.join(', ')}`);
+  }
+  
+  // Check file size
+  const maxSize = type === 'photo' ? MAX_PHOTO_SIZE : MAX_DOCUMENT_SIZE;
+  if (file.size > maxSize) {
+    errors.push(`File too large. Maximum size: ${Math.round(maxSize / (1024 * 1024))}MB`);
+  }
+  
+  // Check for malicious file extensions
+  const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif', '.com'];
+  const originalName = file.originalname?.toLowerCase() || '';
+  if (dangerousExtensions.some(ext => originalName.endsWith(ext))) {
+    errors.push('File type not allowed for security reasons');
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+module.exports = {
+  FIELD_PERMISSIONS,
+  SENSITIVE_FIELDS,
+  AUDIT_REQUIRED_FIELDS,
+  canViewField,
+  canEditField,
+  canAccessSensitiveData,
+  filterEmployeeData,
+  validateEditPermissions,
+  createAuditLog,
+  enhancedFieldAccessControl,
+  validateFileUpload,
+  ALLOWED_PHOTO_TYPES,
+  ALLOWED_DOCUMENT_TYPES,
+  MAX_PHOTO_SIZE,
+  MAX_DOCUMENT_SIZE
+};

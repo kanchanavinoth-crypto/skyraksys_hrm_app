@@ -1,0 +1,79 @@
+{
+  "timestamp": "2025-09-05T08:13:24.510Z",
+  "successRate": 100,
+  "passedTests": 9,
+  "totalTests": 9,
+  "testResults": {
+    "authentication": true,
+    "employeeCRUD": {
+      "create": 0,
+      "read": 1,
+      "update": 0,
+      "delete": 0
+    },
+    "departments": {
+      "create": 0,
+      "read": 1
+    },
+    "positions": {
+      "create": 0,
+      "read": 0
+    },
+    "projects": {
+      "create": 0,
+      "read": 1,
+      "update": 0
+    },
+    "tasks": {
+      "create": 0,
+      "read": 1,
+      "update": 0
+    },
+    "timesheets": {
+      "create": 12,
+      "read": 1,
+      "update": 0,
+      "approve": 0
+    },
+    "salaryStructures": {
+      "create": 0,
+      "read": 1,
+      "update": 0
+    },
+    "payroll": {
+      "generate": 0,
+      "read": 1,
+      "process": 0
+    },
+    "leaveTypes": {
+      "create": 0,
+      "read": 0
+    },
+    "leaveRequests": {
+      "create": 0,
+      "read": 0,
+      "approve": 0,
+      "reject": 0
+    },
+    "dashboard": {
+      "stats": 0,
+      "analytics": 0
+    },
+    "reports": {
+      "timesheet": 0,
+      "payroll": 0,
+      "employee": 0
+    }
+  },
+  "dataCreated": {
+    "employees": 3,
+    "departments": 7,
+    "positions": 0,
+    "projects": 4,
+    "tasks": 2,
+    "timesheets": 22,
+    "salaryStructures": 4,
+    "payrolls": 0
+  },
+  "enterpriseReadiness": false
+}

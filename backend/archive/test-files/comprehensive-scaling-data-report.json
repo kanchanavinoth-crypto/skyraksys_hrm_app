@@ -1,0 +1,530 @@
+{
+  "startTime": "2025-09-05T11:16:42.469Z",
+  "authentication": {
+    "success": true,
+    "timestamp": "2025-09-05T11:16:43.041Z"
+  },
+  "departments": [
+    {
+      "id": "2f953880-eaa1-4fc6-b715-521e397971f6",
+      "name": "Quality Assurance",
+      "description": "Testing and Quality Control",
+      "success": true,
+      "positions": [
+        {
+          "id": null,
+          "title": "Team Member",
+          "description": "Quality Assurance team member"
+        },
+        {
+          "id": null,
+          "title": "Senior Team Member",
+          "description": "Senior Quality Assurance team member"
+        }
+      ]
+    },
+    {
+      "id": "2bf8eb0d-48ee-4496-8f8a-c424726d27ea",
+      "name": "Marketing",
+      "description": "Digital Marketing and Brand Management",
+      "success": true,
+      "positions": [
+        {
+          "id": null,
+          "title": "Team Member",
+          "description": "Marketing team member"
+        },
+        {
+          "id": null,
+          "title": "Senior Team Member",
+          "description": "Senior Marketing team member"
+        }
+      ]
+    },
+    {
+      "id": "69531d33-8e1b-42af-82fb-b76fe3f04c9d",
+      "name": "Finance",
+      "description": "Financial Planning and Accounting",
+      "success": true,
+      "positions": [
+        {
+          "id": null,
+          "title": "Team Member",
+          "description": "Finance team member"
+        },
+        {
+          "id": null,
+          "title": "Senior Team Member",
+          "description": "Senior Finance team member"
+        }
+      ]
+    },
+    {
+      "id": "b8d8915f-d9fc-480b-a682-89f090303c7e",
+      "name": "Engineering",
+      "description": "Software Development and Technical Teams",
+      "success": true,
+      "positions": [
+        {
+          "id": null,
+          "title": "Team Member",
+          "description": "Engineering team member"
+        },
+        {
+          "id": null,
+          "title": "Senior Team Member",
+          "description": "Senior Engineering team member"
+        }
+      ]
+    },
+    {
+      "id": "c566ef09-3780-4f61-8870-4741e44a3e9c",
+      "name": "Operations",
+      "description": "Business Operations and Process Management",
+      "success": true,
+      "positions": [
+        {
+          "id": null,
+          "title": "Team Member",
+          "description": "Operations team member"
+        },
+        {
+          "id": null,
+          "title": "Senior Team Member",
+          "description": "Senior Operations team member"
+        }
+      ]
+    },
+    {
+      "id": "4f1d4857-ed6f-47e5-9717-e5211ad2261c",
+      "name": "Customer Support",
+      "description": "Client Support and Service",
+      "success": true,
+      "positions": [
+        {
+          "id": null,
+          "title": "Team Member",
+          "description": "Customer Support team member"
+        },
+        {
+          "id": null,
+          "title": "Senior Team Member",
+          "description": "Senior Customer Support team member"
+        }
+      ]
+    },
+    {
+      "id": "be13b677-8932-428c-8a0d-743517a91427",
+      "name": "Sales",
+      "description": "Business Development and Client Relations",
+      "success": true,
+      "positions": [
+        {
+          "id": null,
+          "title": "Team Member",
+          "description": "Sales team member"
+        },
+        {
+          "id": null,
+          "title": "Senior Team Member",
+          "description": "Senior Sales team member"
+        }
+      ]
+    }
+  ],
+  "positions": [],
+  "salaryStructures": [],
+  "employees": [
+    {
+      "firstName": "Sarah",
+      "lastName": "Johnson",
+      "email": "sarah.johnson@company.com",
+      "phone": "555-0101",
+      "departmentId": "2f953880-eaa1-4fc6-b715-521e397971f6",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-09-02",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Michael",
+      "lastName": "Chen",
+      "email": "michael.chen@company.com",
+      "phone": "555-0102",
+      "departmentId": "2bf8eb0d-48ee-4496-8f8a-c424726d27ea",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-07-20",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Emily",
+      "lastName": "Rodriguez",
+      "email": "emily.rodriguez@company.com",
+      "phone": "555-0103",
+      "departmentId": "69531d33-8e1b-42af-82fb-b76fe3f04c9d",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-05-23",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "David",
+      "lastName": "Thompson",
+      "email": "david.thompson@company.com",
+      "phone": "555-0104",
+      "departmentId": "b8d8915f-d9fc-480b-a682-89f090303c7e",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-12-12",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Jessica",
+      "lastName": "Lee",
+      "email": "jessica.lee@company.com",
+      "phone": "555-0105",
+      "departmentId": "c566ef09-3780-4f61-8870-4741e44a3e9c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-04-22",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Robert",
+      "lastName": "Wilson",
+      "email": "robert.wilson@company.com",
+      "phone": "555-0106",
+      "departmentId": "4f1d4857-ed6f-47e5-9717-e5211ad2261c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-05-14",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Amanda",
+      "lastName": "Davis",
+      "email": "amanda.davis@company.com",
+      "phone": "555-0107",
+      "departmentId": "be13b677-8932-428c-8a0d-743517a91427",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-06-11",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Christopher",
+      "lastName": "Brown",
+      "email": "christopher.brown@company.com",
+      "phone": "555-0108",
+      "departmentId": "2f953880-eaa1-4fc6-b715-521e397971f6",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-05-19",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Jennifer",
+      "lastName": "Taylor",
+      "email": "jennifer.taylor@company.com",
+      "phone": "555-0109",
+      "departmentId": "2bf8eb0d-48ee-4496-8f8a-c424726d27ea",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-08-03",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Daniel",
+      "lastName": "Anderson",
+      "email": "daniel.anderson@company.com",
+      "phone": "555-0110",
+      "departmentId": "69531d33-8e1b-42af-82fb-b76fe3f04c9d",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-06-11",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Michelle",
+      "lastName": "White",
+      "email": "michelle.white@company.com",
+      "phone": "555-0111",
+      "departmentId": "b8d8915f-d9fc-480b-a682-89f090303c7e",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-06-21",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Kevin",
+      "lastName": "Martin",
+      "email": "kevin.martin@company.com",
+      "phone": "555-0112",
+      "departmentId": "c566ef09-3780-4f61-8870-4741e44a3e9c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-11-11",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Lisa",
+      "lastName": "Garcia",
+      "email": "lisa.garcia@company.com",
+      "phone": "555-0113",
+      "departmentId": "4f1d4857-ed6f-47e5-9717-e5211ad2261c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-12-17",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Ryan",
+      "lastName": "Thomas",
+      "email": "ryan.thomas@company.com",
+      "phone": "555-0114",
+      "departmentId": "be13b677-8932-428c-8a0d-743517a91427",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-08-03",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Nicole",
+      "lastName": "Jackson",
+      "email": "nicole.jackson@company.com",
+      "phone": "555-0115",
+      "departmentId": "2f953880-eaa1-4fc6-b715-521e397971f6",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-10-18",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Andrew",
+      "lastName": "Harris",
+      "email": "andrew.harris@company.com",
+      "phone": "555-0116",
+      "departmentId": "2bf8eb0d-48ee-4496-8f8a-c424726d27ea",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-01-12",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Stephanie",
+      "lastName": "Clark",
+      "email": "stephanie.clark@company.com",
+      "phone": "555-0117",
+      "departmentId": "69531d33-8e1b-42af-82fb-b76fe3f04c9d",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-01-23",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Brandon",
+      "lastName": "Lewis",
+      "email": "brandon.lewis@company.com",
+      "phone": "555-0118",
+      "departmentId": "b8d8915f-d9fc-480b-a682-89f090303c7e",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-03-08",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Rachel",
+      "lastName": "Walker",
+      "email": "rachel.walker@company.com",
+      "phone": "555-0119",
+      "departmentId": "c566ef09-3780-4f61-8870-4741e44a3e9c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-05-15",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Matthew",
+      "lastName": "Hall",
+      "email": "matthew.hall@company.com",
+      "phone": "555-0120",
+      "departmentId": "4f1d4857-ed6f-47e5-9717-e5211ad2261c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-09-11",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Samantha",
+      "lastName": "Allen",
+      "email": "samantha.allen@company.com",
+      "phone": "555-0121",
+      "departmentId": "be13b677-8932-428c-8a0d-743517a91427",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-02-14",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Joshua",
+      "lastName": "Young",
+      "email": "joshua.young@company.com",
+      "phone": "555-0122",
+      "departmentId": "2f953880-eaa1-4fc6-b715-521e397971f6",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-05-22",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Ashley",
+      "lastName": "King",
+      "email": "ashley.king@company.com",
+      "phone": "555-0123",
+      "departmentId": "2bf8eb0d-48ee-4496-8f8a-c424726d27ea",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-04-17",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Tyler",
+      "lastName": "Wright",
+      "email": "tyler.wright@company.com",
+      "phone": "555-0124",
+      "departmentId": "69531d33-8e1b-42af-82fb-b76fe3f04c9d",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-11-18",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Megan",
+      "lastName": "Lopez",
+      "email": "megan.lopez@company.com",
+      "phone": "555-0125",
+      "departmentId": "b8d8915f-d9fc-480b-a682-89f090303c7e",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-08-11",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Jonathan",
+      "lastName": "Hill",
+      "email": "jonathan.hill@company.com",
+      "phone": "555-0126",
+      "departmentId": "c566ef09-3780-4f61-8870-4741e44a3e9c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-09-09",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Kimberly",
+      "lastName": "Scott",
+      "email": "kimberly.scott@company.com",
+      "phone": "555-0127",
+      "departmentId": "4f1d4857-ed6f-47e5-9717-e5211ad2261c",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-02-05",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Justin",
+      "lastName": "Green",
+      "email": "justin.green@company.com",
+      "phone": "555-0128",
+      "departmentId": "be13b677-8932-428c-8a0d-743517a91427",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-08-06",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Brittany",
+      "lastName": "Adams",
+      "email": "brittany.adams@company.com",
+      "phone": "555-0129",
+      "departmentId": "2f953880-eaa1-4fc6-b715-521e397971f6",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-05-18",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    },
+    {
+      "firstName": "Nathan",
+      "lastName": "Baker",
+      "email": "nathan.baker@company.com",
+      "phone": "555-0130",
+      "departmentId": "2bf8eb0d-48ee-4496-8f8a-c424726d27ea",
+      "positionId": "5ca16ce4-6b59-4d86-a383-22f799027c3b",
+      "hireDate": "2023-08-18",
+      "isActive": true,
+      "success": false,
+      "error": "Request failed with status code 400"
+    }
+  ],
+  "timesheets": [],
+  "errors": [],
+  "summary": {
+    "departments": {
+      "total": 7,
+      "successful": 7,
+      "failed": 0
+    },
+    "positions": {
+      "total": 14,
+      "successful": 14,
+      "failed": 0
+    },
+    "salaryStructures": {
+      "total": 0,
+      "successful": 0,
+      "failed": 0
+    },
+    "employees": {
+      "total": 30,
+      "successful": 0,
+      "failed": 30
+    },
+    "timesheets": {
+      "total": 0,
+      "successful": 0,
+      "failed": 0
+    }
+  },
+  "endTime": "2025-09-05T11:16:44.164Z",
+  "duration": 1695
+}

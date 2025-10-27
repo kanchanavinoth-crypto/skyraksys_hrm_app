@@ -1,0 +1,322 @@
+{
+  "timestamp": "2025-08-09T15:16:28.560Z",
+  "duration": 2.286,
+  "overallSuccessRate": 34.8,
+  "summary": {
+    "totalTests": 46,
+    "totalPassed": 16,
+    "totalFailed": 30
+  },
+  "roleResults": {
+    "admin": {
+      "passed": 8,
+      "failed": 14,
+      "tests": [
+        {
+          "name": "Authentication - Login",
+          "passed": true,
+          "details": "Token received",
+          "timestamp": "2025-08-09T15:16:26.900Z"
+        },
+        {
+          "name": "Authentication - Get Profile",
+          "passed": false,
+          "details": "API endpoint not found",
+          "timestamp": "2025-08-09T15:16:26.916Z"
+        },
+        {
+          "name": "Employees - Get All",
+          "passed": true,
+          "details": "Found 3 employees",
+          "timestamp": "2025-08-09T15:16:26.993Z"
+        },
+        {
+          "name": "Employees - Get Departments",
+          "passed": true,
+          "details": "Found 2 departments",
+          "timestamp": "2025-08-09T15:16:27.026Z"
+        },
+        {
+          "name": "Employees - Get Positions",
+          "passed": true,
+          "details": "Found 3 positions",
+          "timestamp": "2025-08-09T15:16:27.059Z"
+        },
+        {
+          "name": "Employees - Create New",
+          "passed": false,
+          "details": "Validation error",
+          "timestamp": "2025-08-09T15:16:27.109Z"
+        },
+        {
+          "name": "Employees - Dashboard Stats",
+          "passed": true,
+          "details": "Dashboard data retrieved",
+          "timestamp": "2025-08-09T15:16:27.147Z"
+        },
+        {
+          "name": "Leaves - Get All",
+          "passed": true,
+          "details": "Found 0 leave requests",
+          "timestamp": "2025-08-09T15:16:27.194Z"
+        },
+        {
+          "name": "Leaves - Get Types",
+          "passed": false,
+          "details": "Leave request not found",
+          "timestamp": "2025-08-09T15:16:27.227Z"
+        },
+        {
+          "name": "Leaves - Get Balance",
+          "passed": false,
+          "details": "Leave request not found",
+          "timestamp": "2025-08-09T15:16:27.255Z"
+        },
+        {
+          "name": "Leaves - Create Request",
+          "passed": false,
+          "details": "Validation error",
+          "timestamp": "2025-08-09T15:16:27.276Z"
+        },
+        {
+          "name": "Leaves - Get Statistics",
+          "passed": false,
+          "details": "Leave request not found",
+          "timestamp": "2025-08-09T15:16:27.306Z"
+        },
+        {
+          "name": "Timesheets - Get All",
+          "passed": true,
+          "details": "Found 0 timesheets",
+          "timestamp": "2025-08-09T15:16:27.352Z"
+        },
+        {
+          "name": "Timesheets - Get Projects",
+          "passed": true,
+          "details": "Found 0 projects",
+          "timestamp": "2025-08-09T15:16:27.372Z"
+        },
+        {
+          "name": "Timesheets - Get Summary",
+          "passed": false,
+          "details": "Timesheet not found",
+          "timestamp": "2025-08-09T15:16:27.402Z"
+        },
+        {
+          "name": "Timesheets - Create Entry",
+          "passed": false,
+          "details": "Validation error",
+          "timestamp": "2025-08-09T15:16:27.419Z"
+        },
+        {
+          "name": "Payroll - Get Records",
+          "passed": false,
+          "details": "API endpoint not found",
+          "timestamp": "2025-08-09T15:16:27.424Z"
+        },
+        {
+          "name": "Payroll - Get Dashboard",
+          "passed": false,
+          "details": "API endpoint not found",
+          "timestamp": "2025-08-09T15:16:27.429Z"
+        },
+        {
+          "name": "Payroll - Generate",
+          "passed": false,
+          "details": "Request failed with status code 404",
+          "timestamp": "2025-08-09T15:16:27.440Z"
+        },
+        {
+          "name": "Employee Lifecycle - Complete Flow",
+          "passed": false,
+          "details": "Failed at creation: Validation error",
+          "timestamp": "2025-08-09T15:16:27.459Z"
+        },
+        {
+          "name": "Leave Workflow - Request & Approval",
+          "passed": false,
+          "details": "Failed to create leave: Validation error",
+          "timestamp": "2025-08-09T15:16:27.480Z"
+        },
+        {
+          "name": "Timesheet Workflow - Submit & Approve",
+          "passed": false,
+          "details": "Failed to create timesheet: Validation error",
+          "timestamp": "2025-08-09T15:16:27.505Z"
+        }
+      ]
+    },
+    "hr": {
+      "passed": 8,
+      "failed": 14,
+      "tests": [
+        {
+          "name": "Authentication - Login",
+          "passed": true,
+          "details": "Token received",
+          "timestamp": "2025-08-09T15:16:28.020Z"
+        },
+        {
+          "name": "Authentication - Get Profile",
+          "passed": false,
+          "details": "API endpoint not found",
+          "timestamp": "2025-08-09T15:16:28.024Z"
+        },
+        {
+          "name": "Employees - Get All",
+          "passed": true,
+          "details": "Found 3 employees",
+          "timestamp": "2025-08-09T15:16:28.060Z"
+        },
+        {
+          "name": "Employees - Get Departments",
+          "passed": true,
+          "details": "Found 2 departments",
+          "timestamp": "2025-08-09T15:16:28.085Z"
+        },
+        {
+          "name": "Employees - Get Positions",
+          "passed": true,
+          "details": "Found 3 positions",
+          "timestamp": "2025-08-09T15:16:28.105Z"
+        },
+        {
+          "name": "Employees - Create New",
+          "passed": false,
+          "details": "Validation error",
+          "timestamp": "2025-08-09T15:16:28.122Z"
+        },
+        {
+          "name": "Employees - Dashboard Stats",
+          "passed": true,
+          "details": "Dashboard data retrieved",
+          "timestamp": "2025-08-09T15:16:28.149Z"
+        },
+        {
+          "name": "Leaves - Get All",
+          "passed": true,
+          "details": "Found 0 leave requests",
+          "timestamp": "2025-08-09T15:16:28.174Z"
+        },
+        {
+          "name": "Leaves - Get Types",
+          "passed": false,
+          "details": "Leave request not found",
+          "timestamp": "2025-08-09T15:16:28.192Z"
+        },
+        {
+          "name": "Leaves - Get Balance",
+          "passed": false,
+          "details": "Leave request not found",
+          "timestamp": "2025-08-09T15:16:28.212Z"
+        },
+        {
+          "name": "Leaves - Create Request",
+          "passed": false,
+          "details": "Validation error",
+          "timestamp": "2025-08-09T15:16:28.227Z"
+        },
+        {
+          "name": "Leaves - Get Statistics",
+          "passed": false,
+          "details": "Leave request not found",
+          "timestamp": "2025-08-09T15:16:28.248Z"
+        },
+        {
+          "name": "Timesheets - Get All",
+          "passed": true,
+          "details": "Found 0 timesheets",
+          "timestamp": "2025-08-09T15:16:28.357Z"
+        },
+        {
+          "name": "Timesheets - Get Projects",
+          "passed": true,
+          "details": "Found 0 projects",
+          "timestamp": "2025-08-09T15:16:28.383Z"
+        },
+        {
+          "name": "Timesheets - Get Summary",
+          "passed": false,
+          "details": "Timesheet not found",
+          "timestamp": "2025-08-09T15:16:28.418Z"
+        },
+        {
+          "name": "Timesheets - Create Entry",
+          "passed": false,
+          "details": "Validation error",
+          "timestamp": "2025-08-09T15:16:28.441Z"
+        },
+        {
+          "name": "Payroll - Get Records",
+          "passed": false,
+          "details": "API endpoint not found",
+          "timestamp": "2025-08-09T15:16:28.447Z"
+        },
+        {
+          "name": "Payroll - Get Dashboard",
+          "passed": false,
+          "details": "API endpoint not found",
+          "timestamp": "2025-08-09T15:16:28.455Z"
+        },
+        {
+          "name": "Payroll - Generate",
+          "passed": false,
+          "details": "Request failed with status code 404",
+          "timestamp": "2025-08-09T15:16:28.462Z"
+        },
+        {
+          "name": "Employee Lifecycle - Complete Flow",
+          "passed": false,
+          "details": "Failed at creation: Validation error",
+          "timestamp": "2025-08-09T15:16:28.483Z"
+        },
+        {
+          "name": "Leave Workflow - Request & Approval",
+          "passed": false,
+          "details": "Failed to create leave: Validation error",
+          "timestamp": "2025-08-09T15:16:28.498Z"
+        },
+        {
+          "name": "Timesheet Workflow - Submit & Approve",
+          "passed": false,
+          "details": "Failed to create timesheet: Validation error",
+          "timestamp": "2025-08-09T15:16:28.519Z"
+        }
+      ]
+    },
+    "manager": {
+      "passed": 0,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Authentication - Login",
+          "passed": false,
+          "details": "Invalid credentials",
+          "timestamp": "2025-08-09T15:16:28.533Z"
+        }
+      ]
+    },
+    "employee": {
+      "passed": 0,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Authentication - Login",
+          "passed": false,
+          "details": "Invalid credentials",
+          "timestamp": "2025-08-09T15:16:28.545Z"
+        }
+      ]
+    }
+  },
+  "config": {
+    "apiBaseUrl": "http://localhost:8080/api",
+    "frontendUrl": "http://localhost:3000",
+    "testUsers": [
+      "admin",
+      "hr",
+      "manager",
+      "employee"
+    ]
+  }
+}

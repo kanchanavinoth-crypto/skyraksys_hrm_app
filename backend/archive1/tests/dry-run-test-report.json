@@ -1,0 +1,130 @@
+{
+  "testExecutionDate": "2025-09-06T18:41:06.223Z",
+  "summary": {
+    "passed": 7,
+    "failed": 9,
+    "total": 16
+  },
+  "testResults": {
+    "adminFlows": [
+      {
+        "testName": "View All Employees",
+        "passed": true,
+        "details": "Retrieved 3 employees",
+        "timestamp": "2025-09-06T18:41:04.020Z"
+      },
+      {
+        "testName": "Employee CRUD Operations",
+        "passed": false,
+        "details": "Cannot read properties of undefined (reading 'id')",
+        "timestamp": "2025-09-06T18:41:04.021Z"
+      },
+      {
+        "testName": "View Departments",
+        "passed": true,
+        "details": "Retrieved 2 departments",
+        "timestamp": "2025-09-06T18:41:04.042Z"
+      },
+      {
+        "testName": "View Positions",
+        "passed": true,
+        "details": "Retrieved 4 positions",
+        "timestamp": "2025-09-06T18:41:04.058Z"
+      },
+      {
+        "testName": "View Projects",
+        "passed": false,
+        "details": "Retrieved 0 projects",
+        "timestamp": "2025-09-06T18:41:04.075Z"
+      },
+      {
+        "testName": "View Leave Types",
+        "passed": true,
+        "details": "Retrieved 3 leave types",
+        "timestamp": "2025-09-06T18:41:04.094Z"
+      },
+      {
+        "testName": "View Payrolls",
+        "passed": true,
+        "details": "Payroll access successful",
+        "timestamp": "2025-09-06T18:41:04.112Z"
+      }
+    ],
+    "managerFlows": [
+      {
+        "testName": "Team Member Management",
+        "passed": false,
+        "details": "Request failed with status code 500",
+        "timestamp": "2025-09-06T18:41:04.494Z"
+      },
+      {
+        "testName": "Manager Dashboard Access",
+        "passed": false,
+        "details": "Request failed with status code 500",
+        "timestamp": "2025-09-06T18:41:04.515Z"
+      },
+      {
+        "testName": "Manager Self-Service",
+        "passed": false,
+        "details": "managerEmail is not defined",
+        "timestamp": "2025-09-06T18:41:04.516Z"
+      }
+    ],
+    "employeeFlows": [
+      {
+        "testName": "Profile Access",
+        "passed": false,
+        "details": "employeeEmail is not defined",
+        "timestamp": "2025-09-06T18:41:04.888Z"
+      },
+      {
+        "testName": "Leave Balance Viewing",
+        "passed": false,
+        "details": "Request failed with status code 500",
+        "timestamp": "2025-09-06T18:41:04.901Z"
+      },
+      {
+        "testName": "Timesheet Submission",
+        "passed": false,
+        "details": "Request failed with status code 500",
+        "timestamp": "2025-09-06T18:41:04.926Z"
+      },
+      {
+        "testName": "View Own Payslips",
+        "passed": true,
+        "details": "Employee can view own payslips",
+        "timestamp": "2025-09-06T18:41:04.941Z"
+      },
+      {
+        "testName": "Admin Access Restriction",
+        "passed": false,
+        "details": "Employee correctly denied admin access",
+        "timestamp": "2025-09-06T18:41:04.980Z"
+      }
+    ],
+    "integrationTests": [
+      {
+        "testName": "Role-Based Permission Enforcement",
+        "passed": true,
+        "details": "Permissions correctly enforced across roles",
+        "timestamp": "2025-09-06T18:41:06.222Z"
+      }
+    ],
+    "summary": {
+      "passed": 7,
+      "failed": 9,
+      "total": 16
+    }
+  },
+  "testEnvironment": {
+    "baseURL": "http://localhost:8080/api",
+    "totalEmployees": 0,
+    "totalDepartments": 5,
+    "totalProjects": 3,
+    "totalLeaveTypes": 0
+  },
+  "recommendations": [
+    "Review failed test cases and fix identified issues",
+    "System needs improvement before production deployment"
+  ]
+}

@@ -1,0 +1,1157 @@
+{
+  "summary": {
+    "testRunId": "TEST_RUN_1754708637822",
+    "startTime": "2025-08-09T03:03:57.822Z",
+    "endTime": "2025-08-09T03:06:36.232Z",
+    "duration": "158s",
+    "totalTests": 60,
+    "passed": 5,
+    "failed": 55,
+    "skipped": 0,
+    "successRate": "8.33%"
+  },
+  "results": [
+    {
+      "testId": "A001",
+      "section": "Admin Operations",
+      "scenario": "Admin Login and Authentication",
+      "expectedResult": "Successful login, admin dashboard access",
+      "actualResult": "Admin login successful, dashboard accessible",
+      "status": "PASSED",
+      "duration": 3640,
+      "error": "",
+      "screenshot": "test-screenshots\\A001_2025-08-09T03-04-02-448Z_test_result.png",
+      "timestamp": "2025-08-09T03:03:58.808Z"
+    },
+    {
+      "testId": "A002",
+      "section": "Admin Operations",
+      "scenario": "Create New Employee Record",
+      "expectedResult": "Employee record created",
+      "actualResult": "Failed to create employee record",
+      "status": "FAILED",
+      "duration": 16366,
+      "error": "",
+      "screenshot": "test-screenshots\\A002_2025-08-09T03-04-19-973Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:03.607Z"
+    },
+    {
+      "testId": "A003",
+      "section": "Admin Operations",
+      "scenario": "Set Employee Login Credentials",
+      "expectedResult": "Login credentials configured",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\A003_2025-08-09T03-04-21-296Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:21.294Z"
+    },
+    {
+      "testId": "A004",
+      "section": "Admin Operations",
+      "scenario": "Configure Employee Payslip Details",
+      "expectedResult": "Payslip configuration saved",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 3,
+      "error": "",
+      "screenshot": "test-screenshots\\A004_2025-08-09T03-04-22-600Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:22.597Z"
+    },
+    {
+      "testId": "A005",
+      "section": "Admin Operations",
+      "scenario": "Create Manager Employee",
+      "expectedResult": "Manager record created",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\A005_2025-08-09T03-04-23-893Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:23.891Z"
+    },
+    {
+      "testId": "A006",
+      "section": "Admin Operations",
+      "scenario": "Set Manager Login Credentials",
+      "expectedResult": "Manager credentials configured",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\A006_2025-08-09T03-04-25-198Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:25.196Z"
+    },
+    {
+      "testId": "A007",
+      "section": "Admin Operations",
+      "scenario": "Assign Employee to Manager",
+      "expectedResult": "Reporting structure established",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\A007_2025-08-09T03-04-26-501Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:26.499Z"
+    },
+    {
+      "testId": "A010",
+      "section": "Admin Operations",
+      "scenario": "Verify Employee in System",
+      "expectedResult": "Employee fully configured",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 0,
+      "error": "",
+      "screenshot": "test-screenshots\\A010_2025-08-09T03-04-27-797Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:27.797Z"
+    },
+    {
+      "testId": "B001",
+      "section": "Employee Operations",
+      "scenario": "Employee First Login",
+      "expectedResult": "Successful login, employee dashboard",
+      "actualResult": "Employee login successful, dashboard accessible",
+      "status": "PASSED",
+      "duration": 2947,
+      "error": "",
+      "screenshot": "test-screenshots\\B001_2025-08-09T03-04-32-144Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:29.197Z"
+    },
+    {
+      "testId": "B002",
+      "section": "Employee Operations",
+      "scenario": "Access Employee Dashboard",
+      "expectedResult": "Dashboard loads with widgets",
+      "actualResult": "Employee dashboard not found",
+      "status": "FAILED",
+      "duration": 12559,
+      "error": "",
+      "screenshot": "test-screenshots\\B002_2025-08-09T03-04-45-886Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:33.327Z"
+    },
+    {
+      "testId": "B004",
+      "section": "Employee Operations",
+      "scenario": "Access Timesheet Module",
+      "expectedResult": "Timesheet page loads",
+      "actualResult": "Timesheet module accessible",
+      "status": "PASSED",
+      "duration": 6502,
+      "error": "",
+      "screenshot": "test-screenshots\\B004_2025-08-09T03-04-53-756Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:47.255Z"
+    },
+    {
+      "testId": "B005",
+      "section": "Employee Operations",
+      "scenario": "Submit Daily Timesheet Entry",
+      "expectedResult": "Timesheet entry saved",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\B005_2025-08-09T03-04-55-037Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:55.035Z"
+    },
+    {
+      "testId": "B006",
+      "section": "Employee Operations",
+      "scenario": "Submit Weekly Timesheet",
+      "expectedResult": "Weekly timesheet submitted for approval",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 3,
+      "error": "",
+      "screenshot": "test-screenshots\\B006_2025-08-09T03-04-56-333Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:56.330Z"
+    },
+    {
+      "testId": "B007",
+      "section": "Employee Operations",
+      "scenario": "Access Leave Request Module",
+      "expectedResult": "Leave request page accessible",
+      "actualResult": "Leave request module accessible",
+      "status": "PASSED",
+      "duration": 6529,
+      "error": "",
+      "screenshot": "test-screenshots\\B007_2025-08-09T03-05-04-122Z_test_result.png",
+      "timestamp": "2025-08-09T03:04:57.593Z"
+    },
+    {
+      "testId": "B008",
+      "section": "Employee Operations",
+      "scenario": "Submit Annual Leave Request",
+      "expectedResult": "Leave request submitted",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\B008_2025-08-09T03-05-05-351Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:05.349Z"
+    },
+    {
+      "testId": "B009",
+      "section": "Employee Operations",
+      "scenario": "Submit Sick Leave Request",
+      "expectedResult": "Sick leave request created",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\B009_2025-08-09T03-05-06-594Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:06.592Z"
+    },
+    {
+      "testId": "B011",
+      "section": "Employee Operations",
+      "scenario": "Access Payslip Module",
+      "expectedResult": "Payslip page loads",
+      "actualResult": "Payslip module accessible",
+      "status": "PASSED",
+      "duration": 6503,
+      "error": "",
+      "screenshot": "test-screenshots\\B011_2025-08-09T03-05-14-356Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:07.853Z"
+    },
+    {
+      "testId": "B012",
+      "section": "Employee Operations",
+      "scenario": "View Current Month Payslip",
+      "expectedResult": "Payslip displays with correct calculations",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\B012_2025-08-09T03-05-15-598Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:15.596Z"
+    },
+    {
+      "testId": "C001",
+      "section": "Manager Operations",
+      "scenario": "Manager Login and Authentication",
+      "expectedResult": "Manager login, dashboard access",
+      "actualResult": "Manager login failed",
+      "status": "FAILED",
+      "duration": 17198,
+      "error": "",
+      "screenshot": "test-screenshots\\C001_2025-08-09T03-05-34-078Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:16.880Z"
+    },
+    {
+      "testId": "C002",
+      "section": "Manager Operations",
+      "scenario": "View Team Dashboard",
+      "expectedResult": "Team overview with pending approvals",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 0,
+      "error": "",
+      "screenshot": "test-screenshots\\C002_2025-08-09T03-05-35-358Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:35.358Z"
+    },
+    {
+      "testId": "C003",
+      "section": "Manager Operations",
+      "scenario": "View Team Timesheets",
+      "expectedResult": "Employee timesheets for approval",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C003_2025-08-09T03-05-36-568Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:36.567Z"
+    },
+    {
+      "testId": "C004",
+      "section": "Manager Operations",
+      "scenario": "Approve Employee Timesheet",
+      "expectedResult": "Timesheet approved, status updated",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C004_2025-08-09T03-05-37-805Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:37.804Z"
+    },
+    {
+      "testId": "C005",
+      "section": "Manager Operations",
+      "scenario": "Reject Employee Timesheet",
+      "expectedResult": "Timesheet rejected with comments",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C005_2025-08-09T03-05-39-021Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:39.020Z"
+    },
+    {
+      "testId": "C006",
+      "section": "Manager Operations",
+      "scenario": "View Pending Leave Requests",
+      "expectedResult": "Pending requests displayed",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C006_2025-08-09T03-05-40-269Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:40.268Z"
+    },
+    {
+      "testId": "C007",
+      "section": "Manager Operations",
+      "scenario": "Approve Annual Leave Request",
+      "expectedResult": "Leave approved, calendar updated",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C007_2025-08-09T03-05-41-481Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:41.480Z"
+    },
+    {
+      "testId": "C008",
+      "section": "Manager Operations",
+      "scenario": "Reject Leave Request",
+      "expectedResult": "Leave request rejected with reason",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\C008_2025-08-09T03-05-42-721Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:42.719Z"
+    },
+    {
+      "testId": "D001",
+      "section": "System Integration",
+      "scenario": "Employee Login After Admin Creation",
+      "expectedResult": "Employee can login immediately",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\D001_2025-08-09T03-05-43-962Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:43.961Z"
+    },
+    {
+      "testId": "D002",
+      "section": "System Integration",
+      "scenario": "Manager Sees New Employee",
+      "expectedResult": "Employee visible in team list",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\D002_2025-08-09T03-05-45-233Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:45.231Z"
+    },
+    {
+      "testId": "D003",
+      "section": "System Integration",
+      "scenario": "Payslip Reflects Timesheet Hours",
+      "expectedResult": "Payslip calculates based on approved hours",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\D003_2025-08-09T03-05-46-509Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:46.508Z"
+    },
+    {
+      "testId": "D004",
+      "section": "System Integration",
+      "scenario": "Leave Balance Updates After Approval",
+      "expectedResult": "Balance decreases after approved leave",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\D004_2025-08-09T03-05-47-741Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:47.740Z"
+    },
+    {
+      "testId": "E001",
+      "section": "Error Handling",
+      "scenario": "Invalid Login Credentials",
+      "expectedResult": "Error message, login denied",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 3,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E001_2025-08-09T03-05-48-962Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:48.959Z"
+    },
+    {
+      "testId": "A008",
+      "section": "Admin Operations",
+      "scenario": "Set Employee Work Schedule",
+      "expectedResult": "Work schedule configured",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\A008_2025-08-09T03-05-50-239Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:50.238Z"
+    },
+    {
+      "testId": "A009",
+      "section": "Admin Operations",
+      "scenario": "Configure Leave Balances",
+      "expectedResult": "Leave balances set up",
+      "actualResult": "Admin operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\A009_2025-08-09T03-05-51-451Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:51.449Z"
+    },
+    {
+      "testId": "B003",
+      "section": "Employee Operations",
+      "scenario": "View Personal Profile",
+      "expectedResult": "Employee details displayed correctly",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\B003_2025-08-09T03-05-52-679Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:52.677Z"
+    },
+    {
+      "testId": "B010",
+      "section": "Employee Operations",
+      "scenario": "View Leave Balance",
+      "expectedResult": "Current balances displayed accurately",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\B010_2025-08-09T03-05-53-951Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:53.950Z"
+    },
+    {
+      "testId": "B013",
+      "section": "Employee Operations",
+      "scenario": "Download Payslip PDF",
+      "expectedResult": "PDF generates and downloads successfully",
+      "actualResult": "Failed to view payslip",
+      "status": "FAILED",
+      "duration": 9789,
+      "error": "",
+      "screenshot": "test-screenshots\\B013_2025-08-09T03-06-04-995Z_test_result.png",
+      "timestamp": "2025-08-09T03:05:55.206Z"
+    },
+    {
+      "testId": "B014",
+      "section": "Employee Operations",
+      "scenario": "View Historical Payslips",
+      "expectedResult": "Historical payslips accessible",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\B014_2025-08-09T03-06-06-266Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:06.265Z"
+    },
+    {
+      "testId": "C009",
+      "section": "Manager Operations",
+      "scenario": "View Team Calendar",
+      "expectedResult": "Team availability and leave calendar",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C009_2025-08-09T03-06-07-509Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:07.508Z"
+    },
+    {
+      "testId": "C010",
+      "section": "Manager Operations",
+      "scenario": "Generate Team Reports",
+      "expectedResult": "Team productivity report generated",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\C010_2025-08-09T03-06-08-720Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:08.718Z"
+    },
+    {
+      "testId": "C011",
+      "section": "Manager Operations",
+      "scenario": "Manage Team Members",
+      "expectedResult": "Employee profiles and details accessible",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C011_2025-08-09T03-06-09-965Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:09.964Z"
+    },
+    {
+      "testId": "C014",
+      "section": "Manager Operations",
+      "scenario": "Review Team Performance",
+      "expectedResult": "Team KPIs and metrics displayed",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\C014_2025-08-09T03-06-11-179Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:11.177Z"
+    },
+    {
+      "testId": "D005",
+      "section": "System Integration",
+      "scenario": "Calendar Integration",
+      "expectedResult": "Approved leave shows in team calendar",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\D005_2025-08-09T03-06-12-452Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:12.451Z"
+    },
+    {
+      "testId": "D006",
+      "section": "System Integration",
+      "scenario": "Email Notifications",
+      "expectedResult": "Manager receives notification email",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\D006_2025-08-09T03-06-13-712Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:13.710Z"
+    },
+    {
+      "testId": "D007",
+      "section": "System Integration",
+      "scenario": "Approval Workflow Tracking",
+      "expectedResult": "Status updates visible to employee",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\D007_2025-08-09T03-06-14-970Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:14.969Z"
+    },
+    {
+      "testId": "D008",
+      "section": "System Integration",
+      "scenario": "Reporting Integration",
+      "expectedResult": "Reports include all relevant data",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\D008_2025-08-09T03-06-16-229Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:16.228Z"
+    },
+    {
+      "testId": "D010",
+      "section": "System Integration",
+      "scenario": "Data Consistency Check",
+      "expectedResult": "Consistent information display",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\D010_2025-08-09T03-06-17-448Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:17.446Z"
+    },
+    {
+      "testId": "E002",
+      "section": "Error Handling",
+      "scenario": "Duplicate Employee Email",
+      "expectedResult": "Error message, creation prevented",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 1,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E002_2025-08-09T03-06-18-664Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:18.663Z"
+    },
+    {
+      "testId": "E003",
+      "section": "Error Handling",
+      "scenario": "Invalid Timesheet Hours",
+      "expectedResult": "Validation error, entry rejected",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 2,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E003_2025-08-09T03-06-19-948Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:19.947Z"
+    },
+    {
+      "testId": "E004",
+      "section": "Error Handling",
+      "scenario": "Leave Request Exceeding Balance",
+      "expectedResult": "Error message, request blocked",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 1,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E004_2025-08-09T03-06-21-197Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:21.196Z"
+    },
+    {
+      "testId": "E005",
+      "section": "Error Handling",
+      "scenario": "Past Date Leave Request",
+      "expectedResult": "Appropriate handling/warning",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 2,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E005_2025-08-09T03-06-22-474Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:22.472Z"
+    },
+    {
+      "testId": "B015",
+      "section": "Employee Operations",
+      "scenario": "Update Personal Information",
+      "expectedResult": "Information updated successfully",
+      "actualResult": "Employee operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\B015_2025-08-09T03-06-23-764Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:23.763Z"
+    },
+    {
+      "testId": "C012",
+      "section": "Manager Operations",
+      "scenario": "Delegate Approval Authority",
+      "expectedResult": "Approval delegation configured",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 2,
+      "error": "",
+      "screenshot": "test-screenshots\\C012_2025-08-09T03-06-25-057Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:25.055Z"
+    },
+    {
+      "testId": "C013",
+      "section": "Manager Operations",
+      "scenario": "Send Team Communications",
+      "expectedResult": "Communication sent successfully",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 0,
+      "error": "",
+      "screenshot": "test-screenshots\\C013_2025-08-09T03-06-26-335Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:26.335Z"
+    },
+    {
+      "testId": "C015",
+      "section": "Manager Operations",
+      "scenario": "Export Team Data",
+      "expectedResult": "Data export completed successfully",
+      "actualResult": "Manager operation test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\C015_2025-08-09T03-06-27-573Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:27.572Z"
+    },
+    {
+      "testId": "D009",
+      "section": "System Integration",
+      "scenario": "Audit Trail Functionality",
+      "expectedResult": "Audit log captures user actions",
+      "actualResult": "System integration test not fully implemented",
+      "status": "SKIPPED",
+      "duration": 1,
+      "error": "",
+      "screenshot": "test-screenshots\\D009_2025-08-09T03-06-28-859Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:28.858Z"
+    },
+    {
+      "testId": "E006",
+      "section": "Error Handling",
+      "scenario": "Concurrent User Sessions",
+      "expectedResult": "Session management handling",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 1,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E006_2025-08-09T03-06-30-052Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:30.051Z"
+    },
+    {
+      "testId": "E007",
+      "section": "Error Handling",
+      "scenario": "Network Connection Issues",
+      "expectedResult": "Graceful error handling",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 1,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E007_2025-08-09T03-06-31-269Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:31.268Z"
+    },
+    {
+      "testId": "E008",
+      "section": "Error Handling",
+      "scenario": "Large File Upload",
+      "expectedResult": "File size validation",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 1,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E008_2025-08-09T03-06-32-489Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:32.488Z"
+    },
+    {
+      "testId": "E009",
+      "section": "Error Handling",
+      "scenario": "Special Characters in Data",
+      "expectedResult": "Proper character handling",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 0,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E009_2025-08-09T03-06-33-740Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:33.740Z"
+    },
+    {
+      "testId": "E010",
+      "section": "Error Handling",
+      "scenario": "Browser Compatibility",
+      "expectedResult": "Consistent functionality",
+      "actualResult": "Test category not implemented",
+      "status": "FAILED",
+      "duration": 2,
+      "error": "Unknown test section",
+      "screenshot": "test-screenshots\\E010_2025-08-09T03-06-35-012Z_test_result.png",
+      "timestamp": "2025-08-09T03:06:35.010Z"
+    }
+  ],
+  "screenshots": [
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-04-02-155Z_logged_in_as_admin.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-04-02-155Z_logged_in_as_admin.png",
+      "description": "logged_in_as_admin"
+    },
+    {
+      "testId": "A001",
+      "filename": "A001_2025-08-09T03-04-02-448Z_test_result.png",
+      "filepath": "test-screenshots\\A001_2025-08-09T03-04-02-448Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-04-07-064Z_logged_in_as_admin.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-04-07-064Z_logged_in_as_admin.png",
+      "description": "logged_in_as_admin"
+    },
+    {
+      "testId": "A002",
+      "filename": "A002_2025-08-09T03-04-19-973Z_test_result.png",
+      "filepath": "test-screenshots\\A002_2025-08-09T03-04-19-973Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A003",
+      "filename": "A003_2025-08-09T03-04-21-296Z_test_result.png",
+      "filepath": "test-screenshots\\A003_2025-08-09T03-04-21-296Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A004",
+      "filename": "A004_2025-08-09T03-04-22-600Z_test_result.png",
+      "filepath": "test-screenshots\\A004_2025-08-09T03-04-22-600Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A005",
+      "filename": "A005_2025-08-09T03-04-23-893Z_test_result.png",
+      "filepath": "test-screenshots\\A005_2025-08-09T03-04-23-893Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A006",
+      "filename": "A006_2025-08-09T03-04-25-198Z_test_result.png",
+      "filepath": "test-screenshots\\A006_2025-08-09T03-04-25-198Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A007",
+      "filename": "A007_2025-08-09T03-04-26-501Z_test_result.png",
+      "filepath": "test-screenshots\\A007_2025-08-09T03-04-26-501Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A010",
+      "filename": "A010_2025-08-09T03-04-27-797Z_test_result.png",
+      "filepath": "test-screenshots\\A010_2025-08-09T03-04-27-797Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-04-31-925Z_logged_in_as_employee.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-04-31-925Z_logged_in_as_employee.png",
+      "description": "logged_in_as_employee"
+    },
+    {
+      "testId": "B001",
+      "filename": "B001_2025-08-09T03-04-32-144Z_test_result.png",
+      "filepath": "test-screenshots\\B001_2025-08-09T03-04-32-144Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-04-35-681Z_logged_in_as_employee.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-04-35-681Z_logged_in_as_employee.png",
+      "description": "logged_in_as_employee"
+    },
+    {
+      "testId": "B002",
+      "filename": "B002_2025-08-09T03-04-45-886Z_test_result.png",
+      "filepath": "test-screenshots\\B002_2025-08-09T03-04-45-886Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-04-50-286Z_logged_in_as_employee.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-04-50-286Z_logged_in_as_employee.png",
+      "description": "logged_in_as_employee"
+    },
+    {
+      "testId": "B004",
+      "filename": "B004_2025-08-09T03-04-53-756Z_test_result.png",
+      "filepath": "test-screenshots\\B004_2025-08-09T03-04-53-756Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B005",
+      "filename": "B005_2025-08-09T03-04-55-037Z_test_result.png",
+      "filepath": "test-screenshots\\B005_2025-08-09T03-04-55-037Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B006",
+      "filename": "B006_2025-08-09T03-04-56-333Z_test_result.png",
+      "filepath": "test-screenshots\\B006_2025-08-09T03-04-56-333Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-05-00-652Z_logged_in_as_employee.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-05-00-652Z_logged_in_as_employee.png",
+      "description": "logged_in_as_employee"
+    },
+    {
+      "testId": "B007",
+      "filename": "B007_2025-08-09T03-05-04-122Z_test_result.png",
+      "filepath": "test-screenshots\\B007_2025-08-09T03-05-04-122Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B008",
+      "filename": "B008_2025-08-09T03-05-05-351Z_test_result.png",
+      "filepath": "test-screenshots\\B008_2025-08-09T03-05-05-351Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B009",
+      "filename": "B009_2025-08-09T03-05-06-594Z_test_result.png",
+      "filepath": "test-screenshots\\B009_2025-08-09T03-05-06-594Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-05-10-860Z_logged_in_as_employee.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-05-10-860Z_logged_in_as_employee.png",
+      "description": "logged_in_as_employee"
+    },
+    {
+      "testId": "B011",
+      "filename": "B011_2025-08-09T03-05-14-356Z_test_result.png",
+      "filepath": "test-screenshots\\B011_2025-08-09T03-05-14-356Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B012",
+      "filename": "B012_2025-08-09T03-05-15-598Z_test_result.png",
+      "filepath": "test-screenshots\\B012_2025-08-09T03-05-15-598Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN_FAILED",
+      "filename": "LOGIN_FAILED_2025-08-09T03-05-33-816Z_login_error_managerTest.png",
+      "filepath": "test-screenshots\\LOGIN_FAILED_2025-08-09T03-05-33-816Z_login_error_managerTest.png",
+      "description": "login_error_managerTest"
+    },
+    {
+      "testId": "C001",
+      "filename": "C001_2025-08-09T03-05-34-078Z_test_result.png",
+      "filepath": "test-screenshots\\C001_2025-08-09T03-05-34-078Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C002",
+      "filename": "C002_2025-08-09T03-05-35-358Z_test_result.png",
+      "filepath": "test-screenshots\\C002_2025-08-09T03-05-35-358Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C003",
+      "filename": "C003_2025-08-09T03-05-36-568Z_test_result.png",
+      "filepath": "test-screenshots\\C003_2025-08-09T03-05-36-568Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C004",
+      "filename": "C004_2025-08-09T03-05-37-805Z_test_result.png",
+      "filepath": "test-screenshots\\C004_2025-08-09T03-05-37-805Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C005",
+      "filename": "C005_2025-08-09T03-05-39-021Z_test_result.png",
+      "filepath": "test-screenshots\\C005_2025-08-09T03-05-39-021Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C006",
+      "filename": "C006_2025-08-09T03-05-40-269Z_test_result.png",
+      "filepath": "test-screenshots\\C006_2025-08-09T03-05-40-269Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C007",
+      "filename": "C007_2025-08-09T03-05-41-481Z_test_result.png",
+      "filepath": "test-screenshots\\C007_2025-08-09T03-05-41-481Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C008",
+      "filename": "C008_2025-08-09T03-05-42-721Z_test_result.png",
+      "filepath": "test-screenshots\\C008_2025-08-09T03-05-42-721Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D001",
+      "filename": "D001_2025-08-09T03-05-43-962Z_test_result.png",
+      "filepath": "test-screenshots\\D001_2025-08-09T03-05-43-962Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D002",
+      "filename": "D002_2025-08-09T03-05-45-233Z_test_result.png",
+      "filepath": "test-screenshots\\D002_2025-08-09T03-05-45-233Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D003",
+      "filename": "D003_2025-08-09T03-05-46-509Z_test_result.png",
+      "filepath": "test-screenshots\\D003_2025-08-09T03-05-46-509Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D004",
+      "filename": "D004_2025-08-09T03-05-47-741Z_test_result.png",
+      "filepath": "test-screenshots\\D004_2025-08-09T03-05-47-741Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E001",
+      "filename": "E001_2025-08-09T03-05-48-962Z_test_result.png",
+      "filepath": "test-screenshots\\E001_2025-08-09T03-05-48-962Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A008",
+      "filename": "A008_2025-08-09T03-05-50-239Z_test_result.png",
+      "filepath": "test-screenshots\\A008_2025-08-09T03-05-50-239Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "A009",
+      "filename": "A009_2025-08-09T03-05-51-451Z_test_result.png",
+      "filepath": "test-screenshots\\A009_2025-08-09T03-05-51-451Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B003",
+      "filename": "B003_2025-08-09T03-05-52-679Z_test_result.png",
+      "filepath": "test-screenshots\\B003_2025-08-09T03-05-52-679Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B010",
+      "filename": "B010_2025-08-09T03-05-53-951Z_test_result.png",
+      "filepath": "test-screenshots\\B010_2025-08-09T03-05-53-951Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "LOGIN",
+      "filename": "LOGIN_2025-08-09T03-05-58-277Z_logged_in_as_employee.png",
+      "filepath": "test-screenshots\\LOGIN_2025-08-09T03-05-58-277Z_logged_in_as_employee.png",
+      "description": "logged_in_as_employee"
+    },
+    {
+      "testId": "B013",
+      "filename": "B013_2025-08-09T03-06-04-995Z_test_result.png",
+      "filepath": "test-screenshots\\B013_2025-08-09T03-06-04-995Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B014",
+      "filename": "B014_2025-08-09T03-06-06-266Z_test_result.png",
+      "filepath": "test-screenshots\\B014_2025-08-09T03-06-06-266Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C009",
+      "filename": "C009_2025-08-09T03-06-07-509Z_test_result.png",
+      "filepath": "test-screenshots\\C009_2025-08-09T03-06-07-509Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C010",
+      "filename": "C010_2025-08-09T03-06-08-720Z_test_result.png",
+      "filepath": "test-screenshots\\C010_2025-08-09T03-06-08-720Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C011",
+      "filename": "C011_2025-08-09T03-06-09-965Z_test_result.png",
+      "filepath": "test-screenshots\\C011_2025-08-09T03-06-09-965Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C014",
+      "filename": "C014_2025-08-09T03-06-11-179Z_test_result.png",
+      "filepath": "test-screenshots\\C014_2025-08-09T03-06-11-179Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D005",
+      "filename": "D005_2025-08-09T03-06-12-452Z_test_result.png",
+      "filepath": "test-screenshots\\D005_2025-08-09T03-06-12-452Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D006",
+      "filename": "D006_2025-08-09T03-06-13-712Z_test_result.png",
+      "filepath": "test-screenshots\\D006_2025-08-09T03-06-13-712Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D007",
+      "filename": "D007_2025-08-09T03-06-14-970Z_test_result.png",
+      "filepath": "test-screenshots\\D007_2025-08-09T03-06-14-970Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D008",
+      "filename": "D008_2025-08-09T03-06-16-229Z_test_result.png",
+      "filepath": "test-screenshots\\D008_2025-08-09T03-06-16-229Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D010",
+      "filename": "D010_2025-08-09T03-06-17-448Z_test_result.png",
+      "filepath": "test-screenshots\\D010_2025-08-09T03-06-17-448Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E002",
+      "filename": "E002_2025-08-09T03-06-18-664Z_test_result.png",
+      "filepath": "test-screenshots\\E002_2025-08-09T03-06-18-664Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E003",
+      "filename": "E003_2025-08-09T03-06-19-948Z_test_result.png",
+      "filepath": "test-screenshots\\E003_2025-08-09T03-06-19-948Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E004",
+      "filename": "E004_2025-08-09T03-06-21-197Z_test_result.png",
+      "filepath": "test-screenshots\\E004_2025-08-09T03-06-21-197Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E005",
+      "filename": "E005_2025-08-09T03-06-22-474Z_test_result.png",
+      "filepath": "test-screenshots\\E005_2025-08-09T03-06-22-474Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "B015",
+      "filename": "B015_2025-08-09T03-06-23-764Z_test_result.png",
+      "filepath": "test-screenshots\\B015_2025-08-09T03-06-23-764Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C012",
+      "filename": "C012_2025-08-09T03-06-25-057Z_test_result.png",
+      "filepath": "test-screenshots\\C012_2025-08-09T03-06-25-057Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C013",
+      "filename": "C013_2025-08-09T03-06-26-335Z_test_result.png",
+      "filepath": "test-screenshots\\C013_2025-08-09T03-06-26-335Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "C015",
+      "filename": "C015_2025-08-09T03-06-27-573Z_test_result.png",
+      "filepath": "test-screenshots\\C015_2025-08-09T03-06-27-573Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "D009",
+      "filename": "D009_2025-08-09T03-06-28-859Z_test_result.png",
+      "filepath": "test-screenshots\\D009_2025-08-09T03-06-28-859Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E006",
+      "filename": "E006_2025-08-09T03-06-30-052Z_test_result.png",
+      "filepath": "test-screenshots\\E006_2025-08-09T03-06-30-052Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E007",
+      "filename": "E007_2025-08-09T03-06-31-269Z_test_result.png",
+      "filepath": "test-screenshots\\E007_2025-08-09T03-06-31-269Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E008",
+      "filename": "E008_2025-08-09T03-06-32-489Z_test_result.png",
+      "filepath": "test-screenshots\\E008_2025-08-09T03-06-32-489Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E009",
+      "filename": "E009_2025-08-09T03-06-33-740Z_test_result.png",
+      "filepath": "test-screenshots\\E009_2025-08-09T03-06-33-740Z_test_result.png",
+      "description": "test_result"
+    },
+    {
+      "testId": "E010",
+      "filename": "E010_2025-08-09T03-06-35-012Z_test_result.png",
+      "filepath": "test-screenshots\\E010_2025-08-09T03-06-35-012Z_test_result.png",
+      "description": "test_result"
+    }
+  ],
+  "environment": {
+    "frontendUrl": "http://localhost:3000",
+    "backendUrl": "http://localhost:8080/api",
+    "browserVersion": "Chrome/139.0.7258.66",
+    "timestamp": "2025-08-09T03:06:36.232Z"
+  }
+}

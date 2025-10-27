@@ -1,0 +1,243 @@
+/* Payslip Template CSS */
+.payslip-container {
+  width: 800px;
+  margin: auto;
+  border: 1px solid #ddd;
+  padding: 30px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  background: white;
+  font-family: 'Roboto', Arial, sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* Print-specific styles */
+@media print {
+  .payslip-container {
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding: 20px;
+    width: 100%;
+    max-width: none;
+  }
+  
+  /* Hide any elements that shouldn't be printed */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ensure good page breaks */
+  .section-title {
+    page-break-after: avoid;
+  }
+  
+  .salary-table, .details-table {
+    page-break-inside: avoid;
+  }
+}
+
+/* Header Styles */
+.payslip-header {
+  text-align: center;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #004d99;
+  padding-bottom: 15px;
+}
+
+.company-logo {
+  height: 50px;
+  margin-bottom: 10px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.company-name {
+  margin: 0 !important;
+  font-size: 24px !important;
+  color: #004d99 !important;
+  font-weight: bold !important;
+  margin-bottom: 5px !important;
+}
+
+.company-info {
+  font-size: 12px;
+  color: #777;
+  margin: 10px 0;
+  line-height: 1.4;
+}
+
+.payslip-title {
+  margin: 15px 0 5px 0 !important;
+  font-size: 18px !important;
+  color: #555 !important;
+  font-weight: 600 !important;
+}
+
+.payslip-month {
+  margin: 0 !important;
+  font-size: 16px !important;
+  color: #666 !important;
+}
+
+/* Table Styles */
+.details-table, .salary-table {
+  margin-bottom: 20px !important;
+}
+
+.details-table .MuiTableCell-root {
+  padding: 8px !important;
+  border: 1px solid #eee !important;
+  font-size: 14px !important;
+}
+
+.details-table .MuiTableCell-root:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.salary-table .MuiTableCell-root {
+  border: 1px solid #ddd !important;
+  padding: 8px !important;
+  text-align: left !important;
+  font-size: 14px !important;
+}
+
+.salary-table .MuiTableHead-root .MuiTableCell-root {
+  background-color: #f2f2f2 !important;
+  font-weight: bold !important;
+}
+
+.total-row .MuiTableCell-root {
+  font-weight: bold !important;
+  background-color: #f0f8ff !important;
+}
+
+.net-pay-row .MuiTableCell-root {
+  background-color: #e8f5e8 !important;
+  font-size: 16px !important;
+  color: #2e7d32 !important;
+}
+
+/* Section Titles */
+.section-title {
+  background-color: #f2f2f2;
+  padding: 12px 15px;
+  font-weight: bold;
+  margin: 25px 0 10px 0;
+  border-left: 4px solid #004d99;
+  font-size: 16px;
+  color: #004d99;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Signature Section */
+.signature-section {
+  margin-top: 50px;
+  text-align: right;
+  border-top: 1px solid #eee;
+  padding-top: 30px;
+}
+
+.signature-image {
+  height: 80px;
+  margin-bottom: 10px;
+}
+
+.signature-text {
+  font-weight: bold !important;
+  color: #555 !important;
+  margin: 0 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+  .payslip-container {
+    width: 95%;
+    padding: 20px;
+    margin: 10px auto;
+  }
+  
+  .company-name {
+    font-size: 20px !important;
+  }
+  
+  .company-info {
+    font-size: 11px;
+  }
+  
+  .details-table .MuiTableCell-root,
+  .salary-table .MuiTableCell-root {
+    padding: 6px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .payslip-container {
+    width: 100%;
+    padding: 15px;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+  }
+  
+  .company-name {
+    font-size: 18px !important;
+  }
+  
+  .company-info {
+    font-size: 10px;
+  }
+  
+  .section-title {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+  
+  .details-table .MuiTableCell-root,
+  .salary-table .MuiTableCell-root {
+    padding: 4px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Custom scrollbar for better print preview */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Ensure consistent borders */
+.MuiTable-root {
+  border-collapse: collapse !important;
+}
+
+/* Animation for better user experience */
+.payslip-container {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

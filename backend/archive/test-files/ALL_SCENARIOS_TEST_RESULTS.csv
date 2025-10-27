@@ -1,0 +1,15 @@
+Test ID,Test Name,Category,Status,Duration (ms),HTTP Status,Error,Timestamp
+TC001,"Admin Login Success",Authentication,PASS,533,200,,2025-09-05T12:41:41.231Z
+TC002,"Invalid Login Attempt",Authentication,PASS,0,,,2025-09-05T12:41:41.990Z
+TC003,"Get Admin Profile",Authentication,PASS,0,200,,2025-09-05T12:41:42.114Z
+TC004,"Access Protected Resource Without Token",Authorization,PASS,0,,,2025-09-05T12:41:42.227Z
+TC006,"Create Employee - Valid Data",Employee Management,FAIL,0,,Request failed with status code 429,2025-09-05T12:41:42.424Z
+TC007,"Create Employee - Duplicate Email",Employee Management,SKIP,0,,,2025-09-05T12:41:42.527Z
+TC008,"Create Employee - Invalid Phone Format",Data Validation,FAIL,0,,Request failed with status code 429,2025-09-05T12:41:42.691Z
+TC010,"Get All Employees",Employee Management,FAIL,0,,Request failed with status code 429,2025-09-05T12:41:42.835Z
+TC016,"Get All Departments",Department Management,PASS,0,200,,2025-09-05T12:41:42.966Z
+TC017,"Create Department",Department Management,PASS,0,201,,2025-09-05T12:41:43.083Z
+TC021,"Get All Salary Structures",Salary Management,PASS,0,200,,2025-09-05T12:41:43.218Z
+TC022,"Create Salary Structure",Salary Management,SKIP,0,,,2025-09-05T12:41:43.333Z
+TC053,"Response Time - Employee List",Performance Testing,FAIL,0,,Request failed with status code 429,2025-09-05T12:41:43.479Z
+TC046,"Employee-Department Relationship",Integration Testing,FAIL,0,,Request failed with status code 429,2025-09-05T12:41:43.633Z

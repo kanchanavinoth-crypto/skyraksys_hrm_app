@@ -1,0 +1,352 @@
+{
+  "summary": {
+    "totalTests": 37,
+    "passed": 11,
+    "failed": 26,
+    "skipped": 0,
+    "passRate": "29.73",
+    "testDate": "2025-09-05T12:35:04.653Z",
+    "employeesCreated": 0,
+    "salaryStructuresCreated": 0
+  },
+  "results": [
+    {
+      "testId": "TC001",
+      "testName": "Admin Login Success",
+      "status": "PASS",
+      "duration": 907,
+      "response": 200,
+      "error": null,
+      "timestamp": "2025-09-05T12:34:57.715Z"
+    },
+    {
+      "testId": "TC002",
+      "testName": "Invalid Login Attempt",
+      "status": "PASS",
+      "duration": 0,
+      "response": 401,
+      "error": null,
+      "timestamp": "2025-09-05T12:34:58.433Z"
+    },
+    {
+      "testId": "TC003",
+      "testName": "Get Admin Profile",
+      "status": "PASS",
+      "duration": 13,
+      "response": 200,
+      "error": null,
+      "timestamp": "2025-09-05T12:34:58.446Z"
+    },
+    {
+      "testId": "TC004",
+      "testName": "Access Protected Resource Without Token",
+      "status": "PASS",
+      "duration": 0,
+      "response": 401,
+      "error": null,
+      "timestamp": "2025-09-05T12:34:58.454Z"
+    },
+    {
+      "testId": "TC006",
+      "testName": "Create Employee 1 - Alice Johnson",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:58.568Z"
+    },
+    {
+      "testId": "TC007",
+      "testName": "Create Employee 2 - Bob Smith",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:58.744Z"
+    },
+    {
+      "testId": "TC008",
+      "testName": "Create Employee 3 - Carol Williams",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:58.908Z"
+    },
+    {
+      "testId": "TC009",
+      "testName": "Create Employee 4 - David Brown",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:59.068Z"
+    },
+    {
+      "testId": "TC0010",
+      "testName": "Create Employee 5 - Emma Davis",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:59.204Z"
+    },
+    {
+      "testId": "TC0011",
+      "testName": "Create Employee 6 - Frank Miller",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:59.332Z"
+    },
+    {
+      "testId": "TC0012",
+      "testName": "Create Employee 7 - Grace Wilson",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:59.464Z"
+    },
+    {
+      "testId": "TC0013",
+      "testName": "Create Employee 8 - Henry Moore",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:59.598Z"
+    },
+    {
+      "testId": "TC0014",
+      "testName": "Create Employee 9 - Iris Taylor",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:59.753Z"
+    },
+    {
+      "testId": "TC0015",
+      "testName": "Create Employee 10 - Jack Anderson",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:34:59.887Z"
+    },
+    {
+      "testId": "TC0016",
+      "testName": "Create Employee 11 - Kate Thomas",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:00.040Z"
+    },
+    {
+      "testId": "TC0017",
+      "testName": "Create Employee 12 - Liam Jackson",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:00.168Z"
+    },
+    {
+      "testId": "TC0018",
+      "testName": "Create Employee 13 - Maya White",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:00.335Z"
+    },
+    {
+      "testId": "TC0019",
+      "testName": "Create Employee 14 - Noah Harris",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:00.469Z"
+    },
+    {
+      "testId": "TC0020",
+      "testName": "Create Employee 15 - Olivia Martin",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:00.608Z"
+    },
+    {
+      "testId": "TC0021",
+      "testName": "Create Employee 16 - Paul Garcia",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:00.770Z"
+    },
+    {
+      "testId": "TC0022",
+      "testName": "Create Employee 17 - Quinn Rodriguez",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:00.903Z"
+    },
+    {
+      "testId": "TC0023",
+      "testName": "Create Employee 18 - Ruby Lewis",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:01.078Z"
+    },
+    {
+      "testId": "TC0024",
+      "testName": "Create Employee 19 - Sam Lee",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:01.235Z"
+    },
+    {
+      "testId": "TC0025",
+      "testName": "Create Employee 20 - Tina Walker",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:01.367Z"
+    },
+    {
+      "testId": "TC0026",
+      "testName": "Create Employee 21 - Uma Hall",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:01.512Z"
+    },
+    {
+      "testId": "TC0027",
+      "testName": "Create Employee 22 - Victor Allen",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:01.648Z"
+    },
+    {
+      "testId": "TC0028",
+      "testName": "Create Employee 23 - Wendy Young",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:01.802Z"
+    },
+    {
+      "testId": "TC0029",
+      "testName": "Create Employee 24 - Xavier King",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:01.942Z"
+    },
+    {
+      "testId": "TC0030",
+      "testName": "Create Employee 25 - Yara Wright",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 400",
+      "timestamp": "2025-09-05T12:35:02.082Z"
+    },
+    {
+      "testId": "TC007",
+      "testName": "Create Employee - Duplicate Email",
+      "status": "PASS",
+      "duration": 0,
+      "response": 400,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:02.235Z"
+    },
+    {
+      "testId": "TC008",
+      "testName": "Create Employee - Invalid Phone Format",
+      "status": "PASS",
+      "duration": 0,
+      "response": 400,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:02.270Z"
+    },
+    {
+      "testId": "TC010",
+      "testName": "Get All Employees",
+      "status": "PASS",
+      "duration": 50,
+      "response": 200,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:02.320Z"
+    },
+    {
+      "testId": "TC021",
+      "testName": "Get All Salary Structures",
+      "status": "PASS",
+      "duration": 22,
+      "response": 200,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:02.348Z"
+    },
+    {
+      "testId": "TC046",
+      "testName": "Employee-Department Relationship",
+      "status": "PASS",
+      "duration": 0,
+      "response": null,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:02.407Z"
+    },
+    {
+      "testId": "TC047",
+      "testName": "Employee-Salary Relationship",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:02.484Z"
+    },
+    {
+      "testId": "TC051",
+      "testName": "Load Test - Get Employees",
+      "status": "PASS",
+      "duration": 2100,
+      "response": null,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:04.617Z"
+    },
+    {
+      "testId": "TC053",
+      "testName": "Response Time - Employee List",
+      "status": "PASS",
+      "duration": 33,
+      "response": 200,
+      "error": null,
+      "timestamp": "2025-09-05T12:35:04.651Z"
+    }
+  ],
+  "testData": {
+    "employeeCount": 0,
+    "departmentCount": 0,
+    "salaryStructureCount": 0
+  }
+}

@@ -1,0 +1,167 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authService } from '../services/auth.service';
+
+const AuthContext = createContext({});
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check if user is authenticated on app startup
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          // Validate token by fetching user profile
+          const userData = await authService.getProfile();
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        // Clear invalid tokens
+        localStorage.removeItem('accessToken');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      const response = await authService.login(email, password);
+      const { user: userData, accessToken } = response;
+      
+      // Store token
+      localStorage.setItem('accessToken', accessToken);
+      
+      // Update state
+      setUser(userData);
+      setIsAuthenticated(true);
+      
+      return { success: true, user: userData };
+    } catch (error) {
+      console.error('Login failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Login failed' 
+      };
+    }
+  };
+
+  const register = async (userData) => {
+    try {
+      const response = await authService.register(userData);
+      return { success: true, user: response.user };
+    } catch (error) {
+      console.error('Registration failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Registration failed' 
+      };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear local state regardless of API call success
+      localStorage.removeItem('accessToken');
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      const updatedUser = await authService.updateProfile(profileData);
+      setUser(updatedUser);
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      console.error('Profile update failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Profile update failed' 
+      };
+    }
+  };
+
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      await authService.changePassword(currentPassword, newPassword);
+      return { success: true };
+    } catch (error) {
+      console.error('Password change failed:', error);
+      return { 
+        success: false, 
+        error: error.response?.data?.message || 'Password change failed' 
+      };
+    }
+  };
+
+  // Role-based permission checks
+  const hasRole = (role) => {
+    return user?.role === role;
+  };
+
+  const hasAnyRole = (roles) => {
+    return roles.includes(user?.role);
+  };
+
+  const isAdmin = () => hasRole('admin');
+  const isHR = () => hasRole('hr');
+  const isManager = () => hasRole('manager');
+  const isEmployee = () => hasRole('employee');
+
+  const canManageEmployees = () => hasAnyRole(['admin', 'hr']);
+  const canApproveLeaves = () => hasAnyRole(['admin', 'hr', 'manager']);
+  const canViewPayroll = () => hasAnyRole(['admin', 'hr']);
+  const canManageSettings = () => hasAnyRole(['admin']);
+
+  const value = {
+    // State
+    user,
+    loading,
+    isAuthenticated,
+    
+    // Actions
+    login,
+    register,
+    logout,
+    updateProfile,
+    changePassword,
+    
+    // Role checks
+    hasRole,
+    hasAnyRole,
+    isAdmin,
+    isHR,
+    isManager,
+    isEmployee,
+    canManageEmployees,
+    canApproveLeaves,
+    canViewPayroll,
+    canManageSettings
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

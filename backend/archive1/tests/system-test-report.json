@@ -1,0 +1,96 @@
+{
+  "backend": {
+    "health": {
+      "status": "PASS",
+      "data": {
+        "status": "OK",
+        "message": "HRM System API is running",
+        "timestamp": "2025-09-06T19:32:34.644Z",
+        "database": "PostgreSQL",
+        "dbHost": "localhost",
+        "dbPort": "5433",
+        "dbName": "skyraksys_hrm"
+      }
+    },
+    "endpoints": [
+      {
+        "endpoint": "/employees",
+        "method": "GET",
+        "name": "Employee List",
+        "status": "FAIL",
+        "error": 403
+      },
+      {
+        "endpoint": "/positions",
+        "method": "GET",
+        "name": "Position List",
+        "status": "FAIL",
+        "error": 403
+      },
+      {
+        "endpoint": "/payroll",
+        "method": "GET",
+        "name": "Payroll List",
+        "status": "FAIL",
+        "error": 403
+      },
+      {
+        "endpoint": "/users",
+        "method": "GET",
+        "name": "User List",
+        "status": "FAIL",
+        "error": 403
+      }
+    ]
+  },
+  "frontend": {
+    "componentExports": [
+      {
+        "component": "EmployeeList",
+        "status": "PASS",
+        "path": "frontend/src/components/features/employees/EmployeeList.js"
+      },
+      {
+        "component": "EmployeeForm",
+        "status": "PASS",
+        "path": "frontend/src/components/features/employees/EmployeeForm.js"
+      },
+      {
+        "component": "EmployeeProfile",
+        "status": "PASS",
+        "path": "frontend/src/components/features/employees/EmployeeProfile.js"
+      },
+      {
+        "component": "EmployeeEdit",
+        "status": "PASS",
+        "path": "frontend/src/components/features/employees/EmployeeEdit.js"
+      },
+      {
+        "component": "UserManagement",
+        "status": "PASS",
+        "path": "frontend/src/components/features/admin/UserManagement.js"
+      },
+      {
+        "component": "SystemSettings",
+        "status": "PASS",
+        "path": "frontend/src/components/features/admin/SystemSettings.js"
+      },
+      {
+        "component": "PositionManagement",
+        "status": "PASS",
+        "path": "frontend/src/components/features/admin/PositionManagement.js"
+      },
+      {
+        "component": "ProjectTaskConfiguration",
+        "status": "PASS",
+        "path": "frontend/src/components/features/admin/ProjectTaskConfiguration.js"
+      },
+      {
+        "component": "ReportsModule",
+        "status": "PASS",
+        "path": "frontend/src/components/features/admin/ReportsModule.js"
+      }
+    ]
+  },
+  "integration": {}
+}

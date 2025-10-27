@@ -1,0 +1,406 @@
+{
+  "summary": {
+    "totalTests": 43,
+    "passed": 33,
+    "failed": 10,
+    "skipped": 0,
+    "passRate": "76.74",
+    "testDate": "2025-09-05T12:36:54.793Z",
+    "employeesCreated": 16,
+    "salaryStructuresCreated": 16,
+    "targetAchieved": false
+  },
+  "results": [
+    {
+      "testId": "TC100",
+      "testName": "Create Employee 1 - TestUser1",
+      "status": "PASS",
+      "duration": 563,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:42.814Z"
+    },
+    {
+      "testId": "TC101",
+      "testName": "Create Employee 2 - TestUser2",
+      "status": "PASS",
+      "duration": 551,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:43.426Z"
+    },
+    {
+      "testId": "TC102",
+      "testName": "Create Employee 3 - TestUser3",
+      "status": "PASS",
+      "duration": 564,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:44.043Z"
+    },
+    {
+      "testId": "TC103",
+      "testName": "Create Employee 4 - TestUser4",
+      "status": "PASS",
+      "duration": 562,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:44.662Z"
+    },
+    {
+      "testId": "TC104",
+      "testName": "Create Employee 5 - TestUser5",
+      "status": "PASS",
+      "duration": 644,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:45.391Z"
+    },
+    {
+      "testId": "TC105",
+      "testName": "Create Employee 6 - TestUser6",
+      "status": "PASS",
+      "duration": 526,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:45.979Z"
+    },
+    {
+      "testId": "TC106",
+      "testName": "Create Employee 7 - TestUser7",
+      "status": "PASS",
+      "duration": 586,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:46.629Z"
+    },
+    {
+      "testId": "TC107",
+      "testName": "Create Employee 8 - TestUser8",
+      "status": "PASS",
+      "duration": 620,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:47.312Z"
+    },
+    {
+      "testId": "TC108",
+      "testName": "Create Employee 9 - TestUser9",
+      "status": "PASS",
+      "duration": 596,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:47.973Z"
+    },
+    {
+      "testId": "TC109",
+      "testName": "Create Employee 10 - TestUser10",
+      "status": "PASS",
+      "duration": 562,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:48.588Z"
+    },
+    {
+      "testId": "TC110",
+      "testName": "Create Employee 11 - TestUser11",
+      "status": "PASS",
+      "duration": 601,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:49.249Z"
+    },
+    {
+      "testId": "TC111",
+      "testName": "Create Employee 12 - TestUser12",
+      "status": "PASS",
+      "duration": 540,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:49.843Z"
+    },
+    {
+      "testId": "TC112",
+      "testName": "Create Employee 13 - TestUser13",
+      "status": "PASS",
+      "duration": 610,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:50.518Z"
+    },
+    {
+      "testId": "TC113",
+      "testName": "Create Employee 14 - TestUser14",
+      "status": "PASS",
+      "duration": 611,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:51.188Z"
+    },
+    {
+      "testId": "TC114",
+      "testName": "Create Employee 15 - TestUser15",
+      "status": "PASS",
+      "duration": 636,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:51.879Z"
+    },
+    {
+      "testId": "TC115",
+      "testName": "Create Employee 16 - TestUser16",
+      "status": "PASS",
+      "duration": 585,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:52.525Z"
+    },
+    {
+      "testId": "TC116",
+      "testName": "Create Employee 17 - TestUser17",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:52.621Z"
+    },
+    {
+      "testId": "TC117",
+      "testName": "Create Employee 18 - TestUser18",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:52.713Z"
+    },
+    {
+      "testId": "TC118",
+      "testName": "Create Employee 19 - TestUser19",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:52.839Z"
+    },
+    {
+      "testId": "TC119",
+      "testName": "Create Employee 20 - TestUser20",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:52.921Z"
+    },
+    {
+      "testId": "TC120",
+      "testName": "Create Employee 21 - TestUser21",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:53.006Z"
+    },
+    {
+      "testId": "TC121",
+      "testName": "Create Employee 22 - TestUser22",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:53.090Z"
+    },
+    {
+      "testId": "TC122",
+      "testName": "Create Employee 23 - TestUser23",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:53.171Z"
+    },
+    {
+      "testId": "TC123",
+      "testName": "Create Employee 24 - TestUser24",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:53.245Z"
+    },
+    {
+      "testId": "TC124",
+      "testName": "Create Employee 25 - TestUser25",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:53.323Z"
+    },
+    {
+      "testId": "TC200",
+      "testName": "Create Salary Structure 1",
+      "status": "PASS",
+      "duration": 35,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:53.416Z"
+    },
+    {
+      "testId": "TC201",
+      "testName": "Create Salary Structure 2",
+      "status": "PASS",
+      "duration": 24,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:53.496Z"
+    },
+    {
+      "testId": "TC202",
+      "testName": "Create Salary Structure 3",
+      "status": "PASS",
+      "duration": 27,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:53.580Z"
+    },
+    {
+      "testId": "TC203",
+      "testName": "Create Salary Structure 4",
+      "status": "PASS",
+      "duration": 24,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:53.668Z"
+    },
+    {
+      "testId": "TC204",
+      "testName": "Create Salary Structure 5",
+      "status": "PASS",
+      "duration": 28,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:53.764Z"
+    },
+    {
+      "testId": "TC205",
+      "testName": "Create Salary Structure 6",
+      "status": "PASS",
+      "duration": 30,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:53.859Z"
+    },
+    {
+      "testId": "TC206",
+      "testName": "Create Salary Structure 7",
+      "status": "PASS",
+      "duration": 25,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:53.947Z"
+    },
+    {
+      "testId": "TC207",
+      "testName": "Create Salary Structure 8",
+      "status": "PASS",
+      "duration": 26,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.027Z"
+    },
+    {
+      "testId": "TC208",
+      "testName": "Create Salary Structure 9",
+      "status": "PASS",
+      "duration": 26,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.104Z"
+    },
+    {
+      "testId": "TC209",
+      "testName": "Create Salary Structure 10",
+      "status": "PASS",
+      "duration": 25,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.180Z"
+    },
+    {
+      "testId": "TC210",
+      "testName": "Create Salary Structure 11",
+      "status": "PASS",
+      "duration": 30,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.261Z"
+    },
+    {
+      "testId": "TC211",
+      "testName": "Create Salary Structure 12",
+      "status": "PASS",
+      "duration": 30,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.356Z"
+    },
+    {
+      "testId": "TC212",
+      "testName": "Create Salary Structure 13",
+      "status": "PASS",
+      "duration": 26,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.444Z"
+    },
+    {
+      "testId": "TC213",
+      "testName": "Create Salary Structure 14",
+      "status": "PASS",
+      "duration": 17,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.511Z"
+    },
+    {
+      "testId": "TC214",
+      "testName": "Create Salary Structure 15",
+      "status": "PASS",
+      "duration": 21,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.592Z"
+    },
+    {
+      "testId": "TC215",
+      "testName": "Create Salary Structure 16",
+      "status": "PASS",
+      "duration": 26,
+      "response": 201,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.674Z"
+    },
+    {
+      "testId": "TC300",
+      "testName": "Performance - Get All Employees",
+      "status": "FAIL",
+      "duration": 0,
+      "response": null,
+      "error": "Request failed with status code 429",
+      "timestamp": "2025-09-05T12:36:54.752Z"
+    },
+    {
+      "testId": "TC301",
+      "testName": "Performance - Get All Salary Structures",
+      "status": "PASS",
+      "duration": 34,
+      "response": 200,
+      "error": null,
+      "timestamp": "2025-09-05T12:36:54.791Z"
+    }
+  ],
+  "testData": {
+    "employeeCount": 16,
+    "salaryStructureCount": 16
+  }
+}

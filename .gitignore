@@ -1,0 +1,81 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+backend/.env*
+!backend/.env.example
+
+# Ignore all Playwright and E2E artifacts
+frontend/e2e/playwright-report/
+frontend/e2e/test-results/
+frontend/e2e/.auth/
+frontend/e2e/.cache/
+frontend/e2e/coverage/
+frontend/e2e/.env*
+
+# Ignore admin-debug-panel server artifacts
+admin-debug-panel/server.log
+admin-debug-panel/.env*
+
+# Build outputs
+frontend/build/
+backend/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+database.sqlite
+*.sqlite
+*.db
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# IDE files
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# PM2
+.pm2/
+
+# Temporary files
+tmp/
+temp/
+
+# Development scripts (archived)
+scripts/development/*
+scripts/testing/*
+
+# Screenshots and test files
+*.png
+test-screenshots/
+backend/test-screenshots/
+
+# Backup files
+*.backup
+*.bak

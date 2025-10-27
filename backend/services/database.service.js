@@ -1,0 +1,366 @@
+const db = require('../models');
+const { QueryTypes } = require('sequelize');
+
+class DatabaseService {
+  constructor() {
+    this.sequelize = db.sequelize;
+  }
+
+  /**
+   * Get list of all tables in the database
+   */
+  async getTables() {
+    try {
+      const tables = await this.sequelize.query(`
+        SELECT 
+          table_name,
+          pg_size_pretty(pg_total_relation_size(quote_ident(table_name)::regclass)) as size,
+          (SELECT count(*) FROM information_schema.columns WHERE table_name = t.table_name) as column_count
+        FROM information_schema.tables t
+        WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+        ORDER BY table_name;
+      `, { type: QueryTypes.SELECT });
+
+      return tables;
+    } catch (error) {
+      console.error('Error getting tables:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get schema information for a specific table
+   */
+  async getTableSchema(tableName) {
+    try {
+      const columns = await this.sequelize.query(`
+        SELECT 
+          column_name,
+          data_type,
+          character_maximum_length,
+          is_nullable,
+          column_default
+        FROM information_schema.columns
+        WHERE table_name = :tableName
+        AND table_schema = 'public'
+        ORDER BY ordinal_position;
+      `, {
+        replacements: { tableName },
+        type: QueryTypes.SELECT
+      });
+
+      // Get primary keys
+      const primaryKeys = await this.sequelize.query(`
+        SELECT a.attname
+        FROM pg_index i
+        JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+        WHERE i.indrelid = :tableName::regclass
+        AND i.indisprimary;
+      `, {
+        replacements: { tableName },
+        type: QueryTypes.SELECT
+      });
+
+      // Get foreign keys
+      const foreignKeys = await this.sequelize.query(`
+        SELECT
+          kcu.column_name,
+          ccu.table_name AS foreign_table_name,
+          ccu.column_name AS foreign_column_name
+        FROM information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+          ON ccu.constraint_name = tc.constraint_name
+          AND ccu.table_schema = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+        AND tc.table_name = :tableName;
+      `, {
+        replacements: { tableName },
+        type: QueryTypes.SELECT
+      });
+
+      // Get indexes
+      const indexes = await this.sequelize.query(`
+        SELECT
+          i.relname as index_name,
+          a.attname as column_name,
+          ix.indisunique as is_unique,
+          ix.indisprimary as is_primary
+        FROM pg_class t
+        JOIN pg_index ix ON t.oid = ix.indrelid
+        JOIN pg_class i ON i.oid = ix.indexrelid
+        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey)
+        WHERE t.relname = :tableName
+        AND t.relkind = 'r';
+      `, {
+        replacements: { tableName },
+        type: QueryTypes.SELECT
+      });
+
+      return {
+        columns,
+        primaryKeys: primaryKeys.map(pk => pk.attname),
+        foreignKeys,
+        indexes
+      };
+    } catch (error) {
+      console.error('Error getting table schema:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get data from a specific table with pagination
+   */
+  async getTableData(tableName, options = {}) {
+    try {
+      let { limit = 50, offset = 0, orderBy, orderDir = 'ASC' } = options;
+
+      // Validate table name to prevent SQL injection
+      const validTables = await this.getTables();
+      if (!validTables.find(t => t.table_name === tableName)) {
+        throw new Error('Invalid table name');
+      }
+
+      // Get table schema to find a valid column for ordering
+      if (!orderBy) {
+        const schema = await this.getTableSchema(tableName);
+        if (schema.columns && schema.columns.length > 0) {
+          // Try to use primary key first, otherwise use first column
+          const primaryKey = schema.primaryKeys && schema.primaryKeys.length > 0 
+            ? schema.primaryKeys[0] 
+            : schema.columns[0].column_name;
+          orderBy = primaryKey;
+        } else {
+          orderBy = '1'; // Fallback to first column by position
+        }
+      }
+
+      // Get total count
+      const [{ count }] = await this.sequelize.query(
+        `SELECT COUNT(*) as count FROM "${tableName}"`,
+        { type: QueryTypes.SELECT }
+      );
+
+      // Get data with safe ordering
+      let query;
+      if (orderBy === '1') {
+        // Order by column position
+        query = `SELECT * FROM "${tableName}" LIMIT :limit OFFSET :offset`;
+      } else {
+        // Order by specific column
+        query = `SELECT * FROM "${tableName}" ORDER BY "${orderBy}" ${orderDir} LIMIT :limit OFFSET :offset`;
+      }
+
+      const data = await this.sequelize.query(query, {
+        replacements: { limit, offset },
+        type: QueryTypes.SELECT
+      });
+
+      return {
+        data,
+        total: parseInt(count),
+        limit,
+        offset,
+        hasMore: parseInt(count) > (offset + limit)
+      };
+    } catch (error) {
+      console.error('Error getting table data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Execute SQL query with safety checks
+   */
+  async executeQuery(query, options = {}) {
+    try {
+      const { readOnly = false, maxRows = 1000 } = options;
+
+      // Trim and uppercase for checking
+      const upperQuery = query.trim().toUpperCase();
+
+      // Dangerous operations to block
+      const dangerousKeywords = [
+        'DROP DATABASE',
+        'DROP SCHEMA',
+        'TRUNCATE',
+        'DELETE FROM',
+        'UPDATE ',
+        'INSERT INTO',
+        'ALTER TABLE',
+        'CREATE TABLE',
+        'DROP TABLE'
+      ];
+
+      // Check for dangerous operations
+      if (readOnly) {
+        for (const keyword of dangerousKeywords) {
+          if (upperQuery.includes(keyword)) {
+            throw new Error(`Operation not allowed in read-only mode: ${keyword}`);
+          }
+        }
+      }
+
+      // Execute query
+      const startTime = Date.now();
+      const results = await this.sequelize.query(query, {
+        type: QueryTypes.SELECT,
+        raw: true
+      });
+      const executionTime = Date.now() - startTime;
+
+      // Limit results if too many
+      const limitedResults = results.slice(0, maxRows);
+      const truncated = results.length > maxRows;
+
+      return {
+        success: true,
+        results: limitedResults,
+        rowCount: results.length,
+        executionTime,
+        truncated,
+        maxRows
+      };
+    } catch (error) {
+      console.error('Error executing query:', error);
+      return {
+        success: false,
+        error: error.message,
+        results: []
+      };
+    }
+  }
+
+  /**
+   * Get database statistics
+   */
+  async getDatabaseStats() {
+    try {
+      // Total database size
+      const [dbSize] = await this.sequelize.query(`
+        SELECT pg_size_pretty(pg_database_size(current_database())) as size;
+      `, { type: QueryTypes.SELECT });
+
+      // Table count
+      const [tableCount] = await this.sequelize.query(`
+        SELECT count(*) as count
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE';
+      `, { type: QueryTypes.SELECT });
+
+      // Total row count across all tables
+      const tables = await this.getTables();
+      let totalRows = 0;
+      
+      for (const table of tables) {
+        const [{ count }] = await this.sequelize.query(
+          `SELECT COUNT(*) as count FROM "${table.table_name}"`,
+          { type: QueryTypes.SELECT }
+        );
+        totalRows += parseInt(count);
+      }
+
+      // Get table sizes
+      const tableSizes = await this.sequelize.query(`
+        SELECT 
+          table_name,
+          pg_size_pretty(pg_total_relation_size(quote_ident(table_name)::regclass)) as size,
+          pg_total_relation_size(quote_ident(table_name)::regclass) as size_bytes
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+        ORDER BY size_bytes DESC
+        LIMIT 10;
+      `, { type: QueryTypes.SELECT });
+
+      return {
+        databaseSize: dbSize.size,
+        tableCount: parseInt(tableCount.count),
+        totalRows,
+        largestTables: tableSizes
+      };
+    } catch (error) {
+      console.error('Error getting database stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create backup of a table
+   */
+  async backupTable(tableName) {
+    try {
+      const backupTableName = `${tableName}_backup_${Date.now()}`;
+      
+      await this.sequelize.query(`
+        CREATE TABLE "${backupTableName}" AS 
+        SELECT * FROM "${tableName}";
+      `);
+
+      return {
+        success: true,
+        backupTable: backupTableName,
+        message: `Table backed up to ${backupTableName}`
+      };
+    } catch (error) {
+      console.error('Error backing up table:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get query execution plan
+   */
+  async explainQuery(query) {
+    try {
+      const plan = await this.sequelize.query(`EXPLAIN ANALYZE ${query}`, {
+        type: QueryTypes.SELECT
+      });
+
+      return {
+        success: true,
+        plan
+      };
+    } catch (error) {
+      console.error('Error explaining query:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Get active connections
+   */
+  async getActiveConnections() {
+    try {
+      const connections = await this.sequelize.query(`
+        SELECT 
+          pid,
+          usename,
+          application_name,
+          client_addr,
+          state,
+          query,
+          state_change
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+        AND pid <> pg_backend_pid()
+        ORDER BY state_change DESC;
+      `, { type: QueryTypes.SELECT });
+
+      return connections;
+    } catch (error) {
+      console.error('Error getting active connections:', error);
+      throw error;
+    }
+  }
+}
+
+module.exports = new DatabaseService();

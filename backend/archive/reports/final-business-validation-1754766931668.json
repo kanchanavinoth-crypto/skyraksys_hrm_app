@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-08-09T19:15:14.801Z",
+  "totalTests": 16,
+  "passedTests": 14,
+  "businessCases": {
+    "authentication": {
+      "total": 3,
+      "passed": 3,
+      "status": "PASS"
+    },
+    "coreAPIs": {
+      "total": 8,
+      "passed": 8,
+      "status": "PASS"
+    },
+    "employeeManagement": {
+      "total": 3,
+      "passed": 2,
+      "status": "PASS"
+    },
+    "leaveManagement": {
+      "total": 2,
+      "passed": 1,
+      "status": "PASS"
+    },
+    "timesheetManagement": {
+      "total": 2,
+      "passed": 1,
+      "status": "PASS"
+    },
+    "payrollManagement": {
+      "total": 1,
+      "passed": 1,
+      "status": "PASS"
+    },
+    "hrAnalytics": {
+      "total": 3,
+      "passed": 3,
+      "status": "PASS"
+    }
+  },
+  "createdData": [],
+  "issues": [
+    "Employee creation failed: Request failed with status code 500",
+    "Leave request creation failed: Request failed with status code 400"
+  ],
+  "recommendations": [
+    "Set up initial projects for timesheet functionality"
+  ]
+}

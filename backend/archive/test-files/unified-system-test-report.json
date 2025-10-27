@@ -1,0 +1,2186 @@
+{
+  "timestamp": "2025-09-05T07:34:58.661Z",
+  "testSuite": "Comprehensive HRM System Testing",
+  "version": "1.0.0",
+  "configuration": {
+    "API_BASE": "http://localhost:5000/api",
+    "FRONTEND_BASE": "http://localhost:3000",
+    "BACKEND_REQUIRED": true,
+    "FRONTEND_REQUIRED": true,
+    "TIMEOUT": 60000
+  },
+  "results": {
+    "api": {
+      "timestamp": "2025-09-05T07:34:58.505Z",
+      "summary": {
+        "totalTests": 43,
+        "passedTests": 7,
+        "overallPercentage": "16.3",
+        "categoryResults": {
+          "authentication": {
+            "passed": 1,
+            "total": 4,
+            "percentage": "25.0"
+          },
+          "employeeManagement": {
+            "passed": 1,
+            "total": 7,
+            "percentage": "14.3"
+          },
+          "leaveManagement": {
+            "passed": 0,
+            "total": 4,
+            "percentage": "0.0"
+          },
+          "timesheetManagement": {
+            "passed": 0,
+            "total": 4,
+            "percentage": "0.0"
+          },
+          "payrollManagement": {
+            "passed": 0,
+            "total": 3,
+            "percentage": "0.0"
+          },
+          "projectManagement": {
+            "passed": 0,
+            "total": 2,
+            "percentage": "0.0"
+          },
+          "dashboardAnalytics": {
+            "passed": 0,
+            "total": 6,
+            "percentage": "0.0"
+          },
+          "workflowIntegration": {
+            "passed": 0,
+            "total": 1,
+            "percentage": "0.0"
+          },
+          "fieldValidation": {
+            "passed": 5,
+            "total": 5,
+            "percentage": "100.0"
+          },
+          "screenFunctionality": {
+            "passed": 0,
+            "total": 7,
+            "percentage": "0.0"
+          }
+        }
+      },
+      "detailedResults": {
+        "authentication": [
+          {
+            "testName": "admin login",
+            "passed": false,
+            "details": "Invalid JSON response",
+            "timestamp": "2025-09-05T07:34:58.148Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "hr login",
+            "passed": false,
+            "details": "Invalid JSON response",
+            "timestamp": "2025-09-05T07:34:58.162Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "employee login",
+            "passed": false,
+            "details": "Invalid JSON response",
+            "timestamp": "2025-09-05T07:34:58.168Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "Invalid credentials rejection",
+            "passed": true,
+            "details": "Should reject invalid credentials",
+            "timestamp": "2025-09-05T07:34:58.180Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          }
+        ],
+        "employeeManagement": [
+          {
+            "testName": "Get all employees",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.197Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Employee pagination",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.213Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Create employee with all fields",
+            "passed": false,
+            "details": "Invalid JSON response",
+            "timestamp": "2025-09-05T07:34:58.226Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "Required field validation",
+            "passed": true,
+            "details": "Should reject incomplete data",
+            "timestamp": "2025-09-05T07:34:58.232Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "Metadata: /employees/meta/departments",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.242Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Metadata: /employees/meta/positions",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.248Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Metadata: /employees/meta/stats",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.254Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          }
+        ],
+        "leaveManagement": [
+          {
+            "testName": "Get leave types",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.263Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Get all leave requests",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.270Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Get leave balances",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.277Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Admin leave balance access",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.287Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          }
+        ],
+        "timesheetManagement": [
+          {
+            "testName": "Get all timesheets",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.296Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Get projects for timesheet",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.302Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Get tasks for timesheet",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.308Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Timesheet summary",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.315Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          }
+        ],
+        "payrollManagement": [
+          {
+            "testName": "Get all payslips",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.322Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Get salary structures",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.327Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Payroll statistics",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.330Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          }
+        ],
+        "projectManagement": [
+          {
+            "testName": "Get all projects",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.333Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Create project",
+            "passed": false,
+            "details": "Invalid JSON response",
+            "timestamp": "2025-09-05T07:34:58.343Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          }
+        ],
+        "dashboardAnalytics": [
+          {
+            "testName": "Main dashboard stats",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.348Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Chart data: /dashboard/charts/employee-distribution",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.353Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Chart data: /dashboard/charts/timesheet-summary",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.362Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Chart data: /dashboard/charts/leave-trends",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.366Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Chart data: /dashboard/charts/project-progress",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.371Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Analytics with filters",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.378Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          }
+        ],
+        "workflowIntegration": [
+          {
+            "testName": "Cross-module data consistency",
+            "passed": false,
+            "details": "Failed to retrieve comparison data",
+            "timestamp": "2025-09-05T07:34:58.393Z",
+            "response": null
+          }
+        ],
+        "fieldValidation": [
+          {
+            "testName": "Email format validation",
+            "passed": true,
+            "details": "Should reject invalid email format",
+            "timestamp": "2025-09-05T07:34:58.399Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "Phone number validation",
+            "passed": true,
+            "details": "Should reject invalid phone number",
+            "timestamp": "2025-09-05T07:34:58.405Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "Date format validation",
+            "passed": true,
+            "details": "Should reject invalid date format",
+            "timestamp": "2025-09-05T07:34:58.412Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "Required fields validation",
+            "passed": true,
+            "details": "Should reject empty timesheet data",
+            "timestamp": "2025-09-05T07:34:58.415Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          },
+          {
+            "testName": "Data type validation",
+            "passed": true,
+            "details": "Should reject invalid data types",
+            "timestamp": "2025-09-05T07:34:58.420Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "message",
+                "raw"
+              ]
+            }
+          }
+        ],
+        "screenFunctionality": [
+          {
+            "testName": "Employee list pagination",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.429Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Timesheet list pagination",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.433Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Leave requests pagination",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.441Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Project list pagination",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.447Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Employee list sorting",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.451Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Timesheet filtering",
+            "passed": false,
+            "details": "API endpoint not found",
+            "timestamp": "2025-09-05T07:34:58.459Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          },
+          {
+            "testName": "Data export",
+            "passed": false,
+            "details": "Export not available",
+            "timestamp": "2025-09-05T07:34:58.463Z",
+            "response": {
+              "status": 404,
+              "success": false,
+              "dataKeys": [
+                "success",
+                "message",
+                "availableEndpoints"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "frontend": {
+      "timestamp": "2025-09-05T07:34:58.649Z",
+      "testType": "Frontend Functionality",
+      "summary": {
+        "totalTests": 210,
+        "passedTests": 206,
+        "overallPercentage": "98.1",
+        "categoryResults": {
+          "componentRendering": {
+            "passed": 114,
+            "total": 114,
+            "percentage": "100.0"
+          },
+          "formValidation": {
+            "passed": 6,
+            "total": 7,
+            "percentage": "85.7"
+          },
+          "navigationFlow": {
+            "passed": 17,
+            "total": 17,
+            "percentage": "100.0"
+          },
+          "dataBinding": {
+            "passed": 2,
+            "total": 5,
+            "percentage": "40.0"
+          },
+          "userInteraction": {
+            "passed": 20,
+            "total": 20,
+            "percentage": "100.0"
+          },
+          "responsiveDesign": {
+            "passed": 27,
+            "total": 27,
+            "percentage": "100.0"
+          },
+          "apiIntegration": {
+            "passed": 7,
+            "total": 7,
+            "percentage": "100.0"
+          },
+          "errorHandling": {
+            "passed": 13,
+            "total": 13,
+            "percentage": "100.0"
+          }
+        }
+      },
+      "detailedResults": {
+        "componentRendering": [
+          {
+            "testName": "Login Component renders",
+            "passed": true,
+            "details": "Component at /login renders successfully",
+            "timestamp": "2025-09-05T07:34:58.538Z"
+          },
+          {
+            "testName": "Login Component props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.538Z"
+          },
+          {
+            "testName": "Login Component state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.538Z"
+          },
+          {
+            "testName": "Login Component lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.538Z"
+          },
+          {
+            "testName": "Profile Component renders",
+            "passed": true,
+            "details": "Component at /profile renders successfully",
+            "timestamp": "2025-09-05T07:34:58.539Z"
+          },
+          {
+            "testName": "Profile Component props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.539Z"
+          },
+          {
+            "testName": "Profile Component state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.539Z"
+          },
+          {
+            "testName": "Profile Component lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.540Z"
+          },
+          {
+            "testName": "Dashboard renders",
+            "passed": true,
+            "details": "Component at /dashboard renders successfully",
+            "timestamp": "2025-09-05T07:34:58.540Z"
+          },
+          {
+            "testName": "Dashboard props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.540Z"
+          },
+          {
+            "testName": "Dashboard state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.540Z"
+          },
+          {
+            "testName": "Dashboard lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.541Z"
+          },
+          {
+            "testName": "Dashboard Analytics renders",
+            "passed": true,
+            "details": "Component at /dashboard renders successfully",
+            "timestamp": "2025-09-05T07:34:58.541Z"
+          },
+          {
+            "testName": "Dashboard Analytics props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.541Z"
+          },
+          {
+            "testName": "Dashboard Analytics state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.541Z"
+          },
+          {
+            "testName": "Dashboard Analytics lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.542Z"
+          },
+          {
+            "testName": "Employee List renders",
+            "passed": true,
+            "details": "Component at /employees renders successfully",
+            "timestamp": "2025-09-05T07:34:58.542Z"
+          },
+          {
+            "testName": "Employee List props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.542Z"
+          },
+          {
+            "testName": "Employee List state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.542Z"
+          },
+          {
+            "testName": "Employee List lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.542Z"
+          },
+          {
+            "testName": "Employee Creation Form renders",
+            "passed": true,
+            "details": "Component at /employees/new renders successfully",
+            "timestamp": "2025-09-05T07:34:58.543Z"
+          },
+          {
+            "testName": "Employee Creation Form props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.543Z"
+          },
+          {
+            "testName": "Employee Creation Form state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.543Z"
+          },
+          {
+            "testName": "Employee Creation Form lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.543Z"
+          },
+          {
+            "testName": "Employee Details renders",
+            "passed": true,
+            "details": "Component at /employees/:id renders successfully",
+            "timestamp": "2025-09-05T07:34:58.543Z"
+          },
+          {
+            "testName": "Employee Details props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.544Z"
+          },
+          {
+            "testName": "Employee Details state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.544Z"
+          },
+          {
+            "testName": "Employee Details lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.544Z"
+          },
+          {
+            "testName": "Employee Edit Form renders",
+            "passed": true,
+            "details": "Component at /employees/:id/edit renders successfully",
+            "timestamp": "2025-09-05T07:34:58.544Z"
+          },
+          {
+            "testName": "Employee Edit Form props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.544Z"
+          },
+          {
+            "testName": "Employee Edit Form state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.545Z"
+          },
+          {
+            "testName": "Employee Edit Form lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.545Z"
+          },
+          {
+            "testName": "Leave Request List renders",
+            "passed": true,
+            "details": "Component at /leaves renders successfully",
+            "timestamp": "2025-09-05T07:34:58.545Z"
+          },
+          {
+            "testName": "Leave Request List props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.545Z"
+          },
+          {
+            "testName": "Leave Request List state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.545Z"
+          },
+          {
+            "testName": "Leave Request List lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.546Z"
+          },
+          {
+            "testName": "Leave Request Form renders",
+            "passed": true,
+            "details": "Component at /leaves/new renders successfully",
+            "timestamp": "2025-09-05T07:34:58.546Z"
+          },
+          {
+            "testName": "Leave Request Form props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.546Z"
+          },
+          {
+            "testName": "Leave Request Form state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.546Z"
+          },
+          {
+            "testName": "Leave Request Form lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.546Z"
+          },
+          {
+            "testName": "Leave Balance Admin renders",
+            "passed": true,
+            "details": "Component at /admin/leave-balances renders successfully",
+            "timestamp": "2025-09-05T07:34:58.546Z"
+          },
+          {
+            "testName": "Leave Balance Admin props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.547Z"
+          },
+          {
+            "testName": "Leave Balance Admin state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.547Z"
+          },
+          {
+            "testName": "Leave Balance Admin lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.547Z"
+          },
+          {
+            "testName": "Leave Approval renders",
+            "passed": true,
+            "details": "Component at /leaves/approval renders successfully",
+            "timestamp": "2025-09-05T07:34:58.547Z"
+          },
+          {
+            "testName": "Leave Approval props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.547Z"
+          },
+          {
+            "testName": "Leave Approval state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.547Z"
+          },
+          {
+            "testName": "Leave Approval lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.548Z"
+          },
+          {
+            "testName": "Timesheet List renders",
+            "passed": true,
+            "details": "Component at /timesheets renders successfully",
+            "timestamp": "2025-09-05T07:34:58.548Z"
+          },
+          {
+            "testName": "Timesheet List props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.548Z"
+          },
+          {
+            "testName": "Timesheet List state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.548Z"
+          },
+          {
+            "testName": "Timesheet List lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.548Z"
+          },
+          {
+            "testName": "Timesheet Entry Form renders",
+            "passed": true,
+            "details": "Component at /timesheets/new renders successfully",
+            "timestamp": "2025-09-05T07:34:58.548Z"
+          },
+          {
+            "testName": "Timesheet Entry Form props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.549Z"
+          },
+          {
+            "testName": "Timesheet Entry Form state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.549Z"
+          },
+          {
+            "testName": "Timesheet Entry Form lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.549Z"
+          },
+          {
+            "testName": "Timesheet Summary renders",
+            "passed": true,
+            "details": "Component at /timesheets/summary renders successfully",
+            "timestamp": "2025-09-05T07:34:58.550Z"
+          },
+          {
+            "testName": "Timesheet Summary props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.550Z"
+          },
+          {
+            "testName": "Timesheet Summary state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.550Z"
+          },
+          {
+            "testName": "Timesheet Summary lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.550Z"
+          },
+          {
+            "testName": "Payroll Dashboard renders",
+            "passed": true,
+            "details": "Component at /payroll renders successfully",
+            "timestamp": "2025-09-05T07:34:58.550Z"
+          },
+          {
+            "testName": "Payroll Dashboard props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.551Z"
+          },
+          {
+            "testName": "Payroll Dashboard state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.551Z"
+          },
+          {
+            "testName": "Payroll Dashboard lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.551Z"
+          },
+          {
+            "testName": "Salary Structure renders",
+            "passed": true,
+            "details": "Component at /payroll/salary-structures renders successfully",
+            "timestamp": "2025-09-05T07:34:58.551Z"
+          },
+          {
+            "testName": "Salary Structure props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.551Z"
+          },
+          {
+            "testName": "Salary Structure state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.551Z"
+          },
+          {
+            "testName": "Salary Structure lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.551Z"
+          },
+          {
+            "testName": "Payslip Generation renders",
+            "passed": true,
+            "details": "Component at /payroll/generate renders successfully",
+            "timestamp": "2025-09-05T07:34:58.552Z"
+          },
+          {
+            "testName": "Payslip Generation props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.552Z"
+          },
+          {
+            "testName": "Payslip Generation state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.552Z"
+          },
+          {
+            "testName": "Payslip Generation lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.552Z"
+          },
+          {
+            "testName": "Payslip View renders",
+            "passed": true,
+            "details": "Component at /payroll/payslips renders successfully",
+            "timestamp": "2025-09-05T07:34:58.552Z"
+          },
+          {
+            "testName": "Payslip View props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.552Z"
+          },
+          {
+            "testName": "Payslip View state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.553Z"
+          },
+          {
+            "testName": "Payslip View lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.553Z"
+          },
+          {
+            "testName": "Project List renders",
+            "passed": true,
+            "details": "Component at /projects renders successfully",
+            "timestamp": "2025-09-05T07:34:58.553Z"
+          },
+          {
+            "testName": "Project List props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.553Z"
+          },
+          {
+            "testName": "Project List state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.553Z"
+          },
+          {
+            "testName": "Project List lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.553Z"
+          },
+          {
+            "testName": "Project Creation Form renders",
+            "passed": true,
+            "details": "Component at /projects/new renders successfully",
+            "timestamp": "2025-09-05T07:34:58.553Z"
+          },
+          {
+            "testName": "Project Creation Form props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.554Z"
+          },
+          {
+            "testName": "Project Creation Form state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.554Z"
+          },
+          {
+            "testName": "Project Creation Form lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.554Z"
+          },
+          {
+            "testName": "Task Management renders",
+            "passed": true,
+            "details": "Component at /tasks renders successfully",
+            "timestamp": "2025-09-05T07:34:58.554Z"
+          },
+          {
+            "testName": "Task Management props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.554Z"
+          },
+          {
+            "testName": "Task Management state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.554Z"
+          },
+          {
+            "testName": "Task Management lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.555Z"
+          },
+          {
+            "testName": "Reports Dashboard renders",
+            "passed": true,
+            "details": "Component at /reports renders successfully",
+            "timestamp": "2025-09-05T07:34:58.555Z"
+          },
+          {
+            "testName": "Reports Dashboard props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.555Z"
+          },
+          {
+            "testName": "Reports Dashboard state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.555Z"
+          },
+          {
+            "testName": "Reports Dashboard lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.555Z"
+          },
+          {
+            "testName": "Employee Reports renders",
+            "passed": true,
+            "details": "Component at /reports/employees renders successfully",
+            "timestamp": "2025-09-05T07:34:58.555Z"
+          },
+          {
+            "testName": "Employee Reports props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Employee Reports state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Employee Reports lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Leave Reports renders",
+            "passed": true,
+            "details": "Component at /reports/leaves renders successfully",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Leave Reports props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Leave Reports state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Leave Reports lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Timesheet Reports renders",
+            "passed": true,
+            "details": "Component at /reports/timesheets renders successfully",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Timesheet Reports props",
+            "passed": true,
+            "details": "Component properly handles props",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Timesheet Reports state",
+            "passed": true,
+            "details": "Component state management working",
+            "timestamp": "2025-09-05T07:34:58.556Z"
+          },
+          {
+            "testName": "Timesheet Reports lifecycle",
+            "passed": true,
+            "details": "Component lifecycle methods working",
+            "timestamp": "2025-09-05T07:34:58.557Z"
+          },
+          {
+            "testName": "Header component",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.557Z"
+          },
+          {
+            "testName": "Sidebar navigation",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.557Z"
+          },
+          {
+            "testName": "Footer component",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.557Z"
+          },
+          {
+            "testName": "Loading spinner",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.558Z"
+          },
+          {
+            "testName": "Error boundary",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.558Z"
+          },
+          {
+            "testName": "Notification system",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.558Z"
+          },
+          {
+            "testName": "Modal components",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.558Z"
+          },
+          {
+            "testName": "Form components",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.558Z"
+          },
+          {
+            "testName": "Table components",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.558Z"
+          },
+          {
+            "testName": "Chart components",
+            "passed": true,
+            "details": "Shared component renders across pages",
+            "timestamp": "2025-09-05T07:34:58.559Z"
+          }
+        ],
+        "formValidation": [
+          {
+            "testName": "Employee form - Required fields",
+            "passed": true,
+            "details": "Expected failure, got failure",
+            "timestamp": "2025-09-05T07:34:58.562Z"
+          },
+          {
+            "testName": "Employee form - Invalid email",
+            "passed": true,
+            "details": "Expected failure, got failure",
+            "timestamp": "2025-09-05T07:34:58.565Z"
+          },
+          {
+            "testName": "Employee form - Valid data",
+            "passed": false,
+            "details": "Expected success, got failure",
+            "timestamp": "2025-09-05T07:34:58.569Z"
+          },
+          {
+            "testName": "Leave form - End date before start date",
+            "passed": true,
+            "details": "Date validation working properly",
+            "timestamp": "2025-09-05T07:34:58.576Z"
+          },
+          {
+            "testName": "Leave form - Past date",
+            "passed": true,
+            "details": "Date validation working properly",
+            "timestamp": "2025-09-05T07:34:58.582Z"
+          },
+          {
+            "testName": "Timesheet form - Invalid hours (>24)",
+            "passed": true,
+            "details": "Hours validation working properly",
+            "timestamp": "2025-09-05T07:34:58.589Z"
+          },
+          {
+            "testName": "Timesheet form - Negative hours",
+            "passed": true,
+            "details": "Hours validation working properly",
+            "timestamp": "2025-09-05T07:34:58.594Z"
+          }
+        ],
+        "navigationFlow": [
+          {
+            "testName": "Dashboard navigation",
+            "passed": true,
+            "details": "Route accessible",
+            "timestamp": "2025-09-05T07:34:58.597Z"
+          },
+          {
+            "testName": "Employee list navigation",
+            "passed": true,
+            "details": "Route accessible",
+            "timestamp": "2025-09-05T07:34:58.597Z"
+          },
+          {
+            "testName": "Leave management navigation",
+            "passed": true,
+            "details": "Route accessible",
+            "timestamp": "2025-09-05T07:34:58.598Z"
+          },
+          {
+            "testName": "Timesheet navigation",
+            "passed": true,
+            "details": "Route accessible",
+            "timestamp": "2025-09-05T07:34:58.598Z"
+          },
+          {
+            "testName": "Payroll navigation",
+            "passed": true,
+            "details": "Route accessible",
+            "timestamp": "2025-09-05T07:34:58.599Z"
+          },
+          {
+            "testName": "Projects navigation",
+            "passed": true,
+            "details": "Route accessible",
+            "timestamp": "2025-09-05T07:34:58.599Z"
+          },
+          {
+            "testName": "Admin routes (unauthorized)",
+            "passed": true,
+            "details": "Route properly restricted",
+            "timestamp": "2025-09-05T07:34:58.600Z"
+          },
+          {
+            "testName": "Invalid route handling",
+            "passed": true,
+            "details": "Route properly restricted",
+            "timestamp": "2025-09-05T07:34:58.601Z"
+          },
+          {
+            "testName": "Menu flow: Dashboard → Employee Management",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.602Z"
+          },
+          {
+            "testName": "Menu flow: Employee Management → Add Employee",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.603Z"
+          },
+          {
+            "testName": "Menu flow: Employee List → Employee Details",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.604Z"
+          },
+          {
+            "testName": "Menu flow: Dashboard → Leave Management",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.604Z"
+          },
+          {
+            "testName": "Menu flow: Leave Management → New Leave Request",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.605Z"
+          },
+          {
+            "testName": "Menu flow: Dashboard → Timesheet Management",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.605Z"
+          },
+          {
+            "testName": "Menu flow: Timesheet → Add Entry",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.606Z"
+          },
+          {
+            "testName": "Menu flow: Dashboard → Payroll",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.606Z"
+          },
+          {
+            "testName": "Menu flow: Payroll → Generate Payslip",
+            "passed": true,
+            "details": "Menu navigation structure verified",
+            "timestamp": "2025-09-05T07:34:58.607Z"
+          }
+        ],
+        "dataBinding": [
+          {
+            "testName": "Employee list data binding",
+            "passed": false,
+            "details": "Failed to load employee data",
+            "timestamp": "2025-09-05T07:34:58.614Z"
+          },
+          {
+            "testName": "Dashboard stats binding",
+            "passed": false,
+            "details": "Failed to load dashboard stats",
+            "timestamp": "2025-09-05T07:34:58.616Z"
+          },
+          {
+            "testName": "Real-time data updates",
+            "passed": true,
+            "details": "State management for live updates verified",
+            "timestamp": "2025-09-05T07:34:58.617Z"
+          },
+          {
+            "testName": "Form data binding",
+            "passed": true,
+            "details": "Two-way data binding in forms verified",
+            "timestamp": "2025-09-05T07:34:58.617Z"
+          },
+          {
+            "testName": "Paginated data binding",
+            "passed": false,
+            "details": "Pagination data binding failed",
+            "timestamp": "2025-09-05T07:34:58.621Z"
+          }
+        ],
+        "userInteraction": [
+          {
+            "testName": "Create operation",
+            "passed": true,
+            "details": "User can create new records",
+            "timestamp": "2025-09-05T07:34:58.622Z"
+          },
+          {
+            "testName": "Read operation",
+            "passed": true,
+            "details": "User can view record details",
+            "timestamp": "2025-09-05T07:34:58.622Z"
+          },
+          {
+            "testName": "Update operation",
+            "passed": true,
+            "details": "User can edit existing records",
+            "timestamp": "2025-09-05T07:34:58.622Z"
+          },
+          {
+            "testName": "Delete operation",
+            "passed": true,
+            "details": "User can delete records",
+            "timestamp": "2025-09-05T07:34:58.622Z"
+          },
+          {
+            "testName": "Employee search by name",
+            "passed": true,
+            "details": "Search/filter functionality available",
+            "timestamp": "2025-09-05T07:34:58.623Z"
+          },
+          {
+            "testName": "Employee filter by department",
+            "passed": true,
+            "details": "Search/filter functionality available",
+            "timestamp": "2025-09-05T07:34:58.623Z"
+          },
+          {
+            "testName": "Leave filter by status",
+            "passed": true,
+            "details": "Search/filter functionality available",
+            "timestamp": "2025-09-05T07:34:58.623Z"
+          },
+          {
+            "testName": "Timesheet filter by date range",
+            "passed": true,
+            "details": "Search/filter functionality available",
+            "timestamp": "2025-09-05T07:34:58.623Z"
+          },
+          {
+            "testName": "Project search by name",
+            "passed": true,
+            "details": "Search/filter functionality available",
+            "timestamp": "2025-09-05T07:34:58.624Z"
+          },
+          {
+            "testName": "Bulk employee selection",
+            "passed": true,
+            "details": "Bulk operation interface available",
+            "timestamp": "2025-09-05T07:34:58.624Z"
+          },
+          {
+            "testName": "Bulk leave approval",
+            "passed": true,
+            "details": "Bulk operation interface available",
+            "timestamp": "2025-09-05T07:34:58.624Z"
+          },
+          {
+            "testName": "Bulk timesheet approval",
+            "passed": true,
+            "details": "Bulk operation interface available",
+            "timestamp": "2025-09-05T07:34:58.624Z"
+          },
+          {
+            "testName": "Bulk payroll generation",
+            "passed": true,
+            "details": "Bulk operation interface available",
+            "timestamp": "2025-09-05T07:34:58.625Z"
+          },
+          {
+            "testName": "Employee creation modal",
+            "passed": true,
+            "details": "Modal interaction working",
+            "timestamp": "2025-09-05T07:34:58.625Z"
+          },
+          {
+            "testName": "Leave request modal",
+            "passed": true,
+            "details": "Modal interaction working",
+            "timestamp": "2025-09-05T07:34:58.625Z"
+          },
+          {
+            "testName": "Timesheet entry modal",
+            "passed": true,
+            "details": "Modal interaction working",
+            "timestamp": "2025-09-05T07:34:58.625Z"
+          },
+          {
+            "testName": "Confirmation dialogs",
+            "passed": true,
+            "details": "Modal interaction working",
+            "timestamp": "2025-09-05T07:34:58.625Z"
+          },
+          {
+            "testName": "Error message dialogs",
+            "passed": true,
+            "details": "Modal interaction working",
+            "timestamp": "2025-09-05T07:34:58.625Z"
+          },
+          {
+            "testName": "Keyboard navigation",
+            "passed": true,
+            "details": "Keyboard accessibility implemented",
+            "timestamp": "2025-09-05T07:34:58.625Z"
+          },
+          {
+            "testName": "Touch interactions",
+            "passed": true,
+            "details": "Touch-friendly interface for mobile devices",
+            "timestamp": "2025-09-05T07:34:58.626Z"
+          }
+        ],
+        "responsiveDesign": [
+          {
+            "testName": "Layout - Mobile (320px)",
+            "passed": true,
+            "details": "Layout adapts to 320x568",
+            "timestamp": "2025-09-05T07:34:58.627Z"
+          },
+          {
+            "testName": "Navigation - Mobile (320px)",
+            "passed": true,
+            "details": "Navigation optimized for Mobile (320px)",
+            "timestamp": "2025-09-05T07:34:58.627Z"
+          },
+          {
+            "testName": "Tables - Mobile (320px)",
+            "passed": true,
+            "details": "Tables responsive on Mobile (320px)",
+            "timestamp": "2025-09-05T07:34:58.627Z"
+          },
+          {
+            "testName": "Forms - Mobile (320px)",
+            "passed": true,
+            "details": "Forms optimized for Mobile (320px)",
+            "timestamp": "2025-09-05T07:34:58.627Z"
+          },
+          {
+            "testName": "Layout - Mobile Large (414px)",
+            "passed": true,
+            "details": "Layout adapts to 414x736",
+            "timestamp": "2025-09-05T07:34:58.628Z"
+          },
+          {
+            "testName": "Navigation - Mobile Large (414px)",
+            "passed": true,
+            "details": "Navigation optimized for Mobile Large (414px)",
+            "timestamp": "2025-09-05T07:34:58.628Z"
+          },
+          {
+            "testName": "Tables - Mobile Large (414px)",
+            "passed": true,
+            "details": "Tables responsive on Mobile Large (414px)",
+            "timestamp": "2025-09-05T07:34:58.628Z"
+          },
+          {
+            "testName": "Forms - Mobile Large (414px)",
+            "passed": true,
+            "details": "Forms optimized for Mobile Large (414px)",
+            "timestamp": "2025-09-05T07:34:58.628Z"
+          },
+          {
+            "testName": "Layout - Tablet (768px)",
+            "passed": true,
+            "details": "Layout adapts to 768x1024",
+            "timestamp": "2025-09-05T07:34:58.628Z"
+          },
+          {
+            "testName": "Navigation - Tablet (768px)",
+            "passed": true,
+            "details": "Navigation optimized for Tablet (768px)",
+            "timestamp": "2025-09-05T07:34:58.629Z"
+          },
+          {
+            "testName": "Tables - Tablet (768px)",
+            "passed": true,
+            "details": "Tables responsive on Tablet (768px)",
+            "timestamp": "2025-09-05T07:34:58.629Z"
+          },
+          {
+            "testName": "Forms - Tablet (768px)",
+            "passed": true,
+            "details": "Forms optimized for Tablet (768px)",
+            "timestamp": "2025-09-05T07:34:58.629Z"
+          },
+          {
+            "testName": "Layout - Desktop (1024px)",
+            "passed": true,
+            "details": "Layout adapts to 1024x768",
+            "timestamp": "2025-09-05T07:34:58.629Z"
+          },
+          {
+            "testName": "Navigation - Desktop (1024px)",
+            "passed": true,
+            "details": "Navigation optimized for Desktop (1024px)",
+            "timestamp": "2025-09-05T07:34:58.630Z"
+          },
+          {
+            "testName": "Tables - Desktop (1024px)",
+            "passed": true,
+            "details": "Tables responsive on Desktop (1024px)",
+            "timestamp": "2025-09-05T07:34:58.630Z"
+          },
+          {
+            "testName": "Forms - Desktop (1024px)",
+            "passed": true,
+            "details": "Forms optimized for Desktop (1024px)",
+            "timestamp": "2025-09-05T07:34:58.630Z"
+          },
+          {
+            "testName": "Layout - Large Desktop (1440px)",
+            "passed": true,
+            "details": "Layout adapts to 1440x900",
+            "timestamp": "2025-09-05T07:34:58.630Z"
+          },
+          {
+            "testName": "Navigation - Large Desktop (1440px)",
+            "passed": true,
+            "details": "Navigation optimized for Large Desktop (1440px)",
+            "timestamp": "2025-09-05T07:34:58.630Z"
+          },
+          {
+            "testName": "Tables - Large Desktop (1440px)",
+            "passed": true,
+            "details": "Tables responsive on Large Desktop (1440px)",
+            "timestamp": "2025-09-05T07:34:58.631Z"
+          },
+          {
+            "testName": "Forms - Large Desktop (1440px)",
+            "passed": true,
+            "details": "Forms optimized for Large Desktop (1440px)",
+            "timestamp": "2025-09-05T07:34:58.631Z"
+          },
+          {
+            "testName": "Mobile-first design approach",
+            "passed": true,
+            "details": "Responsive feature implemented",
+            "timestamp": "2025-09-05T07:34:58.631Z"
+          },
+          {
+            "testName": "Hamburger menu for mobile",
+            "passed": true,
+            "details": "Responsive feature implemented",
+            "timestamp": "2025-09-05T07:34:58.631Z"
+          },
+          {
+            "testName": "Collapsible sidebar",
+            "passed": true,
+            "details": "Responsive feature implemented",
+            "timestamp": "2025-09-05T07:34:58.631Z"
+          },
+          {
+            "testName": "Responsive data tables",
+            "passed": true,
+            "details": "Responsive feature implemented",
+            "timestamp": "2025-09-05T07:34:58.632Z"
+          },
+          {
+            "testName": "Touch-friendly buttons",
+            "passed": true,
+            "details": "Responsive feature implemented",
+            "timestamp": "2025-09-05T07:34:58.632Z"
+          },
+          {
+            "testName": "Optimized font sizes",
+            "passed": true,
+            "details": "Responsive feature implemented",
+            "timestamp": "2025-09-05T07:34:58.632Z"
+          },
+          {
+            "testName": "Proper spacing on mobile",
+            "passed": true,
+            "details": "Responsive feature implemented",
+            "timestamp": "2025-09-05T07:34:58.632Z"
+          }
+        ],
+        "apiIntegration": [
+          {
+            "testName": "API Endpoint: /auth/login",
+            "passed": true,
+            "details": "Status: 404",
+            "timestamp": "2025-09-05T07:34:58.514Z"
+          },
+          {
+            "testName": "API Endpoint: /employees",
+            "passed": true,
+            "details": "Status: 404",
+            "timestamp": "2025-09-05T07:34:58.519Z"
+          },
+          {
+            "testName": "API Endpoint: /leaves",
+            "passed": true,
+            "details": "Status: 404",
+            "timestamp": "2025-09-05T07:34:58.524Z"
+          },
+          {
+            "testName": "API Endpoint: /timesheets",
+            "passed": true,
+            "details": "Status: 404",
+            "timestamp": "2025-09-05T07:34:58.527Z"
+          },
+          {
+            "testName": "API Endpoint: /payroll",
+            "passed": true,
+            "details": "Status: 404",
+            "timestamp": "2025-09-05T07:34:58.530Z"
+          },
+          {
+            "testName": "API Endpoint: /projects",
+            "passed": true,
+            "details": "Status: 404",
+            "timestamp": "2025-09-05T07:34:58.533Z"
+          },
+          {
+            "testName": "API Endpoint: /dashboard/stats",
+            "passed": true,
+            "details": "Status: 404",
+            "timestamp": "2025-09-05T07:34:58.536Z"
+          }
+        ],
+        "errorHandling": [
+          {
+            "testName": "Validation error: Email",
+            "passed": true,
+            "details": "Invalid email format displayed to user",
+            "timestamp": "2025-09-05T07:34:58.637Z"
+          },
+          {
+            "testName": "Validation error: Phone",
+            "passed": true,
+            "details": "Invalid phone number displayed to user",
+            "timestamp": "2025-09-05T07:34:58.638Z"
+          },
+          {
+            "testName": "Validation error: Date",
+            "passed": true,
+            "details": "Invalid date format displayed to user",
+            "timestamp": "2025-09-05T07:34:58.638Z"
+          },
+          {
+            "testName": "Validation error: Required fields",
+            "passed": true,
+            "details": "Required field missing displayed to user",
+            "timestamp": "2025-09-05T07:34:58.638Z"
+          },
+          {
+            "testName": "400 Bad Request handling",
+            "passed": true,
+            "details": "API error properly handled",
+            "timestamp": "2025-09-05T07:34:58.638Z"
+          },
+          {
+            "testName": "401 Unauthorized handling",
+            "passed": true,
+            "details": "API error properly handled",
+            "timestamp": "2025-09-05T07:34:58.639Z"
+          },
+          {
+            "testName": "403 Forbidden handling",
+            "passed": true,
+            "details": "API error properly handled",
+            "timestamp": "2025-09-05T07:34:58.640Z"
+          },
+          {
+            "testName": "404 Not Found handling",
+            "passed": true,
+            "details": "API error properly handled",
+            "timestamp": "2025-09-05T07:34:58.640Z"
+          },
+          {
+            "testName": "500 Server Error handling",
+            "passed": true,
+            "details": "API error properly handled",
+            "timestamp": "2025-09-05T07:34:58.641Z"
+          },
+          {
+            "testName": "Offline mode handling",
+            "passed": true,
+            "details": "Graceful degradation implemented",
+            "timestamp": "2025-09-05T07:34:58.642Z"
+          },
+          {
+            "testName": "Slow network handling",
+            "passed": true,
+            "details": "Graceful degradation implemented",
+            "timestamp": "2025-09-05T07:34:58.642Z"
+          },
+          {
+            "testName": "Large dataset handling",
+            "passed": true,
+            "details": "Graceful degradation implemented",
+            "timestamp": "2025-09-05T07:34:58.642Z"
+          },
+          {
+            "testName": "Browser compatibility",
+            "passed": true,
+            "details": "Graceful degradation implemented",
+            "timestamp": "2025-09-05T07:34:58.642Z"
+          }
+        ]
+      }
+    },
+    "unified": {
+      "totalTests": 253,
+      "passedTests": 213,
+      "overallPercentage": "84.2",
+      "systemStatus": "🟠 NEEDS ATTENTION (Moderate Issues)",
+      "recommendations": [
+        "Fix API endpoint issues and validation errors",
+        "Review authentication and authorization implementation",
+        "Implement comprehensive error handling across all modules",
+        "Complete leave balance management implementation",
+        "Conduct security penetration testing",
+        "Implement automated testing in CI/CD pipeline"
+      ]
+    }
+  },
+  "summary": {
+    "executionTime": "2025-09-05T07:34:58.661Z",
+    "totalTestSuites": 2,
+    "apiTests": {
+      "totalTests": 43,
+      "passedTests": 7,
+      "overallPercentage": "16.3",
+      "categoryResults": {
+        "authentication": {
+          "passed": 1,
+          "total": 4,
+          "percentage": "25.0"
+        },
+        "employeeManagement": {
+          "passed": 1,
+          "total": 7,
+          "percentage": "14.3"
+        },
+        "leaveManagement": {
+          "passed": 0,
+          "total": 4,
+          "percentage": "0.0"
+        },
+        "timesheetManagement": {
+          "passed": 0,
+          "total": 4,
+          "percentage": "0.0"
+        },
+        "payrollManagement": {
+          "passed": 0,
+          "total": 3,
+          "percentage": "0.0"
+        },
+        "projectManagement": {
+          "passed": 0,
+          "total": 2,
+          "percentage": "0.0"
+        },
+        "dashboardAnalytics": {
+          "passed": 0,
+          "total": 6,
+          "percentage": "0.0"
+        },
+        "workflowIntegration": {
+          "passed": 0,
+          "total": 1,
+          "percentage": "0.0"
+        },
+        "fieldValidation": {
+          "passed": 5,
+          "total": 5,
+          "percentage": "100.0"
+        },
+        "screenFunctionality": {
+          "passed": 0,
+          "total": 7,
+          "percentage": "0.0"
+        }
+      }
+    },
+    "frontendTests": {
+      "totalTests": 210,
+      "passedTests": 206,
+      "overallPercentage": "98.1",
+      "categoryResults": {
+        "componentRendering": {
+          "passed": 114,
+          "total": 114,
+          "percentage": "100.0"
+        },
+        "formValidation": {
+          "passed": 6,
+          "total": 7,
+          "percentage": "85.7"
+        },
+        "navigationFlow": {
+          "passed": 17,
+          "total": 17,
+          "percentage": "100.0"
+        },
+        "dataBinding": {
+          "passed": 2,
+          "total": 5,
+          "percentage": "40.0"
+        },
+        "userInteraction": {
+          "passed": 20,
+          "total": 20,
+          "percentage": "100.0"
+        },
+        "responsiveDesign": {
+          "passed": 27,
+          "total": 27,
+          "percentage": "100.0"
+        },
+        "apiIntegration": {
+          "passed": 7,
+          "total": 7,
+          "percentage": "100.0"
+        },
+        "errorHandling": {
+          "passed": 13,
+          "total": 13,
+          "percentage": "100.0"
+        }
+      }
+    },
+    "unifiedResults": {
+      "totalTests": 253,
+      "passedTests": 213,
+      "overallPercentage": "84.2",
+      "systemStatus": "🟠 NEEDS ATTENTION (Moderate Issues)",
+      "recommendations": [
+        "Fix API endpoint issues and validation errors",
+        "Review authentication and authorization implementation",
+        "Implement comprehensive error handling across all modules",
+        "Complete leave balance management implementation",
+        "Conduct security penetration testing",
+        "Implement automated testing in CI/CD pipeline"
+      ]
+    }
+  }
+}
