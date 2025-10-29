@@ -13,7 +13,7 @@ export class LoginPage extends BasePage {
     this.loginButton = 'button[type="submit"]';
     this.rememberMeCheckbox = 'input[name="rememberMe"]';
     this.showPasswordButton = 'button[aria-label="toggle password visibility"]';
-    this.errorMessage = '.MuiAlert-standardError, [role="alert"]';
+    this.errorMessage = '.MuiAlert-standardError, [role="alert"], .notistack-MuiContent-error, .MuiSnackbar-root';
     this.pageTitle = 'h4:has-text("Welcome Back")';
     this.logo = 'svg[data-testid="BusinessIcon"]';
   }
@@ -56,9 +56,26 @@ export class LoginPage extends BasePage {
    * Get error message
    */
   async getErrorMessage() {
-    if (await this.isVisible(this.errorMessage)) {
-      return await this.getText(this.errorMessage);
+    // Wait a moment for error to appear
+    await this.page.waitForTimeout(1000);
+    
+    // Try different error message selectors
+    const selectors = [
+      '.MuiAlert-standardError',
+      '[role="alert"]',
+      '.notistack-MuiContent-error',
+      '.MuiSnackbar-root [role="alert"]',
+      'div:has-text("Invalid")',
+      'div:has-text("incorrect")',
+      'div:has-text("failed")'
+    ];
+    
+    for (const selector of selectors) {
+      if (await this.isVisible(selector)) {
+        return await this.getText(selector);
+      }
     }
+    
     return null;
   }
 

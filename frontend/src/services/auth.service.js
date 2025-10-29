@@ -237,6 +237,47 @@ class AuthService {
     }
   }
 
+  // Get all users (Admin/HR only)
+  async getAllUsers(params = {}) {
+    try {
+      const response = await http.get('/auth/users', { params });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  }
+
+  // Delete user (Admin only)
+  async deleteUser(userId) {
+    try {
+      const response = await http.delete(`/auth/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  }
+
+  // Create user account for existing employee
+  async createEmployeeUserAccount(employeeId, userData) {
+    try {
+      console.log('Creating user account for employee:', employeeId, userData);
+      const response = await http.post(`/auth/users/employee/${employeeId}`, userData);
+      return response.data;
+    } catch (error) {
+      console.error('Error in createEmployeeUserAccount:', error);
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  }
+
     // Clear all auth data
   clearAuthData() {
     localStorage.removeItem('accessToken');

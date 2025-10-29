@@ -19,8 +19,13 @@ const generateAccessToken = (user) => {
 };
 
 const authenticateToken = async (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  // Try to get token from cookie first, then fallback to Authorization header
+  let token = req.cookies?.accessToken;
+  
+  if (!token) {
+    const authHeader = req.headers['authorization'];
+    token = authHeader && authHeader.split(' ')[1];
+  }
 
   if (!token) {
     LogHelper.logAuthEvent('token_missing', false, { 

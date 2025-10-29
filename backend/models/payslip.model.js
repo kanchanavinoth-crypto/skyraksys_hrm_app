@@ -192,6 +192,67 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false,
       comment: 'Prevents modifications when locked'
+    },
+    // Manual edit tracking
+    manuallyEdited: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: 'Indicates if payslip was manually edited'
+    },
+    lastEditedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      comment: 'User who last edited the payslip'
+    },
+    lastEditedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Timestamp of last edit'
+    },
+    // Finalization tracking
+    finalizedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When payslip was finalized'
+    },
+    finalizedBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      comment: 'User who finalized the payslip'
+    },
+    // Payment tracking
+    paidAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'When payslip was marked as paid'
+    },
+    paidBy: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id'
+      },
+      comment: 'User who marked as paid'
+    },
+    paymentMethod: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      comment: 'Method of payment (bank transfer, cheque, etc.)'
+    },
+    paymentReference: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+      comment: 'Payment transaction reference number'
     }
   }, {
     tableName: 'payslips',
@@ -335,35 +396,36 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   Payslip.generateBulkPayslips = async function(payrollDataIds, templateId, generatedBy) {
-    const payslips = [];
     const PayrollData = this.sequelize.models.PayrollData;
+    const { Op } = require('sequelize');
     
-    for (const payrollDataId of payrollDataIds) {
-      const payrollData = await PayrollData.findByPk(payrollDataId, {
-        include: [{ model: this.sequelize.models.Employee, as: 'employee' }]
-      });
-      
-      if (payrollData && payrollData.status === 'approved') {
-        const payslipData = {
-          employeeId: payrollData.employeeId,
-          month: payrollData.month,
-          year: payrollData.year,
-          templateId,
-          payrollDataId,
-          employeeInfo: payrollData.employee,
-          earnings: payrollData.earnings,
-          deductions: payrollData.deductions,
-          attendance: payrollData.attendance,
-          grossEarnings: payrollData.grossEarnings,
-          totalDeductions: payrollData.totalDeductions,
-          netPay: payrollData.netPay,
-          generatedBy
-        };
-        
-        const payslip = await this.create(payslipData);
-        payslips.push(payslip);
-      }
-    }
+    // Fetch all payroll data at once to avoid N+1
+    const payrollDataRecords = await PayrollData.findAll({
+      where: { 
+        id: { [Op.in]: payrollDataIds },
+        status: 'approved'
+      },
+      include: [{ model: this.sequelize.models.Employee, as: 'employee' }]
+    });
+
+    // Bulk create all payslips at once
+    const payslipDataArray = payrollDataRecords.map(payrollData => ({
+      employeeId: payrollData.employeeId,
+      month: payrollData.month,
+      year: payrollData.year,
+      templateId,
+      payrollDataId: payrollData.id,
+      employeeInfo: payrollData.employee,
+      earnings: payrollData.earnings,
+      deductions: payrollData.deductions,
+      attendance: payrollData.attendance,
+      grossEarnings: payrollData.grossEarnings,
+      totalDeductions: payrollData.totalDeductions,
+      netPay: payrollData.netPay,
+      generatedBy
+    }));
+
+    const payslips = await this.bulkCreate(payslipDataArray);
     
     return payslips;
   };

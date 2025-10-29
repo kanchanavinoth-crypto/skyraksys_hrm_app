@@ -46,7 +46,7 @@ class LeaveBalanceAdminService {
   // Get all employees for leave balance management
   async getEmployees() {
     const response = await http.get('/employees', { 
-      params: { limit: 1000, status: 'active' } 
+      params: { limit: 1000 } 
     });
     return response.data;
   }

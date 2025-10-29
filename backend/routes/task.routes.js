@@ -17,6 +17,98 @@ const canAccessTask = async (task, userId, role) => {
   return task.availableToAll || task.assignedTo === employee?.id;
 };
 
+/**
+ * @swagger
+ * /api/tasks:
+ *   get:
+ *     summary: Get all tasks
+ *     description: Retrieve tasks with optional filtering by project, status, priority
+ *     tags: [Projects & Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Tasks retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *   post:
+ *     summary: Create new task
+ *     description: Create a new task - Admin/Manager only
+ *     tags: [Projects & Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - projectId
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               projectId:
+ *                 type: string
+ *                 format: uuid
+ *               assignedTo:
+ *                 type: string
+ *                 format: uuid
+ *               status:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *               availableToAll:
+ *                 type: boolean
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Get all tasks (with optional project filtering)
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -75,6 +167,91 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get task by ID
+/**
+ * @swagger
+ * /api/tasks/{id}:
+ *   get:
+ *     summary: Get task by ID
+ *     description: Retrieve detailed task information
+ *     tags: [Projects & Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Task retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *   put:
+ *     summary: Update task
+ *     description: Update task details - Admin/Manager only
+ *     tags: [Projects & Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *               assignedTo:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const task = await db.Task.findByPk(req.params.id, {

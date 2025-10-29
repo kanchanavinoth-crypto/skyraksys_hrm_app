@@ -173,7 +173,7 @@ router.get('/active',
     try {
       const templates = await PayslipTemplate.findAll({
         where: { isActive: true },
-        attributes: ['id', 'name', 'description', 'templateData'],
+        attributes: ['id', 'name', 'description', 'isDefault', 'isActive', 'headerFields', 'earningsFields', 'deductionsFields', 'footerFields', 'styling', 'createdAt', 'updatedAt'],
         order: [['name', 'ASC']]
       });
 
@@ -232,16 +232,18 @@ router.post('/',
   [
     body('name').notEmpty().trim().isLength({ min: 3, max: 100 }),
     body('description').optional().trim().isLength({ max: 500 }),
-    body('templateData').isObject(),
-    body('templateData.earnings').isObject(),
-    body('templateData.deductions').isObject(),
+    body('headerFields').optional().isArray(),
+    body('earningsFields').optional().isArray(),
+    body('deductionsFields').optional().isArray(),
+    body('footerFields').optional().isArray(),
+    body('styling').optional().isObject(),
     body('isActive').optional().isBoolean(),
     body('isDefault').optional().isBoolean()
   ],
   validateRequest,
   async (req, res) => {
     try {
-      const { name, description, templateData, isActive, isDefault } = req.body;
+      const { name, description, headerFields, earningsFields, deductionsFields, footerFields, styling, isActive, isDefault } = req.body;
 
       // Check if template name already exists
       const existingTemplate = await PayslipTemplate.findOne({
@@ -266,7 +268,11 @@ router.post('/',
       const template = await PayslipTemplate.create({
         name: name.trim(),
         description: description?.trim(),
-        templateData,
+        headerFields: headerFields || [],
+        earningsFields: earningsFields || [],
+        deductionsFields: deductionsFields || [],
+        footerFields: footerFields || [],
+        styling: styling || {},
         isActive: isActive !== undefined ? isActive : true,
         isDefault: isDefault || false,
         createdBy: req.employeeId || null
@@ -296,8 +302,11 @@ router.put('/:id',
     param('id').isUUID(),
     body('name').optional().trim().isLength({ min: 3, max: 100 }),
     body('description').optional().trim().isLength({ max: 500 }),
-    body('version').optional().trim().isLength({ max: 20 }),
-    body('templateData').optional().isObject(),
+    body('headerFields').optional().isArray(),
+    body('earningsFields').optional().isArray(),
+    body('deductionsFields').optional().isArray(),
+    body('footerFields').optional().isArray(),
+    body('styling').optional().isObject(),
     body('isActive').optional().isBoolean(),
     body('isDefault').optional().isBoolean()
   ],

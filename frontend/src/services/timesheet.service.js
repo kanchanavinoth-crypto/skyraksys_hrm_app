@@ -114,6 +114,35 @@ class TimesheetService {
     return response.data;
   }
 
+  // Get timesheets by date range
+  async getByDateRange(startDate, endDate) {
+    logger.debug('🔍 TimesheetService.getByDateRange called with:', { startDate, endDate });
+    const params = { startDate, endDate };
+    
+    const response = await http.get('/timesheets', { params });
+    logger.debug('📊 Date range response:', response);
+    
+    return response;
+  }
+
+  // Get pending timesheets for approval
+  async getPending() {
+    logger.debug('🔍 TimesheetService.getPending called');
+    const response = await http.get('/timesheets', { params: { status: 'submitted' } });
+    logger.debug('📊 Pending timesheets response:', response);
+    
+    return response;
+  }
+
+  // Create batch of timesheets
+  async createBatch(timesheets) {
+    logger.debug('🔍 TimesheetService.createBatch called with:', timesheets);
+    const response = await http.post('/timesheets/bulk-save', { timesheets });
+    logger.debug('📊 Batch create response:', response);
+    
+    return response;
+  }
+
   // Get timesheets by week
   async getByWeek(weekStartDate) {
     logger.debug('🔍 TimesheetService.getByWeek called with:', weekStartDate);
@@ -230,6 +259,18 @@ class TimesheetService {
       timesheetIds,
       approverComments: comments
     });
+    return response.data;
+  }
+
+  // Get pending timesheets for approval (admin/manager/hr)
+  async getPendingApprovals(params = {}) {
+    const response = await http.get('/timesheets/approval/pending', { params });
+    return response.data;
+  }
+
+  // Approve a timesheet
+  async approve(id, data) {
+    const response = await http.put(`/timesheets/${id}/approve`, data);
     return response.data;
   }
 }

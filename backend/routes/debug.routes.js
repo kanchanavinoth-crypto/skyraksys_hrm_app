@@ -19,20 +19,8 @@ const Task = db.Task;
 
 // ⚠️ WARNING: NO AUTHENTICATION - INTERNAL TOOL ONLY
 // These endpoints are for the admin debug panel
-// Configure access based on your security requirements
-
-// Optional: Disable in production (comment out to allow in prod)
-// const checkDevelopmentMode = (req, res, next) => {
-//     if (process.env.NODE_ENV === 'production') {
-//         return res.status(403).json({
-//             success: false,
-//             message: 'Debug endpoints are disabled in production'
-//         });
-//     }
-//     console.log(`🔧 Debug endpoint accessed: ${req.method} ${req.path}`);
-//     next();
-// };
-// router.use(checkDevelopmentMode);
+// Access is controlled by conditional registration in server.js
+// Only available when NODE_ENV !== 'production'
 
 // Dashboard stats
 router.get('/stats', async (req, res) => {

@@ -15,31 +15,38 @@ module.exports = {
     const transaction = await queryInterface.sequelize.transaction();
     
     try {
-      console.log('🔄 Removing unique constraint on timesheets...');
+      console.log('🔄 Checking for unique constraint on timesheets...');
       
-      // Drop the unique constraint that's preventing multiple tasks per week
-      await queryInterface.removeConstraint(
-        'timesheets',
-        'unique_employee_week_timesheet',
+      // Check if the constraint exists
+      const [constraints] = await queryInterface.sequelize.query(
+        `SELECT constraint_name 
+         FROM information_schema.table_constraints 
+         WHERE table_name = 'timesheets' 
+         AND constraint_name = 'unique_employee_week_timesheet';`,
         { transaction }
       );
       
-      console.log('✅ Unique constraint removed successfully');
-      console.log('ℹ️  Employees can now create multiple timesheets per week for different projects/tasks');
+      if (constraints && constraints.length > 0) {
+        console.log('🔄 Removing unique constraint...');
+        // Drop the unique constraint
+        await queryInterface.removeConstraint(
+          'timesheets',
+          'unique_employee_week_timesheet',
+          { transaction }
+        );
+        console.log('✅ Unique constraint removed successfully');
+        console.log('ℹ️  Employees can now create multiple timesheets per week for different projects/tasks');
+      } else {
+        console.log('ℹ️  Constraint does not exist - skipping removal');
+      }
       
       await transaction.commit();
       console.log('🎉 Migration completed successfully!');
       
     } catch (error) {
       await transaction.rollback();
-      
-      // If constraint doesn't exist, that's okay - it might have been removed already
-      if (error.message && error.message.includes('does not exist')) {
-        console.log('ℹ️  Constraint already removed or never existed - skipping');
-      } else {
-        console.error('❌ Migration failed:', error);
-        throw error;
-      }
+      console.error('❌ Migration failed:', error);
+      throw error;
     }
   },
 

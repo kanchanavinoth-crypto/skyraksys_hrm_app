@@ -333,7 +333,7 @@ router.post('/bulk/initialize', async (req, res) => {
         }
 
         const balancesToCreate = [];
-        const existingBalances = [];
+        const balancesToUpdate = [];
 
         for (const employee of employees) {
             for (const [leaveTypeId, allocation] of Object.entries(leaveAllocations)) {
@@ -343,12 +343,17 @@ router.post('/bulk/initialize', async (req, res) => {
                 });
 
                 if (existing) {
-                    existingBalances.push({
-                        employeeId: employee.id,
-                        leaveTypeId,
-                        year
+                    // Add to existing balance
+                    const newTotalAccrued = parseFloat(existing.totalAccrued) + parseFloat(allocation);
+                    const newBalance = newTotalAccrued + parseFloat(existing.carryForward) - parseFloat(existing.totalTaken) - parseFloat(existing.totalPending);
+                    
+                    balancesToUpdate.push({
+                        id: existing.id,
+                        totalAccrued: newTotalAccrued,
+                        balance: newBalance
                     });
                 } else {
+                    // Create new balance
                     balancesToCreate.push({
                         employeeId: employee.id,
                         leaveTypeId,
@@ -363,9 +368,24 @@ router.post('/bulk/initialize', async (req, res) => {
             }
         }
 
-        // Bulk create balances
+        // Bulk create new balances
         if (balancesToCreate.length > 0) {
             await LeaveBalance.bulkCreate(balancesToCreate);
+        }
+
+        // Update existing balances
+        if (balancesToUpdate.length > 0) {
+            await Promise.all(
+                balancesToUpdate.map(update =>
+                    LeaveBalance.update(
+                        { 
+                            totalAccrued: update.totalAccrued,
+                            balance: update.balance
+                        },
+                        { where: { id: update.id } }
+                    )
+                )
+            );
         }
 
         res.status(201).json({
@@ -373,7 +393,7 @@ router.post('/bulk/initialize', async (req, res) => {
             message: 'Leave balances initialized successfully',
             data: {
                 created: balancesToCreate.length,
-                existing: existingBalances.length,
+                updated: balancesToUpdate.length,
                 employees: employees.length,
                 leaveTypes: Object.keys(leaveAllocations).length
             }

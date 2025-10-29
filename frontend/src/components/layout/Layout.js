@@ -16,6 +16,7 @@ import {
   Menu,
   MenuItem,
   useTheme,
+  alpha,
   Collapse,
   Paper,
   Stack,
@@ -46,6 +47,7 @@ import {
   CalendarToday,
   History,
   CheckCircle,
+  CheckCircleOutline,
   Receipt,
   Description,
   FileCopy,
@@ -107,14 +109,14 @@ const Layout = () => {
 
   // Menu structure based on role
   const getMenuStructure = () => {
-    if (isAdmin || isHR) {
+    if (isAdmin() || isHR()) {
       return [
         {
           id: 'dashboards',
           label: 'Dashboards',
           icon: <DashboardIcon />,
           items: [
-            { label: 'Overview', path: '/dashboard', icon: <DashboardIcon /> },
+            { label: 'Overview', path: '/admin-dashboard', icon: <DashboardIcon /> },
             { label: 'Performance', path: '/performance-dashboard', icon: <Assessment /> }
           ]
         },
@@ -124,10 +126,9 @@ const Layout = () => {
           icon: <PeopleIcon />,
           items: [
             { label: 'All Employees', path: '/employees', icon: <PeopleIcon /> },
-            { label: 'Add New Employee', path: '/employees/add-modern', icon: <Add /> },
+            { label: 'Add New Employee', path: '/employees/add', icon: <Add /> },
             { label: 'Employee Records', path: '/employee-records', icon: <Folder /> },
-            { label: 'Positions', path: '/position-management', icon: <WorkIcon /> },
-            { label: 'My Profile', path: '/my-profile', icon: <PersonIcon /> }
+            { label: 'Positions', path: '/position-management', icon: <WorkIcon /> }
           ]
         },
         {
@@ -135,10 +136,10 @@ const Layout = () => {
           label: 'Leave Management',
           icon: <LeaveIcon />,
           items: [
-            { label: 'All Leave Requests', path: '/leave-management', icon: <LeaveIcon /> },
-            { label: 'Apply for Leave', path: '/add-leave-request', icon: <Add /> },
+            { label: 'Leave Requests', path: '/leave-management', icon: <CheckCircleOutline /> },
             { label: 'Leave Balances', path: '/admin/leave-balances', icon: <AccountBalanceWallet /> },
-            { label: 'My Leave Requests', path: '/leave-requests', icon: <ListAlt /> }
+            { label: 'My Leave Requests', path: '/leave-requests', icon: <ListAlt /> },
+            { label: 'Apply for Leave', path: '/add-leave-request', icon: <Add /> }
           ]
         },
         {
@@ -146,10 +147,9 @@ const Layout = () => {
           label: 'Timesheet & Attendance',
           icon: <TimesheetIcon />,
           items: [
-            { label: 'Timesheet Management', path: '/timesheet-management', icon: <TimesheetIcon /> },
-            { label: 'Weekly Entry', path: '/weekly-timesheet', icon: <CalendarToday /> },
-            { label: 'Timesheet History', path: '/timesheet-history', icon: <History /> },
-            { label: 'Approval', path: '/timesheet-manager', icon: <CheckCircle /> }
+            { label: 'Timesheet Approvals', path: '/timesheets/approvals', icon: <CheckCircleOutline /> },
+            { label: 'My Timesheet', path: '/timesheets', icon: <TimesheetIcon /> },
+            { label: 'Timesheet History', path: '/timesheets/history', icon: <History /> }
           ]
         },
         {
@@ -158,9 +158,8 @@ const Layout = () => {
           icon: <PayrollIcon />,
           items: [
             { label: 'Payroll Management', path: '/payroll-management', icon: <PayrollIcon /> },
-            { label: 'Generate Payslips', path: '/admin/payslip-management', icon: <Receipt /> },
-            { label: 'My Payslips', path: '/employee-payslips', icon: <Description /> },
-            { label: 'Templates', path: '/admin/payslip-templates', icon: <FileCopy /> }
+            { label: 'Payslip Templates', path: '/admin/payslip-templates', icon: <FileCopy /> },
+            { label: 'My Payslips', path: '/employee-payslips', icon: <Receipt /> }
           ]
         },
         {
@@ -168,12 +167,12 @@ const Layout = () => {
           label: 'Projects & Tasks',
           icon: <ProjectIcon />,
           items: [
-            { label: 'Project Configuration', path: '/project-task-config', icon: <ProjectIcon /> }
+            { label: 'All Projects', path: '/project-task-config', icon: <ProjectIcon /> }
           ]
         },
         {
           id: 'reports',
-          label: 'Reports',
+          label: 'Reports & Analytics',
           icon: <ReportsIcon />,
           items: [
             { label: 'All Reports', path: '/reports', icon: <ReportsIcon /> },
@@ -185,30 +184,29 @@ const Layout = () => {
           label: 'Administration',
           icon: <AdminIcon />,
           items: [
-            { label: 'User Management', path: '/user-management', icon: <ManagerIcon /> }, // ✅ Changed from SupervisorAccount
+            { label: 'User Management', path: '/user-management', icon: <ManagerIcon /> },
             { label: 'System Settings', path: '/settings', icon: <SettingsIcon /> },
-            { label: 'Admin Config', path: '/admin/config', icon: <Tune /> },
-            { label: 'Debug Panel', path: '/admin/debug', icon: <BugReport /> }
+            { label: 'My Profile', path: '/my-profile', icon: <PersonIcon /> }
           ]
         }
       ];
     }
 
-    if (isManager) {
+    if (isManager()) {
       return [
         {
           id: 'dashboards',
-          label: 'Dashboards',
+          label: 'Dashboard',
           icon: <DashboardIcon />,
           items: [
-            { label: 'Manager Dashboard', path: '/manager-dashboard', icon: <ManagerIcon /> },
-            { label: 'Team Performance', path: '/performance-dashboard', icon: <Assessment /> } // ✅ Now works
+            { label: 'Overview', path: '/manager-dashboard', icon: <DashboardIcon /> },
+            { label: 'Team Performance', path: '/performance-dashboard', icon: <Assessment /> }
           ]
         },
         {
           id: 'team',
           label: 'My Team',
-          icon: <ManagerIcon />, // ✅ Changed from SupervisorAccount
+          icon: <PeopleIcon />,
           items: [
             { label: 'Team Members', path: '/employees', icon: <PeopleIcon /> }
           ]
@@ -216,10 +214,28 @@ const Layout = () => {
         {
           id: 'approvals',
           label: 'Approvals',
-          icon: <CheckCircle />,
+          icon: <CheckCircleOutline />,
           items: [
             { label: 'Leave Requests', path: '/leave-management', icon: <LeaveIcon /> },
-            { label: 'Timesheet Approval', path: '/timesheet-manager', icon: <TimesheetIcon /> }
+            { label: 'Timesheets', path: '/timesheets/approvals', icon: <TimesheetIcon /> }
+          ]
+        },
+        {
+          id: 'leave',
+          label: 'My Leave',
+          icon: <LeaveIcon />,
+          items: [
+            { label: 'My Leave Requests', path: '/leave-requests', icon: <ListAlt /> },
+            { label: 'Apply for Leave', path: '/add-leave-request', icon: <Add /> }
+          ]
+        },
+        {
+          id: 'timesheet',
+          label: 'My Timesheet',
+          icon: <TimesheetIcon />,
+          items: [
+            { label: 'Current Timesheet', path: '/timesheets', icon: <TimesheetIcon /> },
+            { label: 'History', path: '/timesheets/history', icon: <History /> }
           ]
         },
         {
@@ -231,14 +247,12 @@ const Layout = () => {
           ]
         },
         {
-          id: 'personal',
+          id: 'profile',
           label: 'My Profile',
           icon: <PersonIcon />,
           items: [
             { label: 'Personal Info', path: '/my-profile', icon: <PersonIcon /> },
-            { label: 'My Payslips', path: '/employee-payslips', icon: <PayrollIcon /> },
-            { label: 'My Leaves', path: '/leave-requests', icon: <LeaveIcon /> },
-            { label: 'My Timesheet', path: '/weekly-timesheet', icon: <TimesheetIcon /> }
+            { label: 'My Payslips', path: '/employee-payslips', icon: <Receipt /> }
           ]
         }
       ];
@@ -277,8 +291,8 @@ const Layout = () => {
           label: 'Timesheet',
           icon: <TimesheetIcon />,
           items: [
-            { label: 'Weekly Timesheet', path: '/weekly-timesheet', icon: <TimesheetIcon /> },
-            { label: 'My History', path: '/timesheet-history', icon: <History /> }
+            { label: 'My Timesheet', path: '/timesheets', icon: <TimesheetIcon /> },
+            { label: 'Timesheet History', path: '/timesheets/history', icon: <History /> }
           ]
         },
         {
@@ -321,7 +335,7 @@ const Layout = () => {
               <Typography 
                 variant="h6" 
                 sx={{ 
-                  color: '#1e293b', 
+                  color: theme.palette.text.primary, 
                   fontWeight: 'bold',
                 }}
               >
@@ -330,7 +344,7 @@ const Layout = () => {
               <Typography 
                 variant="caption" 
                 sx={{ 
-                  color: '#64748b',
+                  color: theme.palette.text.secondary,
                   fontWeight: 'medium',
                   fontSize: '0.75rem'
                 }}
@@ -353,13 +367,13 @@ const Layout = () => {
                     px: 2,
                     mb: 0.5,
                     borderRadius: 2,
-                    color: '#1e293b',
+                    color: theme.palette.text.primary,
                     '&:hover': {
-                      backgroundColor: 'rgba(99, 102, 241, 0.08)'
+                      backgroundColor: alpha(theme.palette.primary.main, 0.08)
                     }
                   }}
                 >
-                  <ListItemIcon sx={{ color: '#6366f1', minWidth: 40 }}>
+                  <ListItemIcon sx={{ color: theme.palette.primary.main, minWidth: 40 }}>
                     {group.icon}
                   </ListItemIcon>
                   <ListItemText 
@@ -385,15 +399,15 @@ const Layout = () => {
                           borderRadius: 2,
                           ml: 1,
                           mr: 1,
-                          color: '#64748b',
+                          color: theme.palette.text.secondary,
                           '&.active': {
-                            backgroundColor: 'rgba(99, 102, 241, 0.12)',
-                            borderLeft: '4px solid #6366f1',
-                            color: '#6366f1',
+                            backgroundColor: alpha(theme.palette.primary.main, 0.12),
+                            borderLeft: `4px solid ${theme.palette.primary.main}`,
+                            color: theme.palette.primary.main,
                             fontWeight: 600
                           },
                           '&:hover': {
-                            backgroundColor: 'rgba(99, 102, 241, 0.06)'
+                            backgroundColor: alpha(theme.palette.primary.main, 0.06)
                           }
                         }}
                       >
@@ -416,8 +430,8 @@ const Layout = () => {
         </Box>
 
         {/* Footer */}
-        <Box sx={{ p: 2, textAlign: 'center', borderTop: '1px solid #e2e8f0', bgcolor: 'transparent' }}>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500 }}>
+        <Box sx={{ p: 2, textAlign: 'center', borderTop: `1px solid ${theme.palette.divider}`, bgcolor: 'transparent' }}>
+          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
             © 2025 SKYRAKSYS HRM v2.0
           </Typography>
         </Box>
@@ -554,9 +568,9 @@ const Layout = () => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
-              color: '#1e293b',
-              borderRight: '1px solid #e2e8f0',
+              background: `linear-gradient(180deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.background.default, 0.95)} 100%)`,
+              color: theme.palette.text.primary,
+              borderRight: `1px solid ${theme.palette.divider}`,
             },
           }}
         >
@@ -571,9 +585,9 @@ const Layout = () => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              background: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',
-              color: '#1e293b',
-              borderRight: '1px solid #e2e8f0',
+              background: `linear-gradient(180deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.background.default, 0.95)} 100%)`,
+              color: theme.palette.text.primary,
+              borderRight: `1px solid ${theme.palette.divider}`,
               boxShadow: '2px 0 8px rgba(0,0,0,0.04)'
             },
           }}

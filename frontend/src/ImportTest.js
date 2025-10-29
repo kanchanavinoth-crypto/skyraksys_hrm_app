@@ -12,7 +12,6 @@ import SmartErrorBoundary from './components/common/SmartErrorBoundary';
 import enhancedApiService from './services/enhancedApiService';
 import { ErrorRecoveryManager } from './utils/errorRecovery';
 import { useErrorRecovery } from './hooks/useErrorRecovery';
-import ModernEmployeeForm from './components/features/employees/ModernEmployeeForm';
 
 // Test component to verify imports work
 const ImportTest = () => {
@@ -23,7 +22,6 @@ const ImportTest = () => {
   console.log('enhancedApiService:', enhancedApiService);
   console.log('ErrorRecoveryManager:', ErrorRecoveryManager);
   console.log('useErrorRecovery:', useErrorRecovery);
-  console.log('ModernEmployeeForm:', ModernEmployeeForm);
   
   return (
     <div>

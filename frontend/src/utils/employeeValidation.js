@@ -15,6 +15,12 @@ const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 // Aadhaar Number validation regex (12 digits)
 const AADHAAR_REGEX = /^[0-9]{12}$/;
 
+// UAN Number validation regex (12+ alphanumeric characters)
+const UAN_REGEX = /^[A-Z0-9]{12,}$/;
+
+// ESI Number validation regex (10-17 alphanumeric characters)
+const ESI_REGEX = /^[A-Z0-9]{10,17}$/;
+
 // IFSC Code validation regex
 const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
@@ -160,6 +166,16 @@ export const validateEmployeeForm = (formData, options = {}) => {
   // PAN Number - Optional, but if provided must match pattern
   if (formData.panNumber?.trim() && !PAN_REGEX.test(formData.panNumber.toUpperCase())) {
     errors.panNumber = 'PAN number format is invalid (e.g., ABCDE1234F)';
+  }
+  
+  // UAN Number - Optional, but if provided must be at least 12 alphanumeric characters
+  if (formData.uanNumber?.trim() && !UAN_REGEX.test(formData.uanNumber.toUpperCase())) {
+    errors.uanNumber = 'UAN number must be at least 12 alphanumeric characters';
+  }
+  
+  // ESI Number - Optional, but if provided must be 10-17 alphanumeric characters
+  if (formData.esiNumber?.trim() && !ESI_REGEX.test(formData.esiNumber.toUpperCase())) {
+    errors.esiNumber = 'ESI number must be 10-17 alphanumeric characters';
   }
   
   // ========== BANK DETAILS ==========
@@ -440,9 +456,9 @@ export const transformEmployeeDataForAPI = (formData) => {
         overtime: Number(formData.salary.benefits?.overtime || formData.salary.overtime) || 0
       },
       taxInformation: {
-        taxRegime: (formData.salary.taxRegime || 'old').toLowerCase(),
-        ctc: Number(formData.salary.ctc) || 0,
-        takeHome: Number(formData.salary.takeHome) || 0
+        taxRegime: (formData.salary.taxInformation?.taxRegime || formData.salary.taxRegime || 'old').toLowerCase(),
+        ctc: Number(formData.salary.taxInformation?.ctc || formData.salary.ctc) || 0,
+        takeHome: Number(formData.salary.taxInformation?.takeHome || formData.salary.takeHome) || 0
       },
       salaryNotes: formData.salary.salaryNotes || ''
     };

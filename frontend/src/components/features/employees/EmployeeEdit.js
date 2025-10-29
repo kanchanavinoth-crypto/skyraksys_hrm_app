@@ -1277,7 +1277,7 @@ const EnhancedEmployeeEdit = () => {
                                 label={label}
                                 type={fieldType}
                                 value={value}
-                                onChange={(e) => handleInputChange(field, fieldType === 'number' ? parseFloat(e.target.value) || '' : e.target.value)}
+                                onChange={(e) => handleInputChange(field, e.target.value)}
                                 required={isRequired}
                                 error={!!fieldErrors[field]}
                                 helperText={fieldErrors[field]}

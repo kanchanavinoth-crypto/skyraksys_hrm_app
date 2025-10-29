@@ -4,8 +4,12 @@ class EmployeeDataService {
   getAll(params = {}) {
     const queryParams = new URLSearchParams();
     
+    // Always request a high limit to get all employees (backend will enforce role-based max)
+    queryParams.append('limit', '1000');
+    
     if (params.departmentId) queryParams.append('departmentId', params.departmentId);
     if (params.status) queryParams.append('status', params.status);
+    if (params.page) queryParams.append('page', params.page);
     
     const queryString = queryParams.toString();
     return http.get(`/employees${queryString ? `?${queryString}` : ''}`);

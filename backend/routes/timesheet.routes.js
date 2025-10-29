@@ -2,10 +2,14 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { authenticateToken, requireEmployeeRecord, authorize, isManagerOrAbove } = require('../middleware/auth.simple');
-const { validate, timesheetSchema } = require('../middleware/validation');
+const { validate, validateQuery, validateParams } = require('../middleware/validate');
+const validators = require('../middleware/validators');
+const { NotFoundError, ConflictError, ForbiddenError, ValidationError } = require('../utils/errors');
 const TaskValidator = require('../utils/TaskValidator');
 const { sanitizeTimesheetData, sanitizeBulkTimesheetData } = require('../utils/sanitizer');
 const { bulkOperationLimiter } = require('../middleware/rateLimiter');
+const LogHelper = require('../utils/logHelper');
+const { logger } = require('../config/logger');
 const db = require('../models');
 const { Op } = require('sequelize');
 
@@ -18,13 +22,8 @@ function logSubmissionActivity(type, data) {
         ...data
     };
     
-    // Log to console with enhanced formatting
-    console.log(`\n🔔 === SUBMISSION TRACKING LOG [${type.toUpperCase()}] ===`);
-    console.log(`⏰ Timestamp: ${timestamp}`);
-    Object.keys(data).forEach(key => {
-        console.log(`📝 ${key}: ${typeof data[key] === 'object' ? JSON.stringify(data[key], null, 2) : data[key]}`);
-    });
-    console.log(`🔔 === END SUBMISSION TRACKING LOG ===\n`);
+    // Log using structured logger
+    LogHelper.logBusinessEvent(`Timesheet ${type}`, logEntry);
     
     // Also write to a log file for persistent tracking
     try {
@@ -37,7 +36,7 @@ function logSubmissionActivity(type, data) {
         const logLine = `${timestamp} [${type}] ${JSON.stringify(data)}\n`;
         fs.appendFileSync(logFile, logLine);
     } catch (error) {
-        console.error('⚠️  Failed to write to submission log file:', error.message);
+        LogHelper.logError(error, { context: 'Failed to write to submission log file' });
     }
 }
 
@@ -49,23 +48,22 @@ const Task = db.Task;
 // Helper function for bulk submission logic (extracted for reuse)
 async function handleBulkSubmission(req, res) {
     try {
-        console.log('🔄 === BULK TIMESHEET SUBMISSION START ===');
-        console.log('📝 Request Details:');
-        console.log('   Employee ID:', req.employeeId);
-        console.log('   Request body:', JSON.stringify(req.body, null, 2));
-        console.log('   Timestamp:', new Date().toISOString());
+        logger.info('Bulk timesheet submission started', { 
+            employeeId: req.employeeId, 
+            body: req.body 
+        });
         
         const { timesheetIds } = req.body;
 
         if (!timesheetIds || !Array.isArray(timesheetIds) || timesheetIds.length === 0) {
-            console.log('❌ Invalid timesheet IDs provided');
+            logger.warn('Invalid timesheet IDs provided in bulk submission', { employeeId: req.employeeId });
             return res.status(400).json({
                 success: false,
                 message: 'Invalid timesheet IDs. Please provide an array of timesheet IDs.'
             });
         }
 
-        console.log(`📋 Processing ${timesheetIds.length} timesheets for bulk submission`);
+        logger.info(`Processing bulk submission for ${timesheetIds.length} timesheets`, { employeeId: req.employeeId });
         
         const results = [];
         const errors = [];
@@ -73,7 +71,7 @@ async function handleBulkSubmission(req, res) {
         // Process each timesheet individually with detailed logging
         for (let i = 0; i < timesheetIds.length; i++) {
             const timesheetId = timesheetIds[i];
-            console.log(`\n🔍 Processing timesheet ${i + 1}/${timesheetIds.length}: ${timesheetId}`);
+            logger.debug(`Processing timesheet ${i + 1}/${timesheetIds.length}`, { timesheetId });
             
             try {
                 // Find the timesheet with detailed logging
@@ -87,7 +85,7 @@ async function handleBulkSubmission(req, res) {
                 });
 
                 if (!timesheet) {
-                    console.log(`❌ Timesheet not found: ${timesheetId}`);
+                    logger.warn('Timesheet not found in bulk submission', { timesheetId });
                     errors.push({
                         timesheetId,
                         error: 'Timesheet not found'
@@ -95,17 +93,18 @@ async function handleBulkSubmission(req, res) {
                     continue;
                 }
 
-                console.log(`📊 Timesheet details:`);
-                console.log(`   Employee: ${timesheet.employee?.firstName} ${timesheet.employee?.lastName}`);
-                console.log(`   Project: ${timesheet.project?.name}`);
-                console.log(`   Task: ${timesheet.task?.name}`);
-                console.log(`   Week: ${timesheet.weekStartDate} to ${timesheet.weekEndDate}`);
-                console.log(`   Current Status: ${timesheet.status}`);
-                console.log(`   Total Hours: ${timesheet.totalHoursWorked}`);
+                logger.debug('Timesheet details', {
+                    employee: `${timesheet.employee?.firstName} ${timesheet.employee?.lastName}`,
+                    project: timesheet.project?.name,
+                    task: timesheet.task?.name,
+                    week: `${timesheet.weekStartDate} to ${timesheet.weekEndDate}`,
+                    status: timesheet.status,
+                    totalHours: timesheet.totalHoursWorked
+                });
 
                 // Verify ownership
                 if (timesheet.employeeId !== req.employeeId) {
-                    console.log(`❌ Ownership check failed - timesheet belongs to different employee`);
+                    logger.warn('Ownership check failed for bulk submission', { timesheetId, employeeId: req.employeeId });
                     errors.push({
                         timesheetId,
                         error: 'You can only submit your own timesheets'
@@ -115,7 +114,7 @@ async function handleBulkSubmission(req, res) {
 
                 // Check if timesheet can be submitted
                 if (timesheet.status !== 'Draft') {
-                    console.log(`❌ Status check failed - current status: ${timesheet.status}`);
+                    logger.warn('Status check failed for bulk submission', { timesheetId, status: timesheet.status });
                     errors.push({
                         timesheetId,
                         error: `Cannot submit timesheet with status: ${timesheet.status}. Only draft timesheets can be submitted.`
@@ -125,11 +124,11 @@ async function handleBulkSubmission(req, res) {
 
                 // Check for zero hours
                 if (parseFloat(timesheet.totalHoursWorked) === 0) {
-                    console.log(`⚠️  Warning: Submitting timesheet with zero hours`);
+                    logger.warn('Submitting timesheet with zero hours', { timesheetId });
                 }
 
                 // Update timesheet status
-                console.log(`✅ Submitting timesheet ${timesheetId}...`);
+                logger.info('Submitting timesheet in bulk', { timesheetId });
                 await timesheet.update({
                     status: 'Submitted',
                     submittedAt: new Date()
@@ -153,7 +152,7 @@ async function handleBulkSubmission(req, res) {
                     bulkSubmissionBatch: true
                 });
 
-                console.log(`✅ Successfully submitted timesheet ${timesheetId}`);
+                logger.debug('Timesheet submitted in bulk', { timesheetId, employeeId: timesheet.employeeId });
                 results.push({
                     timesheetId,
                     status: 'success',
@@ -169,7 +168,10 @@ async function handleBulkSubmission(req, res) {
                 });
 
             } catch (timesheetError) {
-                console.log(`❌ Error processing timesheet ${timesheetId}:`, timesheetError.message);
+                logger.warn('Error processing timesheet in bulk submission', { 
+                    timesheetId, 
+                    error: timesheetError.message 
+                });
                 errors.push({
                     timesheetId,
                     error: timesheetError.message
@@ -177,22 +179,27 @@ async function handleBulkSubmission(req, res) {
             }
         }
 
-        console.log('\n📊 BULK SUBMISSION SUMMARY:');
-        console.log(`   ✅ Successfully submitted: ${results.length}`);
-        console.log(`   ❌ Failed submissions: ${errors.length}`);
-        console.log(`   📈 Success rate: ${((results.length / timesheetIds.length) * 100).toFixed(1)}%`);
+        logger.info('Bulk submission summary', {
+            total: timesheetIds.length,
+            successful: results.length,
+            failed: errors.length,
+            successRate: ((results.length / timesheetIds.length) * 100).toFixed(1)
+        });
 
         if (results.length > 0) {
-            console.log('\n✅ Successful submissions:');
-            results.forEach((result, index) => {
-                console.log(`   ${index + 1}. ${result.details.employee} - ${result.details.project}/${result.details.task} (${result.details.totalHours}h)`);
+            logger.debug('Successful submissions', { 
+                submissions: results.map(r => ({
+                    employee: r.details.employee,
+                    project: r.details.project,
+                    task: r.details.task,
+                    hours: r.details.totalHours
+                }))
             });
         }
 
         if (errors.length > 0) {
-            console.log('\n❌ Failed submissions:');
-            errors.forEach((error, index) => {
-                console.log(`   ${index + 1}. ${error.timesheetId}: ${error.error}`);
+            logger.warn('Failed submissions', {
+                failures: errors.map(e => ({ timesheetId: e.timesheetId, error: e.error }))
             });
         }
 
@@ -208,7 +215,10 @@ async function handleBulkSubmission(req, res) {
             weekStartDate: req.body.weekStartDate || 'unknown'
         });
 
-        console.log('🔄 === BULK TIMESHEET SUBMISSION END ===\n');
+        logger.info('Bulk timesheet submission completed', { 
+            employeeId: req.employeeId, 
+            total: timesheetIds.length 
+        });
 
         // Return response based on results
         if (errors.length === 0) {
@@ -255,8 +265,11 @@ async function handleBulkSubmission(req, res) {
         }
 
     } catch (error) {
-        console.error('💥 Bulk Submit Timesheets Error:', error);
-        console.log('🔄 === BULK TIMESHEET SUBMISSION END (ERROR) ===\n');
+        LogHelper.logError(error, { 
+            context: 'Bulk submit timesheets', 
+            employeeId: req.employeeId,
+            timesheetCount: timesheetIds?.length 
+        }, req);
         return res.status(500).json({
             success: false,
             message: 'Failed to process bulk timesheet submission',
@@ -331,21 +344,97 @@ function validateTaskAccess(task, employeeId, context = 'operation') {
 
 router.use(authenticateToken);
 
+/**
+ * @swagger
+ * /api/timesheets:
+ *   get:
+ *     summary: Get all timesheets with filtering
+ *     description: Retrieve paginated timesheets with role-based access - employees see their own, managers see their team, admin/HR see all
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [Draft, Submitted, Approved, Rejected]
+ *       - in: query
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: weekNumber
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           default: createdAt
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *     responses:
+ *       200:
+ *         description: Timesheets retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Timesheet'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/PaginationMeta'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 // GET all weekly timesheets with role-based filtering
-router.get('/', async (req, res) => {
+router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res, next) => {
     try {
+        logger.debug('Timesheet GET request query params:', req.query);
+        logger.debug('Validated query params:', req.validatedQuery);
+        
         const { 
-            page = 1, 
-            limit = 10, 
+            page, 
+            limit, 
             status, 
             employeeId, 
             projectId, 
             year, 
             weekNumber,
             startDate,
-            sortBy = 'weekStartDate', 
-            sortOrder = 'DESC' 
-        } = req.query;
+            sort, 
+            order 
+        } = req.validatedQuery;
         
         const offset = (page - 1) * limit;
         let where = {};
@@ -361,6 +450,8 @@ router.get('/', async (req, res) => {
         } else if (req.userRole === 'employee') {
             where.employeeId = req.employeeId;
         }
+        // Admin/HR can see all timesheets by default, or filter by specific employee
+        // No default filtering for admin/hr roles
 
         // Additional filters
         if (status) where.status = status;
@@ -370,7 +461,7 @@ router.get('/', async (req, res) => {
         
         // Handle startDate parameter for weekly filtering
         if (startDate) {
-            console.log('🔍 Filtering timesheets by startDate:', startDate);
+            logger.debug('Filtering timesheets by startDate', { startDate, employeeId: req.employeeId });
             where.weekStartDate = startDate;
         }
         
@@ -387,7 +478,7 @@ router.get('/', async (req, res) => {
                 { model: Task, as: 'task', attributes: ['id', 'name'], paranoid: false },
                 { model: Employee, as: 'approver', attributes: ['id', 'firstName', 'lastName'], required: false }
             ],
-            order: [[sortBy, sortOrder.toUpperCase()]],
+            order: [[sort, order.toUpperCase()]],
             limit: parseInt(limit),
             offset,
         });
@@ -403,11 +494,7 @@ router.get('/', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Get Weekly Timesheets Error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to fetch weekly timesheets.' 
-        });
+        next(error);
     }
 });
 
@@ -424,37 +511,152 @@ router.put('/bulk-update', async (req, res) => {
 });
 
 // POST bulk submit timesheets (multiple timesheets at once)
-router.post('/bulk-submit', async (req, res) => {
-    return await handleBulkSubmission(req, res);
+/**
+ * @swagger
+ * /api/timesheets/bulk-submit:
+ *   post:
+ *     summary: Bulk submit timesheets
+ *     description: Submit multiple draft timesheets at once - changes status from Draft to Submitted
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - timesheetIds
+ *             properties:
+ *               timesheetIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 example: ["123e4567-e89b-12d3-a456-426614174000", "123e4567-e89b-12d3-a456-426614174001"]
+ *     responses:
+ *       200:
+ *         description: Bulk submission completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     submitted:
+ *                       type: integer
+ *                       example: 5
+ *                     failed:
+ *                       type: integer
+ *                       example: 0
+ *                     results:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     errors:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.post('/bulk-submit', validate(validators.bulkSubmitTimesheetSchema), async (req, res, next) => {
+    return await handleBulkSubmission(req, res, next);
 });
 
 // POST bulk approve timesheets (managers, admin, hr)
-router.post('/bulk-approve', authorize(['manager', 'admin', 'hr']), async (req, res) => {
+/**
+ * @swagger
+ * /api/timesheets/bulk-approve:
+ *   post:
+ *     summary: Bulk approve timesheets
+ *     description: Approve multiple submitted timesheets at once - Manager/Admin/HR only
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - timesheetIds
+ *             properties:
+ *               timesheetIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *               comments:
+ *                 type: string
+ *                 example: Approved for all team members
+ *     responses:
+ *       200:
+ *         description: Bulk approval completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 approved:
+ *                   type: integer
+ *                 failed:
+ *                   type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
+router.post('/bulk-approve', authorize(['manager', 'admin', 'hr']), async (req, res, next) => {
     try {
         const { timesheetIds, approverComments = '' } = req.body;
         
         // Validate input
         if (!timesheetIds || !Array.isArray(timesheetIds) || timesheetIds.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide an array of timesheet IDs to approve.'
-            });
+            throw new ValidationError('Please provide an array of timesheet IDs to approve.');
         }
 
-        console.log(`🔄 === BULK APPROVAL START ===`);
-        console.log(`📝 Approving ${timesheetIds.length} timesheets by user ${req.userId}`);
-        console.log(`📝 Timesheet IDs: ${timesheetIds.join(', ')}`);
-        console.log(`📝 Comments: ${approverComments}`);
+        logger.info('Bulk approval started', { 
+            count: timesheetIds.length, 
+            userId: req.userId,
+            approverId: req.employeeId,
+            hasComments: !!approverComments 
+        });
 
         const results = [];
         const errors = [];
 
+        // Fetch all timesheets with employee data in one query to avoid N+1
+        const timesheets = await Timesheet.findAll({
+            where: { id: { [Op.in]: timesheetIds } },
+            include: [{ 
+                model: Employee, 
+                as: 'employee',
+                attributes: ['id', 'managerId', 'firstName', 'lastName']
+            }]
+        });
+
+        // Create a map for quick lookup
+        const timesheetMap = new Map(timesheets.map(ts => [ts.id, ts]));
+
         // Process each timesheet
         for (const timesheetId of timesheetIds) {
             try {
-                const timesheet = await Timesheet.findByPk(timesheetId, {
-                    include: [{ model: Employee, as: 'employee' }]
-                });
+                const timesheet = timesheetMap.get(timesheetId);
 
                 if (!timesheet) {
                     errors.push({
@@ -464,9 +666,8 @@ router.post('/bulk-approve', authorize(['manager', 'admin', 'hr']), async (req, 
                     continue;
                 }
 
-                // Check approval permissions
-                const employee = await Employee.findByPk(timesheet.employeeId);
-                if (!timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, employee.managerId)) {
+                // Check approval permissions - employee data already loaded
+                if (!timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, timesheet.employee.managerId)) {
                     errors.push({
                         timesheetId,
                         error: 'You do not have permission to approve this timesheet'
@@ -497,10 +698,10 @@ router.post('/bulk-approve', authorize(['manager', 'admin', 'hr']), async (req, 
                     message: 'Approved successfully'
                 });
 
-                console.log(`✅ Approved timesheet ${timesheetId}`);
+                logger.debug('Timesheet approved', { timesheetId, approverId: req.employeeId });
 
             } catch (error) {
-                console.error(`❌ Error approving timesheet ${timesheetId}:`, error);
+                logger.warn('Error approving timesheet', { timesheetId, error: error.message });
                 errors.push({
                     timesheetId,
                     error: error.message
@@ -508,8 +709,11 @@ router.post('/bulk-approve', authorize(['manager', 'admin', 'hr']), async (req, 
             }
         }
 
-        console.log(`🔄 === BULK APPROVAL END ===`);
-        console.log(`✅ Successful: ${results.length}, ❌ Failed: ${errors.length}`);
+        logger.info('Bulk approval completed', { 
+            successful: results.length, 
+            failed: errors.length,
+            approverId: req.employeeId 
+        });
 
         res.json({
             success: true,
@@ -526,48 +730,100 @@ router.post('/bulk-approve', authorize(['manager', 'admin', 'hr']), async (req, 
         });
 
     } catch (error) {
-        console.error('Bulk Approval Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to process bulk approval.'
-        });
+        next(error);
     }
 });
 
 // POST bulk reject timesheets (managers, admin, hr)
-router.post('/bulk-reject', bulkOperationLimiter, authorize(['manager', 'admin', 'hr']), async (req, res) => {
+/**
+ * @swagger
+ * /api/timesheets/bulk-reject:
+ *   post:
+ *     summary: Bulk reject timesheets
+ *     description: Reject multiple submitted timesheets at once with comments - Manager/Admin/HR only
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - timesheetIds
+ *               - comments
+ *             properties:
+ *               timesheetIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *               comments:
+ *                 type: string
+ *                 example: Hours exceed maximum limit, please review
+ *     responses:
+ *       200:
+ *         description: Bulk rejection completed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 rejected:
+ *                   type: integer
+ *                 failed:
+ *                   type: integer
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
+router.post('/bulk-reject', bulkOperationLimiter, authorize(['manager', 'admin', 'hr']), async (req, res, next) => {
     try {
         const { timesheetIds, approverComments = '' } = req.body;
         
         // Validate input
         if (!timesheetIds || !Array.isArray(timesheetIds) || timesheetIds.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Please provide an array of timesheet IDs to reject.'
-            });
+            throw new ValidationError('Please provide an array of timesheet IDs to reject.');
         }
 
         if (!approverComments.trim()) {
-            return res.status(400).json({
-                success: false,
-                message: 'Rejection reason is required for bulk rejection.'
-            });
+            throw new ValidationError('Rejection reason is required for bulk rejection.');
         }
 
-        console.log(`🔄 === BULK REJECTION START ===`);
-        console.log(`📝 Rejecting ${timesheetIds.length} timesheets by user ${req.userId}`);
-        console.log(`📝 Timesheet IDs: ${timesheetIds.join(', ')}`);
-        console.log(`📝 Rejection reason: ${approverComments}`);
+        logger.info('Bulk rejection started', { 
+            count: timesheetIds.length, 
+            userId: req.userId,
+            approverId: req.employeeId 
+        });
 
         const results = [];
         const errors = [];
 
+        // Fetch all timesheets with employee data in one query to avoid N+1
+        const timesheets = await Timesheet.findAll({
+            where: { id: { [Op.in]: timesheetIds } },
+            include: [{ 
+                model: Employee, 
+                as: 'employee',
+                attributes: ['id', 'managerId', 'firstName', 'lastName']
+            }]
+        });
+
+        // Create a map for quick lookup
+        const timesheetMap = new Map(timesheets.map(ts => [ts.id, ts]));
+
         // Process each timesheet
         for (const timesheetId of timesheetIds) {
             try {
-                const timesheet = await Timesheet.findByPk(timesheetId, {
-                    include: [{ model: Employee, as: 'employee' }]
-                });
+                const timesheet = timesheetMap.get(timesheetId);
 
                 if (!timesheet) {
                     errors.push({
@@ -577,9 +833,8 @@ router.post('/bulk-reject', bulkOperationLimiter, authorize(['manager', 'admin',
                     continue;
                 }
 
-                // Check approval permissions
-                const employee = await Employee.findByPk(timesheet.employeeId);
-                if (!timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, employee.managerId)) {
+                // Check approval permissions - employee data already loaded
+                if (!timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, timesheet.employee.managerId)) {
                     errors.push({
                         timesheetId,
                         error: 'You do not have permission to reject this timesheet'
@@ -610,10 +865,10 @@ router.post('/bulk-reject', bulkOperationLimiter, authorize(['manager', 'admin',
                     message: 'Rejected successfully'
                 });
 
-                console.log(`❌ Rejected timesheet ${timesheetId}`);
+                logger.debug('Timesheet rejected', { timesheetId, approverId: req.employeeId });
 
             } catch (error) {
-                console.error(`❌ Error rejecting timesheet ${timesheetId}:`, error);
+                logger.warn('Error rejecting timesheet', { timesheetId, error: error.message });
                 errors.push({
                     timesheetId,
                     error: error.message
@@ -621,8 +876,11 @@ router.post('/bulk-reject', bulkOperationLimiter, authorize(['manager', 'admin',
             }
         }
 
-        console.log(`🔄 === BULK REJECTION END ===`);
-        console.log(`✅ Successful: ${results.length}, ❌ Failed: ${errors.length}`);
+        logger.info('Bulk rejection completed', { 
+            successful: results.length, 
+            failed: errors.length,
+            approverId: req.employeeId 
+        });
 
         res.json({
             success: true,
@@ -639,36 +897,59 @@ router.post('/bulk-reject', bulkOperationLimiter, authorize(['manager', 'admin',
         });
 
     } catch (error) {
-        console.error('Bulk Rejection Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to process bulk rejection.'
-        });
+        next(error);
     }
 });
 
 // ===== INDIVIDUAL OPERATIONS (parameterized routes) =====
 
 // GET specific weekly timesheet by ID
-router.get('/:id', async (req, res) => {
+/**
+ * @swagger
+ * /api/timesheets/{id}:
+ *   get:
+ *     summary: Get timesheet by ID
+ *     description: Retrieve detailed information about a specific timesheet
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Timesheet retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Timesheet'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.get('/:id', validateParams(validators.uuidParamSchema), async (req, res, next) => {
     try {
-        const timesheet = await Timesheet.findByPk(req.params.id, {
+        const timesheet = await Timesheet.findByPk(req.validatedParams.id, {
             include: ['employee', 'project', 'task', 'approver']
         });
 
         if (!timesheet) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Weekly timesheet not found.' 
-            });
+            throw new NotFoundError('Timesheet not found.');
         }
 
         // Check access permissions
         if (req.userRole === 'employee' && timesheet.employeeId !== req.employeeId) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Access denied.' 
-            });
+            throw new ForbiddenError('Access denied.');
         }
 
         if (req.userRole === 'manager') {
@@ -676,105 +957,101 @@ router.get('/:id', async (req, res) => {
                 where: { id: timesheet.employeeId, managerId: req.employeeId } 
             });
             if (!isSubordinate && timesheet.employeeId !== req.employeeId) {
-                return res.status(403).json({ 
-                    success: false, 
-                    message: 'Access denied.' 
-                });
+                throw new ForbiddenError('Access denied.');
             }
         }
 
         res.json({ success: true, data: timesheet });
     } catch (error) {
-        console.error('Get Weekly Timesheet Error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to fetch weekly timesheet.' 
-        });
+        next(error);
     }
 });
 
 // POST create new weekly timesheet
-router.post('/', async (req, res) => {
+/**
+ * @swagger
+ * /api/timesheets:
+ *   post:
+ *     summary: Create a new timesheet
+ *     description: Create a new timesheet entry for tracking work hours on projects/tasks
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - projectId
+ *               - taskId
+ *               - weekStartDate
+ *               - weekEndDate
+ *             properties:
+ *               projectId:
+ *                 type: string
+ *                 format: uuid
+ *               taskId:
+ *                 type: string
+ *                 format: uuid
+ *               weekStartDate:
+ *                 type: string
+ *                 format: date
+ *               weekEndDate:
+ *                 type: string
+ *                 format: date
+ *               mondayHours:
+ *                 type: number
+ *                 example: 8
+ *               tuesdayHours:
+ *                 type: number
+ *               wednesdayHours:
+ *                 type: number
+ *               thursdayHours:
+ *                 type: number
+ *               fridayHours:
+ *                 type: number
+ *               saturdayHours:
+ *                 type: number
+ *               sundayHours:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Timesheet created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Timesheet'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
+router.post('/', validate(validators.createTimesheetSchema), async (req, res, next) => {
     try {
-        // Enhanced request body logging for debugging
-        console.log('🔄 === TIMESHEET CREATION REQUEST START ===');
-        console.log('📝 Request Details:');
-        console.log('   Request body:', JSON.stringify(req.body, null, 2));
-        console.log('   Content-Type:', req.headers['content-type']);
-        console.log('   User ID:', req.userId);
-        console.log('   Employee ID:', req.employeeId);
-        console.log('   Timestamp:', new Date().toISOString());
-        console.log('   Request #:', Math.random().toString(36).substr(2, 9)); // Random ID for tracking
-        console.log('============================================');
-
-        // Pre-validation checks for common issues
-        if (!req.body || Object.keys(req.body).length === 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Request body is empty. Please provide timesheet data.',
-                hint: 'Make sure you are sending JSON data with Content-Type: application/json'
-            });
-        }
-
-        // Check for old daily format vs new weekly format BEFORE Joi validation
-        if (req.body.workDate && req.body.hoursWorked) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid data format: This endpoint expects weekly timesheet data, not daily entries.',
-                details: {
-                    receivedFormat: 'Daily format (workDate, hoursWorked)',
-                    expectedFormat: 'Weekly format (weekStartDate, mondayHours, tuesdayHours, etc.)',
-                    example: {
-                        projectId: 'uuid-string',
-                        taskId: 'uuid-string',
-                        weekStartDate: '2024-01-01', // Must be a Monday
-                        mondayHours: 8,
-                        tuesdayHours: 8,
-                        wednesdayHours: 8,
-                        thursdayHours: 8,
-                        fridayHours: 8,
-                        saturdayHours: 0,
-                        sundayHours: 0,
-                        description: 'Work description (optional)'
-                    }
-                },
-                hint: 'Please use the weekly timesheet format or contact support for API migration assistance.'
-            });
-        }
-
-        // Validate request body with enhanced error messages
-        const { error, value } = timesheetSchema.create.validate(req.body, { 
-            abortEarly: false, // Get all validation errors, not just the first one
-            allowUnknown: false // Reject unknown fields
+        const requestId = Math.random().toString(36).substr(2, 9);
+        logger.info('Timesheet creation request', {
+            requestId,
+            employeeId: req.employeeId,
+            userId: req.userId,
+            hasProjectId: !!req.validatedData.projectId,
+            hasTaskId: !!req.validatedData.taskId
         });
-        
-        if (error) {
-            const detailedErrors = error.details.map(detail => ({
-                field: detail.path.join('.'),
-                message: detail.message,
-                received: detail.context?.value,
-                type: detail.type
-            }));
 
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Timesheet validation failed. Please check the required fields and data format.',
-                errors: detailedErrors,
-                validationGuide: {
-                    requiredFields: ['projectId', 'taskId', 'weekStartDate'],
-                    optionalFields: ['mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours', 'sundayHours', 'description'],
-                    fieldTypes: {
-                        projectId: 'UUID string',
-                        taskId: 'UUID string', 
-                        weekStartDate: 'ISO date string (must be a Monday)',
-                        hours: 'Number between 0 and 24',
-                        description: 'String (max 500 characters)'
-                    }
-                },
-                receivedData: req.body
-            });
-        }
+        // Use validated data from middleware
+        const value = req.validatedData;
 
+        // Sanitize and prepare data
         const employeeId = req.employeeId;
         
         // Enhanced date validation and processing
@@ -804,7 +1081,7 @@ router.post('/', async (req, res) => {
                 success: false, 
                 message: 'Invalid date format for weekStartDate.',
                 details: {
-                    received: sanitizedData.weekStartDate,
+                    received: value.weekStartDate,
                     error: dateError.message,
                     expectedFormat: 'YYYY-MM-DD (ISO 8601 date string)'
                 },
@@ -818,8 +1095,8 @@ router.post('/', async (req, res) => {
                 employeeId,
                 weekStartDate: weekStart,
                 year,
-                projectId: sanitizedData.projectId,
-                taskId: sanitizedData.taskId,
+                projectId: value.projectId,
+                taskId: value.taskId,
                 deletedAt: null
             }
         });
@@ -827,26 +1104,29 @@ router.post('/', async (req, res) => {
         if (existingTimesheet) {
             // If existing timesheet is Draft, allow update instead of creating new one
             if (existingTimesheet.status === 'Draft') {
-                console.log(`📝 Found existing Draft timesheet (${existingTimesheet.id}). Updating instead of creating new one.`);
+                logger.debug('Updating existing Draft timesheet', { 
+                    timesheetId: existingTimesheet.id, 
+                    employeeId 
+                });
                 
                 // Update the existing draft timesheet
-                const totalHours = (sanitizedData.mondayHours || 0) +
-                                 (sanitizedData.tuesdayHours || 0) +
-                                 (sanitizedData.wednesdayHours || 0) +
-                                 (sanitizedData.thursdayHours || 0) +
-                                 (sanitizedData.fridayHours || 0) +
-                                 (sanitizedData.saturdayHours || 0) +
-                                 (sanitizedData.sundayHours || 0);
+                const totalHours = (value.mondayHours || 0) +
+                                 (value.tuesdayHours || 0) +
+                                 (value.wednesdayHours || 0) +
+                                 (value.thursdayHours || 0) +
+                                 (value.fridayHours || 0) +
+                                 (value.saturdayHours || 0) +
+                                 (value.sundayHours || 0);
                 
                 await existingTimesheet.update({
-                    mondayHours: sanitizedData.mondayHours || 0,
-                    tuesdayHours: sanitizedData.tuesdayHours || 0,
-                    wednesdayHours: sanitizedData.wednesdayHours || 0,
-                    thursdayHours: sanitizedData.thursdayHours || 0,
-                    fridayHours: sanitizedData.fridayHours || 0,
-                    saturdayHours: sanitizedData.saturdayHours || 0,
-                    sundayHours: sanitizedData.sundayHours || 0,
-                    description: sanitizedData.description || '',
+                    mondayHours: value.mondayHours || 0,
+                    tuesdayHours: value.tuesdayHours || 0,
+                    wednesdayHours: value.wednesdayHours || 0,
+                    thursdayHours: value.thursdayHours || 0,
+                    fridayHours: value.fridayHours || 0,
+                    saturdayHours: value.saturdayHours || 0,
+                    sundayHours: value.sundayHours || 0,
+                    description: value.description || '',
                     totalHoursWorked: totalHours
                 });
                 
@@ -902,7 +1182,11 @@ router.post('/', async (req, res) => {
         });
 
         if (weekTimesheetCount > 0) {
-            console.log(`📋 Adding additional task for week ${weekStart.toISOString().split('T')[0]} (total tasks for week will be: ${weekTimesheetCount + 1})`);
+            logger.debug('Adding additional task for week', { 
+                weekStart: weekStart.toISOString().split('T')[0], 
+                existingCount: weekTimesheetCount,
+                employeeId 
+            });
         }
 
         // Validate project exists with detailed error
@@ -959,23 +1243,26 @@ router.post('/', async (req, res) => {
 
         // Warn if no hours are entered
         if (totalHours === 0) {
-            console.log('Warning: Timesheet created with zero hours');
+            logger.warn('Timesheet created with zero hours', { employeeId, projectId: value.projectId });
         }
 
         // Warn if excessive hours
         if (totalHours > 60) {
-            console.log(`Warning: High total hours (${totalHours}) for employee ${employeeId}`);
+            logger.warn('High total hours for timesheet', { totalHours, employeeId });
         }
 
         // Create new weekly timesheet with comprehensive logging
-        console.log('📊 Creating timesheet with data:');
-        console.log('   Employee ID:', employeeId);
-        console.log('   Project ID:', value.projectId);
-        console.log('   Task ID:', value.taskId);
-        console.log('   Week:', weekStart.toISOString().split('T')[0], 'to', weekEnd.toISOString().split('T')[0]);
-        console.log('   Week Number:', weekNum, 'Year:', year);
-        console.log('   Total Hours:', totalHours);
-        console.log('   Daily Hours:', dailyHours);
+        logger.debug('Creating timesheet', {
+            employeeId,
+            projectId: value.projectId,
+            taskId: value.taskId,
+            weekStart: weekStart.toISOString().split('T')[0],
+            weekEnd: weekEnd.toISOString().split('T')[0],
+            weekNum,
+            year,
+            totalHours,
+            dailyHours
+        });
 
         const newTimesheet = await Timesheet.create({
             ...value,
@@ -993,13 +1280,14 @@ router.post('/', async (req, res) => {
             include: ['employee', 'project', 'task']
         });
 
-        console.log('✅ Timesheet created successfully:');
-        console.log('   ID:', createdTimesheet.id);
-        console.log('   Status:', createdTimesheet.status);
-        console.log('   Total Hours:', createdTimesheet.totalHoursWorked);
-        console.log('   Project:', createdTimesheet.project?.name);
-        console.log('   Task:', createdTimesheet.task?.name);
-        console.log('   Employee:', createdTimesheet.employee?.firstName, createdTimesheet.employee?.lastName);
+        logger.info('Timesheet created successfully', {
+            timesheetId: createdTimesheet.id,
+            status: createdTimesheet.status,
+            totalHours: createdTimesheet.totalHoursWorked,
+            project: createdTimesheet.project?.name,
+            task: createdTimesheet.task?.name,
+            employeeId
+        });
         
         // Log creation activity for tracking
         logSubmissionActivity('creation', {
@@ -1019,7 +1307,10 @@ router.post('/', async (req, res) => {
             status: 'Draft'
         });
         
-        console.log('🔄 === TIMESHEET CREATION REQUEST END ===\n');
+        logger.info('Timesheet creation completed', { 
+            timesheetId: createdTimesheet.id, 
+            employeeId 
+        });
 
         res.status(201).json({ 
             success: true, 
@@ -1034,98 +1325,100 @@ router.post('/', async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Create Weekly Timesheet Error:', error);
-        console.error('Stack trace:', error.stack);
-        console.error('Request data that caused error:', JSON.stringify(req.body, null, 2));
-        
         // Handle specific database errors
         if (error.name === 'SequelizeUniqueConstraintError') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'A timesheet already exists for this week.',
-                details: {
-                    constraint: 'unique_employee_week_timesheet',
-                    conflictingFields: ['employeeId', 'weekStartDate', 'year']
-                },
-                hint: 'Please edit the existing timesheet instead of creating a new one.'
-            });
+            return next(new ConflictError('A timesheet already exists for this week.'));
         }
         
         if (error.name === 'SequelizeValidationError') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Database validation failed.',
-                details: {
-                    validationErrors: error.errors.map(err => ({
-                        field: err.path,
-                        message: err.message,
-                        value: err.value
-                    }))
-                },
-                hint: 'Please check the data format and constraints.'
-            });
+            const validationErrors = error.errors.map(err => ({
+                field: err.path,
+                message: err.message
+            }));
+            return next(new ValidationError('Database validation failed.', validationErrors));
         }
 
         if (error.name === 'SequelizeForeignKeyConstraintError') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid reference: One or more IDs do not exist.',
-                details: {
-                    table: error.table,
-                    field: error.fields,
-                    error: 'Foreign key constraint violation'
-                },
-                hint: 'Please ensure all project, task, and employee IDs are valid and exist in the system.'
-            });
+            return next(new ValidationError('Invalid reference: One or more IDs do not exist in the system.'));
         }
         
-        // Generic server error with helpful message
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to create weekly timesheet due to an internal server error.',
-            details: {
-                errorType: error.name || 'Unknown',
-                timestamp: new Date().toISOString()
-            },
-            hint: 'Please try again. If the problem persists, contact technical support with the timestamp above.',
-            supportInfo: {
-                whatToInclude: [
-                    'The exact error message',
-                    'The data you were trying to submit',
-                    'The timestamp from this error',
-                    'Steps to reproduce the issue'
-                ]
-            }
-        });
+        next(error);
     }
 });
 
 // PUT update weekly timesheet
-router.put('/:id', async (req, res) => {
+/**
+ * @swagger
+ * /api/timesheets/{id}:
+ *   put:
+ *     summary: Update a timesheet
+ *     description: Update timesheet hours and details (only allowed for Draft timesheets)
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               mondayHours:
+ *                 type: number
+ *               tuesdayHours:
+ *                 type: number
+ *               wednesdayHours:
+ *                 type: number
+ *               thursdayHours:
+ *                 type: number
+ *               fridayHours:
+ *                 type: number
+ *               saturdayHours:
+ *                 type: number
+ *               sundayHours:
+ *                 type: number
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Timesheet updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Timesheet'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.put('/:id', validateParams(validators.uuidParamSchema), validate(validators.updateTimesheetSchema), async (req, res, next) => {
     try {
-        const { error, value } = timesheetSchema.update.validate(req.body);
-        if (error) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Validation failed', 
-                errors: error.details 
-            });
-        }
+        const value = req.validatedData;
+        const timesheet = await Timesheet.findByPk(req.validatedParams.id);
 
-        const timesheet = await Timesheet.findByPk(req.params.id);
         if (!timesheet) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Weekly timesheet not found.' 
-            });
+            throw new NotFoundError('Weekly timesheet not found.');
         }
 
         // Check edit permissions
         if (!timesheet.canBeEditedBy(req.userRole, req.userId, req.employeeId)) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'You can only edit draft or rejected timesheets.' 
-            });
+            throw new ForbiddenError('You can only edit draft or rejected timesheets.');
         }
 
         // If taskId is being updated, validate availability
@@ -1179,7 +1472,7 @@ router.put('/:id', async (req, res) => {
             data: updatedTimesheet 
         });
     } catch (error) {
-        console.error('Update Weekly Timesheet Error:', error);
+        LogHelper.logError(error, { context: 'Update weekly timesheet', timesheetId: req.params.id }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to update weekly timesheet.' 
@@ -1188,14 +1481,50 @@ router.put('/:id', async (req, res) => {
 });
 
 // PUT submit weekly timesheet for approval
+/**
+ * @swagger
+ * /api/timesheets/{id}/submit:
+ *   put:
+ *     summary: Submit a timesheet for approval
+ *     description: Submit a draft timesheet for manager approval
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Timesheet submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Timesheet'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 router.put('/:id/submit', async (req, res) => {
     try {
-        console.log('🔄 === INDIVIDUAL TIMESHEET SUBMISSION START ===');
-        console.log('📝 Request Details:');
-        console.log('   Timesheet ID:', req.params.id);
-        console.log('   User ID:', req.userId);
-        console.log('   Employee ID:', req.employeeId);
-        console.log('   Timestamp:', new Date().toISOString());
+        logger.info('Individual timesheet submission started', {
+            timesheetId: req.params.id,
+            userId: req.userId,
+            employeeId: req.employeeId
+        });
         
         const timesheet = await Timesheet.findByPk(req.params.id, {
             include: [
@@ -1206,24 +1535,30 @@ router.put('/:id/submit', async (req, res) => {
         });
         
         if (!timesheet) {
-            console.log('❌ Timesheet not found:', req.params.id);
+            logger.warn('Timesheet not found for submission', { timesheetId: req.params.id, employeeId: req.employeeId });
             return res.status(404).json({ 
                 success: false, 
                 message: 'Weekly timesheet not found.' 
             });
         }
 
-        console.log('📊 Timesheet details:');
-        console.log('   Employee:', timesheet.employee?.firstName, timesheet.employee?.lastName);
-        console.log('   Project:', timesheet.project?.name);
-        console.log('   Task:', timesheet.task?.name);
-        console.log('   Week:', timesheet.weekStartDate, 'to', timesheet.weekEndDate);
-        console.log('   Current Status:', timesheet.status);
-        console.log('   Total Hours:', timesheet.totalHoursWorked);
+        logger.debug('Timesheet submission details', {
+            timesheetId: req.params.id,
+            employee: `${timesheet.employee?.firstName} ${timesheet.employee?.lastName}`,
+            project: timesheet.project?.name,
+            task: timesheet.task?.name,
+            week: `${timesheet.weekStartDate} to ${timesheet.weekEndDate}`,
+            status: timesheet.status,
+            totalHours: timesheet.totalHoursWorked
+        });
 
         // Only employee can submit their own timesheet
         if (timesheet.employeeId !== req.employeeId) {
-            console.log('❌ Ownership check failed - different employee');
+            logger.warn('Ownership check failed for timesheet submission', { 
+                timesheetId: req.params.id, 
+                timesheetEmployee: timesheet.employeeId, 
+                requestEmployee: req.employeeId 
+            });
             return res.status(403).json({ 
                 success: false, 
                 message: 'You can only submit your own timesheets.' 
@@ -1232,7 +1567,10 @@ router.put('/:id/submit', async (req, res) => {
 
         // Can only submit draft timesheets
         if (timesheet.status !== 'Draft') {
-            console.log('❌ Status check failed - current status:', timesheet.status);
+            logger.warn('Cannot submit non-draft timesheet', { 
+                timesheetId: req.params.id, 
+                currentStatus: timesheet.status 
+            });
             return res.status(400).json({ 
                 success: false, 
                 message: 'Only draft timesheets can be submitted.' 
@@ -1250,8 +1588,11 @@ router.put('/:id/submit', async (req, res) => {
         });
 
         if (weekTimesheets.length > 1) {
-            console.log('🔄 Multiple tasks detected for week - auto-triggering bulk submission');
-            console.log('   Found', weekTimesheets.length, 'tasks for week', timesheet.weekStartDate);
+            logger.info('Multiple tasks for week - triggering bulk submission', { 
+                weeklyTaskCount: weekTimesheets.length, 
+                weekStartDate: timesheet.weekStartDate,
+                employeeId: req.employeeId 
+            });
             
             // Get all draft timesheets for this week
             const draftTimesheets = weekTimesheets.filter(ts => ts.status === 'Draft');
@@ -1263,7 +1604,10 @@ router.put('/:id/submit', async (req, res) => {
                 });
             }
             
-            console.log('📝 Auto-submitting', draftTimesheets.length, 'draft timesheets via bulk submission');
+            logger.debug('Auto-submitting draft timesheets', { 
+                draftCount: draftTimesheets.length,
+                employeeId: req.employeeId 
+            });
             
             // Prepare bulk submission data
             const timesheetIds = draftTimesheets.map(ts => ts.id);
@@ -1282,7 +1626,10 @@ router.put('/:id/submit', async (req, res) => {
         // Validate that the task is still available to the employee
         const task = await Task.findByPk(timesheet.taskId);
         if (!task) {
-            console.log('❌ Task not found:', timesheet.taskId);
+            logger.warn('Task not found for timesheet submission', { 
+                taskId: timesheet.taskId, 
+                timesheetId: req.params.id 
+            });
             return res.status(400).json({ 
                 success: false, 
                 message: 'The task associated with this timesheet no longer exists.' 
@@ -1292,7 +1639,11 @@ router.put('/:id/submit', async (req, res) => {
         // Validate task access using enhanced validation helper
         const taskAccess = validateTaskAccess(task, req.employeeId, 'timesheet submission');
         if (!taskAccess.allowed) {
-            console.log('❌ Task access denied:', taskAccess.message);
+            logger.warn('Task access denied for timesheet submission', { 
+                taskId: timesheet.taskId, 
+                employeeId: req.employeeId,
+                reason: taskAccess.message 
+            });
             return res.status(403).json({ 
                 success: false, 
                 message: taskAccess.message 
@@ -1301,7 +1652,10 @@ router.put('/:id/submit', async (req, res) => {
 
         // Validate minimum hours
         if (timesheet.totalHoursWorked <= 0) {
-            console.log('❌ Zero hours validation failed');
+            logger.warn('Cannot submit timesheet with zero hours', { 
+                timesheetId: req.params.id, 
+                employeeId: req.employeeId 
+            });
             return res.status(400).json({ 
                 success: false, 
                 message: 'Cannot submit timesheet with zero hours.' 
@@ -1309,7 +1663,11 @@ router.put('/:id/submit', async (req, res) => {
         }
 
         // Update status to submitted
-        console.log('✅ Submitting timesheet...');
+        logger.info('Submitting timesheet', { 
+            timesheetId: req.params.id, 
+            employeeId: req.employeeId,
+            totalHours: timesheet.totalHoursWorked 
+        });
         await timesheet.update({
             status: 'Submitted',
             submittedAt: new Date()
@@ -1332,16 +1690,21 @@ router.put('/:id/submit', async (req, res) => {
             submittedAt: new Date().toISOString()
         });
 
-        console.log('✅ Timesheet submitted successfully:', req.params.id);
-        console.log('🔄 === INDIVIDUAL TIMESHEET SUBMISSION END ===\n');
+        logger.info('Timesheet submitted successfully', { 
+            timesheetId: req.params.id, 
+            employeeId: req.employeeId 
+        });
 
         res.json({ 
             success: true, 
             message: 'Weekly timesheet submitted for approval successfully.' 
         });
     } catch (error) {
-        console.error('💥 Submit Weekly Timesheet Error:', error);
-        console.log('🔄 === INDIVIDUAL TIMESHEET SUBMISSION END (ERROR) ===\n');
+        LogHelper.logError(error, { 
+            context: 'Submit timesheet for approval', 
+            timesheetId: req.params.id,
+            employeeId: req.employeeId 
+        }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to submit weekly timesheet.' 
@@ -1350,14 +1713,56 @@ router.put('/:id/submit', async (req, res) => {
 });
 
 // PUT approve/reject weekly timesheet (managers, admin, hr)
+/**
+ * @swagger
+ * /api/timesheets/{id}/approve:
+ *   put:
+ *     summary: Approve a timesheet
+ *     description: Approve a submitted timesheet - Manager/Admin/HR only
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               comments:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Timesheet approved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 router.put('/:id/approve', authorize(['manager', 'admin', 'hr']), async (req, res) => {
     try {
-        console.log('\n📋 APPROVAL REQUEST DATA:');
-        console.log('Request Body:', req.body);
+        logger.debug('Approval request received', { timesheetId: req.params.id, body: req.body });
         
-        const { error, value } = timesheetSchema.updateStatus.validate(req.body);
+        const { error, value } = validators.timesheetApprovalSchema.validate(req.body);
         if (error) {
-            console.log('❌ Validation Error:', error.details);
+            logger.warn('Approval validation failed', { errors: error.details });
             return res.status(400).json({ 
                 success: false, 
                 message: 'Validation failed', 
@@ -1365,10 +1770,14 @@ router.put('/:id/approve', authorize(['manager', 'admin', 'hr']), async (req, re
             });
         }
         
-        console.log('✅ Validation Passed:', value);
+        logger.debug('Approval validation passed', { action: value.action });
 
         const timesheet = await Timesheet.findByPk(req.params.id, {
-            include: [{ model: Employee, as: 'employee' }]
+            include: [{ 
+                model: Employee, 
+                as: 'employee',
+                attributes: ['id', 'managerId', 'firstName', 'lastName']
+            }]
         });
         
         if (!timesheet) {
@@ -1378,23 +1787,24 @@ router.put('/:id/approve', authorize(['manager', 'admin', 'hr']), async (req, re
             });
         }
 
-        // Check approval permissions
-        const employee = await Employee.findByPk(timesheet.employeeId);
+        // Check approval permissions - employee data already loaded
         
-        // Debug permission check
-        console.log('\n🔐 PERMISSION DEBUG - Individual Approval:');
-        console.log('User Role:', req.userRole);
-        console.log('User ID:', req.userId);
-        console.log('User Employee ID:', req.employeeId);
-        console.log('Timesheet Employee ID:', timesheet.employeeId);
-        console.log('Timesheet Employee Manager ID:', employee.managerId);
-        console.log('Timesheet Status:', timesheet.status);
+        logger.debug('Permission check for approval', {
+            userRole: req.userRole,
+            userId: req.userId,
+            userEmployeeId: req.employeeId,
+            timesheetEmployeeId: timesheet.employeeId,
+            timesheetManagerId: timesheet.employee.managerId,
+            timesheetStatus: timesheet.status
+        });
         
-        const canApprove = timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, employee.managerId);
-        console.log('canBeApprovedBy() result:', canApprove);
+        const canApprove = timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, timesheet.employee.managerId);
         
         if (!canApprove) {
-            console.log('❌ Permission denied for individual approval');
+            logger.warn('Permission denied for timesheet approval', { 
+                timesheetId: req.params.id, 
+                userId: req.userId 
+            });
             return res.status(403).json({ 
                 success: false, 
                 message: 'You do not have permission to approve this timesheet.' 
@@ -1412,7 +1822,7 @@ router.put('/:id/approve', authorize(['manager', 'admin', 'hr']), async (req, re
         // Update timesheet status
         const updateData = {
             status: value.action === 'approve' ? 'Approved' : 'Rejected',
-            approverComments: value.approverComments || '',
+            approverComments: value.comments || '',
             approvedBy: req.employeeId,
             approvedAt: new Date()
         };
@@ -1428,7 +1838,7 @@ router.put('/:id/approve', authorize(['manager', 'admin', 'hr']), async (req, re
             message: `Weekly timesheet ${value.action}d successfully.` 
         });
     } catch (error) {
-        console.error('Approve Weekly Timesheet Error:', error);
+        LogHelper.logError(error, { context: 'Approve timesheet', timesheetId: req.params.id }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to process timesheet approval.' 
@@ -1437,6 +1847,41 @@ router.put('/:id/approve', authorize(['manager', 'admin', 'hr']), async (req, re
 });
 
 // DELETE weekly timesheet (admin only)
+/**
+ * @swagger
+ * /api/timesheets/{id}:
+ *   delete:
+ *     summary: Delete a timesheet
+ *     description: Delete a timesheet (admin only)
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Timesheet deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 router.delete('/:id', authorize(['admin']), async (req, res) => {
     try {
         const timesheet = await Timesheet.findByPk(req.params.id);
@@ -1455,7 +1900,7 @@ router.delete('/:id', authorize(['admin']), async (req, res) => {
             message: 'Weekly timesheet deleted successfully.' 
         });
     } catch (error) {
-        console.error('Delete Weekly Timesheet Error:', error);
+        LogHelper.logError(error, { context: 'Delete timesheet', timesheetId: req.params.id }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to delete weekly timesheet.' 
@@ -1464,6 +1909,34 @@ router.delete('/:id', authorize(['admin']), async (req, res) => {
 });
 
 // GET weekly timesheets for approval (managers, admin, hr)
+/**
+ * @swagger
+ * /api/timesheets/approval/pending:
+ *   get:
+ *     summary: Get pending timesheets for approval
+ *     description: Retrieve all timesheets pending approval for manager's team - Manager/Admin/HR only
+ *     tags: [Timesheets]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Pending timesheets retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Timesheet'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/approval/pending', isManagerOrAbove, async (req, res) => {
     try {
         const { year, weekNumber, employeeId } = req.query;
@@ -1506,7 +1979,7 @@ router.get('/approval/pending', isManagerOrAbove, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Get Pending Approvals Error:', error);
+        LogHelper.logError(error, { context: 'Get pending approvals' }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to fetch pending approvals.' 
@@ -1560,7 +2033,7 @@ router.get('/stats/summary', async (req, res) => {
 
         res.json({ success: true, data: summary });
     } catch (error) {
-        console.error('Get Timesheet Stats Error:', error);
+        LogHelper.logError(error, { context: 'Get timesheet statistics', year: req.query.year }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to fetch timesheet statistics.' 
@@ -1575,24 +2048,24 @@ async function handleBulkSave(req, res, isUpdate = false) {
     
     try {
         const operation = isUpdate ? 'UPDATE' : 'CREATE';
-        console.log(`🔄 === BULK TIMESHEET ${operation} START (Transaction ID: ${transaction.id}) ===`);
-        console.log('📝 Request Details:');
-        console.log('   Employee ID:', req.employeeId);
-        console.log('   Operation:', operation);
-        console.log('   Request body:', JSON.stringify(req.body, null, 2));
-        console.log('   Timestamp:', new Date().toISOString());
+        logger.info(`Bulk timesheet ${operation.toLowerCase()} started`, {
+            employeeId: req.employeeId,
+            operation,
+            count: req.body.timesheets?.length,
+            transactionId: transaction.id
+        });
         
         const { timesheets } = req.body;
 
         if (!timesheets || !Array.isArray(timesheets) || timesheets.length === 0) {
-            console.log('❌ Invalid timesheets data provided');
+            logger.warn('Invalid timesheets data for bulk operation');
             return res.status(400).json({
                 success: false,
                 message: `Invalid timesheets data. Please provide an array of timesheet objects.`
             });
         }
 
-        console.log(`📋 Processing ${timesheets.length} timesheets for bulk ${operation.toLowerCase()}`);
+        logger.debug(`Processing ${timesheets.length} timesheets for bulk ${operation.toLowerCase()}`);
         
         // Sanitize all timesheet data
         const sanitizedTimesheets = sanitizeBulkTimesheetData(timesheets);
@@ -1725,14 +2198,19 @@ async function handleBulkSave(req, res, isUpdate = false) {
                         throw createError;
                     }
 
-                    // Fetch with includes for response
+                    // Fetch with includes for response (must use same transaction)
                     timesheet = await Timesheet.findByPk(timesheet.id, {
                         include: [
                             { model: Employee, as: 'employee', attributes: ['id', 'firstName', 'lastName'] },
                             { model: Project, as: 'project', attributes: ['id', 'name'], paranoid: false },
                             { model: Task, as: 'task', attributes: ['id', 'name'], paranoid: false }
-                        ]
+                        ],
+                        transaction
                     });
+                    
+                    if (!timesheet) {
+                        throw new Error('Failed to reload created timesheet with associations');
+                    }
                 }
 
                 console.log(`✅ Successfully ${isUpdate ? 'updated' : 'created'} timesheet ${timesheet.id}`);

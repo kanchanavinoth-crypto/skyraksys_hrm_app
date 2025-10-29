@@ -1,44 +1,136 @@
 # Skyraksys HRM Production Environment - RHEL 9.6
 
-This directory contains all the necessary components for deploying and maintaining the Skyraksys HRM system on Red Hat Enterprise Linux 9.6.
+This directory contains all the necessary components for deploying and maintaining the Skyraksys HRM system on Red Hat Enterprise Linux 9.6 with PostgreSQL and Sequelize ORM.
+
+**Last Updated**: October 29, 2025
+
+---
+
+## 🚀 Quick Start - One Command Deployment
+
+**Deploy the entire system with a single command:**
+
+```bash
+cd /opt/skyraksys-hrm/redhatprod/scripts
+sudo bash deploy.sh YOUR_SERVER_IP
+```
+
+**Example:**
+```bash
+sudo bash deploy.sh 95.216.14.232
+```
+
+**What happens automatically:**
+- ✅ Generates all configuration files (secrets, nginx, .env)
+- ✅ Installs Node.js, PostgreSQL, Nginx
+- ✅ Sets up database with Sequelize migrations
+- ✅ Deploys backend and frontend
+- ✅ Configures and starts services
+- ✅ Runs health checks
+
+**Time**: 10-15 minutes | **Manual Steps**: ZERO
+
+📘 **See**: `ONE_COMMAND_DEPLOYMENT.md` for complete guide
+
+---
 
 ## Directory Structure
 
 ```
 redhatprod/
-├── database/               # Database setup and configuration files
-│   ├── 01_create_schema.sql     # Complete database schema
-│   ├── 02_create_indexes.sql    # Performance optimization indexes
-│   ├── 03_create_triggers.sql   # Business logic triggers
-│   └── 04_insert_sample_data.sql # Sample data for testing
-├── scripts/                # Deployment and installation scripts
-│   ├── 01_install_prerequisites.sh  # System prerequisites
-│   ├── 02_setup_database.sh        # Database setup automation
-│   └── 03_deploy_application.sh    # Application deployment
-├── configs/                # Production configuration files
-│   ├── nginx-hrm.conf              # Nginx reverse proxy config
-│   ├── hrm-backend.service         # Backend systemd service
-│   └── hrm-frontend.service        # Frontend systemd service
-├── maintenance/            # Maintenance and monitoring scripts
-│   ├── health_check.sh             # System health monitoring
-│   ├── database_maintenance.sh     # Database optimization
-│   ├── backup_verification.sh      # Backup integrity verification
-│   ├── performance_monitor.sh      # Performance monitoring
-│   └── setup_cron.sh              # Automated task setup
-└── RHEL_PRODUCTION_DEPLOYMENT_GUIDE.md  # Complete deployment guide
+├── 📘 START_HERE.md                        ⭐ Quick start guide
+├── 📘 ONE_COMMAND_DEPLOYMENT.md            ⭐ Complete deployment guide
+├── 📘 BUILD_INTEGRATED_CONFIG_COMPLETE.md  Implementation details
+├── 📄 DEPLOYMENT_CHEAT_SHEET.txt           Quick reference
+├── scripts/                                Deployment scripts
+│   ├── deploy.sh                           ⭐ Master deployment script
+│   ├── 00_generate_configs.sh              Config generator (auto-called)
+│   ├── 01_install_prerequisites.sh         Node.js, PostgreSQL, Nginx
+│   ├── 02_setup_database.sh                PostgreSQL + Sequelize migrations
+│   ├── 03_deploy_application.sh            Application deployment
+│   ├── 04_health_check.sh                  System health monitoring
+│   ├── 05_maintenance.sh                   System maintenance
+│   ├── 06_setup_ssl.sh                     SSL certificate setup
+│   └── 10_open_firewall_and_selinux.sh     Firewall configuration
+├── configs/                                Production configuration files
+│   └── nginx-hrm.conf                      Nginx reverse proxy config
+├── systemd/                                Systemd service files
+│   ├── hrm-backend.service                 Backend systemd service
+│   └── hrm-frontend.service                Frontend systemd service
+├── templates/                              Environment configuration templates
+│   └── .env.production.template            Production template
+├── maintenance/                            Maintenance and monitoring scripts
+│   ├── health_check.sh                     System health monitoring
+│   ├── database_maintenance.sh             Database optimization
+│   ├── backup_verification.sh              Backup integrity checks
+│   ├── performance_monitor.sh              Performance monitoring
+│   └── setup_cron.sh                       Automated task setup
+├── obsolete/                               ⚠️ Archived files (DO NOT USE)
+│   ├── database/                           Old SQL files (use Sequelize)
+│   └── docs/                               Old documentation
+├── README.md                               This file
+├── PRODUCTION_DEPLOYMENT_GUIDE.md          Detailed deployment guide
+└── RHEL_PRODUCTION_UPDATE_COMPLETE.md      Latest update summary
 ```
 
-## Quick Start
+---
+
+## Deployment Methods
+
+### Method 1: One-Command (Recommended ⭐)
+
+**Single command deploys everything:**
+
+```bash
+cd /opt/skyraksys-hrm/redhatprod/scripts
+sudo bash deploy.sh 95.216.14.232
+```
+
+See `ONE_COMMAND_DEPLOYMENT.md` for details.
+
+### Method 2: Step-by-Step (Advanced)
+
+**For users who want more control:**
+
+```bash
+# Generate configs
+sudo bash 00_generate_configs.sh 95.216.14.232
+
+# Install prerequisites
+sudo bash 01_install_prerequisites.sh
+
+# Setup database
+sudo bash 02_setup_database.sh
+
+# Deploy application
+sudo bash 03_deploy_application.sh
+
+# Health check
+sudo bash 04_health_check.sh
+```
+
+See `START_HERE.md` for details.
+
+---
+
+## Important: Database Setup
+
+⚠️ **The backend uses Sequelize ORM with migrations** - do not use the old SQL files in `obsolete/database/`.
 
 1. **Prerequisites Installation**
    ```bash
    sudo ./scripts/01_install_prerequisites.sh
    ```
 
-2. **Database Setup**
+2. **Database Setup** (PostgreSQL + Sequelize migrations)
    ```bash
    sudo ./scripts/02_setup_database.sh
    ```
+   This script will:
+   - Create PostgreSQL database and user
+   - Install backend dependencies
+   - Run Sequelize migrations to create schema
+   - Run Sequelize seeders to populate sample data
 
 3. **Application Deployment**
    ```bash

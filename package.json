@@ -12,6 +12,7 @@
     "node-fetch": "^3.3.2",
     "puppeteer": "^24.16.0",
     "sqlite3": "^5.1.7",
+    "toast": "^0.5.4",
     "uuid": "^11.1.0"
   },
   "scripts": {

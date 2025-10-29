@@ -5,12 +5,15 @@
 export class BasePage {
   constructor(page) {
     this.page = page;
+    this.baseURL = process.env.BASE_URL || 'http://localhost:3000';
   }
 
   /**
    * Navigate to a specific URL
+   * @param {string} path - Relative path (e.g., '/login') or full URL
    */
-  async goto(url) {
+  async goto(path) {
+    const url = path.startsWith('http') ? path : `${this.baseURL}${path}`;
     await this.page.goto(url);
   }
 

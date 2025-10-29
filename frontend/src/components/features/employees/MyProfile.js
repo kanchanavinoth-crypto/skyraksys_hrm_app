@@ -63,9 +63,8 @@ const MyProfile = () => {
         setLoading(true);
         setError('');
         
-        // Get current user's employee ID
-        const employeeId = user.employeeId || user.id;
-        const response = await employeeService.get(employeeId);
+        // Use the new /me endpoint
+        const response = await employeeService.getMyProfile();
         
         if (response.success) {
           setEmployee(response.data);
@@ -74,7 +73,11 @@ const MyProfile = () => {
         }
       } catch (err) {
         console.error('Error loading profile:', err);
-        setError('Unable to load your profile. Please try again later.');
+        if (err.response?.status === 404) {
+          setError('No employee profile found. Please contact HR to create your profile.');
+        } else {
+          setError('Unable to load your profile. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }

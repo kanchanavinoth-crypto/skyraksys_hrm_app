@@ -32,7 +32,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  Pagination,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -47,13 +51,19 @@ import {
   Visibility as VisibilityIcon,
   People as PeopleIcon,
   ViewModule as CardViewIcon,
-  ViewList as TableViewIcon
+  ViewList as TableViewIcon,
+  VpnKey as VpnKeyIcon,
+  Lock as LockIcon,
+  PersonAdd as PersonAddIcon,
+  Visibility,
+  VisibilityOff
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNotification } from '../../../contexts/NotificationContext';
 import { useLoading } from '../../../contexts/LoadingContext';
 import employeeService from '../../../services/EmployeeService';
+import { authService } from '../../../services/auth.service';
 
 const EmployeeList = () => {
   const navigate = useNavigate();
@@ -70,10 +80,10 @@ const EmployeeList = () => {
   
   // Pagination state
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25); // Changed from 10 to 25 to show more employees by default
+  const [rowsPerPage, setRowsPerPage] = useState(50); // Show 50 employees per page
   
   // Sorting and filtering
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
   
   // Delete dialog state
@@ -81,12 +91,25 @@ const EmployeeList = () => {
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
 
+  // User account creation dialog state
+  const [userAccountDialogOpen, setUserAccountDialogOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [userAccountData, setUserAccountData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'employee'
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [creatingUser, setCreatingUser] = useState(false);
+
   useEffect(() => {
     loadEmployees();
   }, []);
 
   useEffect(() => {
-    if (searchTerm || statusFilter !== 'all' || departmentFilter !== 'all') {
+    if (searchTerm || statusFilter !== '' || departmentFilter !== 'all') {
       let filtered = employees || [];
       
       // Apply search filter
@@ -102,7 +125,7 @@ const EmployeeList = () => {
       }
       
       // Apply status filter
-      if (statusFilter !== 'all') {
+      if (statusFilter !== '') {
         filtered = filtered.filter(employee => 
           (employee.status || 'active') === statusFilter
         );
@@ -129,15 +152,16 @@ const EmployeeList = () => {
       setError(null);
       // Load employees - backend will use role-based default limit (1000 for admin/HR)
       console.log('🔄 Requesting employees from backend');
+      console.log('👤 Current user role:', user?.role);
       const response = await employeeService.getAll();
       console.log('📦 Raw response from backend:', response);
       console.log('📊 Response structure:', JSON.stringify(response, null, 2));
-      console.log('� Backend pagination info:', response.pagination);
+      console.log('📊 Backend pagination info:', response.data?.pagination);
       console.log('📄 Backend data:', response.data);
       // Backend returns { success: true, data: [...] }, so we need response.data.data
       const employeeData = Array.isArray(response.data?.data) ? response.data.data : (Array.isArray(response.data) ? response.data : []);
       console.log('✅ Loaded employees:', employeeData.length);
-      console.log('📊 Total records from backend:', response.pagination?.totalRecords);
+      console.log('📊 Total records from backend:', response.data?.pagination?.totalRecords);
       console.log('📊 Employee data:', employeeData);
       console.log('👤 First employee:', employeeData[0]);
       setEmployees(employeeData);
@@ -187,20 +211,20 @@ const EmployeeList = () => {
     setDeleteDialogOpen(true);
   };
 
-  // Handle delete confirmation
+  // Handle delete confirmation (soft delete - terminates employee)
   const handleDeleteConfirm = async () => {
     if (!employeeToDelete) return;
     
     try {
       setLoading(true);
       await employeeService.delete(employeeToDelete.id);
-      showSuccess(`Employee ${employeeToDelete.firstName} ${employeeToDelete.lastName} deleted successfully`);
+      showSuccess(`Employee ${employeeToDelete.firstName} ${employeeToDelete.lastName} has been terminated`);
       loadEmployees();
       setDeleteDialogOpen(false);
       setEmployeeToDelete(null);
     } catch (error) {
-      console.error('Error deleting employee:', error);
-      showError('Failed to delete employee. Please try again.');
+      console.error('Error terminating employee:', error);
+      showError('Failed to terminate employee. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -211,6 +235,78 @@ const EmployeeList = () => {
     const employee = employees.find(emp => emp.id === employeeId);
     if (employee) {
       handleDeleteClick(employee);
+    }
+  };
+
+  // Handle create user account dialog
+  const handleCreateUserAccount = (employee) => {
+    setSelectedEmployee(employee);
+    setUserAccountData({
+      email: employee.email || '',
+      password: '',
+      confirmPassword: '',
+      role: 'employee'
+    });
+    setUserAccountDialogOpen(true);
+  };
+
+  const handleCloseUserAccountDialog = () => {
+    setUserAccountDialogOpen(false);
+    setSelectedEmployee(null);
+    setUserAccountData({
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'employee'
+    });
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handleUserAccountDataChange = (field, value) => {
+    setUserAccountData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleCreateUserSubmit = async () => {
+    // Validation
+    if (!userAccountData.email || !userAccountData.password || !userAccountData.confirmPassword) {
+      showError('All fields are required');
+      return;
+    }
+
+    if (userAccountData.password.length < 8) {
+      showError('Password must be at least 8 characters long');
+      return;
+    }
+
+    if (userAccountData.password !== userAccountData.confirmPassword) {
+      showError('Passwords do not match');
+      return;
+    }
+
+    setCreatingUser(true);
+    try {
+      const result = await authService.createEmployeeUserAccount(selectedEmployee.id, {
+        password: userAccountData.password,
+        role: userAccountData.role,
+        forcePasswordChange: true
+      });
+
+      if (result.success) {
+        showSuccess(`User account created successfully for ${selectedEmployee.firstName} ${selectedEmployee.lastName}!`);
+        handleCloseUserAccountDialog();
+        loadEmployees(); // Reload to get updated user info
+      } else {
+        showError(result.message || 'Failed to create user account');
+      }
+    } catch (error) {
+      console.error('Error creating user account:', error);
+      showError(error.response?.data?.message || 'Failed to create user account');
+    } finally {
+      setCreatingUser(false);
     }
   };
 
@@ -246,28 +342,28 @@ const EmployeeList = () => {
   const getStatusChip = (status) => {
     const statusConfig = {
       'active': { 
-        color: '#10b981', 
-        bg: 'rgba(16, 185, 129, 0.1)', 
+        color: theme.palette.success.main, 
+        bg: alpha(theme.palette.success.main, 0.1), 
         label: 'ACTIVE',
-        border: '1px solid rgba(16, 185, 129, 0.3)'
+        border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`
       },
       'inactive': { 
-        color: '#64748b', 
-        bg: 'rgba(100, 116, 139, 0.1)', 
+        color: theme.palette.text.secondary, 
+        bg: alpha(theme.palette.text.secondary, 0.1), 
         label: 'INACTIVE',
-        border: '1px solid rgba(100, 116, 139, 0.3)'
+        border: `1px solid ${alpha(theme.palette.text.secondary, 0.3)}`
       },
       'terminated': { 
-        color: '#ef4444', 
-        bg: 'rgba(239, 68, 68, 0.1)', 
+        color: theme.palette.error.main, 
+        bg: alpha(theme.palette.error.main, 0.1), 
         label: 'TERMINATED',
-        border: '1px solid rgba(239, 68, 68, 0.3)'
+        border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`
       },
       'on_leave': { 
-        color: '#f59e0b', 
-        bg: 'rgba(245, 158, 11, 0.1)', 
+        color: theme.palette.warning.main, 
+        bg: alpha(theme.palette.warning.main, 0.1), 
         label: 'ON LEAVE',
-        border: '1px solid rgba(245, 158, 11, 0.3)'
+        border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`
       }
     };
     
@@ -296,21 +392,21 @@ const EmployeeList = () => {
 
   // Table view rendering
   const renderTableView = () => (
-    <TableContainer component={Paper} sx={{ borderRadius: 2, mt: 2 }}>
+    <TableContainer component={Paper} sx={{ borderRadius: 2, mt: 2, border: '1px solid', borderColor: 'divider' }}>
       <Table>
         <TableHead>
-          <TableRow>
-            <TableCell><strong>Name</strong></TableCell>
-            <TableCell><strong>Employee ID</strong></TableCell>
-            <TableCell><strong>Email</strong></TableCell>
-            <TableCell><strong>Department</strong></TableCell>
-            <TableCell><strong>Position</strong></TableCell>
-            <TableCell><strong>Status</strong></TableCell>
-            <TableCell align="right"><strong>Actions</strong></TableCell>
+          <TableRow sx={{ bgcolor: 'grey.50' }}>
+            <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Name</TableCell>
+            <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Employee ID</TableCell>
+            <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Email</TableCell>
+            <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Department</TableCell>
+            <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Position</TableCell>
+            <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Status</TableCell>
+            <TableCell align="right" sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
-          {employees.map((emp) => (
+          {paginatedEmployees.map((emp) => (
             <TableRow key={emp.id} hover>
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -329,17 +425,49 @@ const EmployeeList = () => {
               <TableCell>{emp.department?.name || '-'}</TableCell>
               <TableCell>{emp.position?.name || '-'}</TableCell>
               <TableCell>
-                <Chip
-                  label={emp.status}
-                  color={
-                    emp.status === 'Active' ? 'success' :
-                    emp.status === 'On Leave' ? 'warning' :
-                    emp.status === 'Inactive' ? 'default' : 'error'
-                  }
-                  size="small"
-                />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Chip
+                    label={emp.status}
+                    color={
+                      emp.status === 'Active' ? 'success' :
+                      emp.status === 'On Leave' ? 'warning' :
+                      emp.status === 'Inactive' ? 'default' : 'error'
+                    }
+                    size="small"
+                    variant="outlined"
+                  />
+                  {emp.user && (
+                    <Chip
+                      label={emp.user.isActive ? 'Login: Enabled' : 'Login: Disabled'}
+                      color={emp.user.isActive ? 'success' : 'error'}
+                      size="small"
+                      variant="outlined"
+                    />
+                  )}
+                </Box>
               </TableCell>
               <TableCell align="right">
+                {!emp.userId ? (
+                  <Tooltip title="Create User Account">
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleCreateUserAccount(emp)}
+                      sx={{ color: 'success.main' }}
+                    >
+                      <VpnKeyIcon />
+                    </IconButton>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Manage User Account">
+                    <IconButton 
+                      size="small" 
+                      onClick={() => navigate(`/employees/${emp.id}/user-account`)}
+                      sx={{ color: emp.user?.isActive ? 'primary.main' : 'warning.main' }}
+                    >
+                      <VpnKeyIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
                 <Tooltip title="View Profile">
                   <IconButton size="small" onClick={() => navigate(`/employees/${emp.id}`)}>
                     <VisibilityIcon />
@@ -350,7 +478,7 @@ const EmployeeList = () => {
                     <EditIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Delete">
+                <Tooltip title="Terminate Employee">
                   <IconButton size="small" color="error" onClick={() => handleDelete(emp.id)}>
                     <DeleteIcon />
                   </IconButton>
@@ -358,7 +486,7 @@ const EmployeeList = () => {
               </TableCell>
             </TableRow>
           ))}
-          {employees.length === 0 && (
+          {paginatedEmployees.length === 0 && (
             <TableRow>
               <TableCell colSpan={7} align="center">
                 <Typography variant="body2" color="text.secondary">
@@ -389,10 +517,7 @@ const EmployeeList = () => {
             component="h1"
             sx={{
               fontWeight: 700,
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
+              color: 'text.primary',
               mb: 0.5
             }}
           >
@@ -404,7 +529,7 @@ const EmployeeList = () => {
         </Box>
         {canEdit && (
           <Button
-            variant="contained"
+            variant="outlined"
             startIcon={<AddIcon />}
             onClick={handleAddEmployee}
             sx={{
@@ -412,14 +537,7 @@ const EmployeeList = () => {
               px: 3,
               py: 1.5,
               textTransform: 'none',
-              fontWeight: 600,
-              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              '&:hover': {
-                boxShadow: '0 6px 16px rgba(99, 102, 241, 0.35)',
-                transform: 'translateY(-2px)',
-              },
-              transition: 'all 0.3s ease'
+              fontWeight: 600
             }}
           >
             Add New Employee
@@ -449,9 +567,10 @@ const EmployeeList = () => {
       <Card 
         sx={{ 
           mb: 3, 
-          borderRadius: 3,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          border: '1px solid #e2e8f0'
+          borderRadius: 2,
+          bgcolor: 'white',
+          border: '1px solid',
+          borderColor: 'divider'
         }}
       >
         <CardContent sx={{ p: 3 }}>
@@ -467,13 +586,7 @@ const EmployeeList = () => {
                   </InputAdornment>
                 )
               }}
-              sx={{
-                flex: 1,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 3,
-                  background: alpha(theme.palette.primary.main, 0.02)
-                }
-              }}
+              sx={{ flex: 1 }}
             />
             
             <TextField
@@ -493,18 +606,12 @@ const EmployeeList = () => {
             </TextField>
             
             <Button
-              variant="contained"
+              variant="outlined"
               startIcon={<AddIcon />}
-              onClick={() => navigate('/employees/add-modern')}
+              onClick={() => navigate('/employees/add')}
               sx={{
                 borderRadius: 2,
-                px: 3,
-                background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
-                boxShadow: `0 4px 16px ${alpha(theme.palette.primary.main, 0.3)}`,
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: `0 6px 24px ${alpha(theme.palette.primary.main, 0.5)}`
-                }
+                px: 3
               }}
             >
               Add Employee
@@ -515,7 +622,8 @@ const EmployeeList = () => {
           <Box sx={{ 
             mt: 2.5, 
             pt: 2.5, 
-            borderTop: '1px solid #e2e8f0',
+            borderTop: '1px solid',
+            borderColor: 'divider',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -527,13 +635,10 @@ const EmployeeList = () => {
             </Typography>
             <Chip 
               label={`Total: ${employees.length}`} 
-              size="small" 
-              sx={{ 
-                fontWeight: 600,
-                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
-                color: '#6366f1',
-                border: '1px solid rgba(99, 102, 241, 0.2)'
-              }} 
+              size="small"
+              variant="outlined"
+              color="primary"
+              sx={{ fontWeight: 600 }} 
             />
           </Box>
         </CardContent>
@@ -565,20 +670,21 @@ const EmployeeList = () => {
       {/* Render either cards or table */}
       {viewMode === 'cards' ? (
         <Grid container spacing={3}>
-          {filteredEmployees.map((employee, index) => (
+          {paginatedEmployees.map((employee, index) => (
             <Grow in timeout={300 + index * 50} key={employee.id}>
               <Grid item xs={12} sm={6} md={4}>
                 <Card
                   sx={{
                     height: '100%',
-                    borderRadius: 3,
-                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    borderRadius: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
                     transition: 'all 0.3s ease',
                     cursor: 'pointer',
                     '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.15)}`,
-                      border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
+                      transform: 'translateY(-4px)',
+                      boxShadow: 4,
+                      borderColor: 'primary.main'
                     }
                   }}
                   onClick={() => navigate(`/employees/${employee.id}`)}
@@ -592,8 +698,7 @@ const EmployeeList = () => {
                           sx={{
                             width: 56,
                             height: 56,
-                            border: `3px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                            background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`
+                            bgcolor: 'primary.main'
                           }}
                         >
                           {employee.firstName?.charAt(0)}{employee.lastName?.charAt(0)}
@@ -608,12 +713,24 @@ const EmployeeList = () => {
                           </Typography>
                         </Box>
                         
-                        <Chip
-                          label={employee.status}
-                          size="small"
-                          color={employee.status === 'Active' ? 'success' : 'default'}
-                          sx={{ fontWeight: 600 }}
-                        />
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-end' }}>
+                          <Chip
+                            label={employee.status}
+                            size="small"
+                            color={employee.status === 'Active' ? 'success' : 'default'}
+                            variant="outlined"
+                            sx={{ fontWeight: 600 }}
+                          />
+                          {employee.user && (
+                            <Chip
+                              label={employee.user.isActive ? 'Login: On' : 'Login: Off'}
+                              size="small"
+                              color={employee.user.isActive ? 'success' : 'error'}
+                              variant="outlined"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          )}
+                        </Box>
                       </Box>
                       
                       <Divider />
@@ -651,6 +768,59 @@ const EmployeeList = () => {
                       
                       {/* Actions */}
                       <Box sx={{ display: 'flex', gap: 1, pt: 1 }}>
+                        {!employee.userId ? (
+                          <Tooltip title="Create User Account">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCreateUserAccount(employee);
+                              }}
+                              sx={{
+                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                                '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.2) }
+                              }}
+                            >
+                              <VpnKeyIcon fontSize="small" color="success" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title="Manage User Account">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/employees/${employee.id}/user-account`);
+                              }}
+                              sx={{
+                                bgcolor: alpha(
+                                  employee.user?.isActive 
+                                    ? theme.palette.primary.main 
+                                    : theme.palette.warning.main, 
+                                  0.1
+                                ),
+                                '&:hover': { 
+                                  bgcolor: alpha(
+                                    employee.user?.isActive 
+                                      ? theme.palette.primary.main 
+                                      : theme.palette.warning.main, 
+                                    0.2
+                                  ) 
+                                }
+                              }}
+                            >
+                              <VpnKeyIcon 
+                                fontSize="small" 
+                                sx={{ 
+                                  color: employee.user?.isActive 
+                                    ? 'primary.main' 
+                                    : 'warning.main' 
+                                }} 
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        
                         <Tooltip title="View Profile">
                           <IconButton
                             size="small"
@@ -683,7 +853,7 @@ const EmployeeList = () => {
                           </IconButton>
                         </Tooltip>
                         
-                        <Tooltip title="Delete Employee">
+                        <Tooltip title="Terminate Employee">
                           <IconButton
                             size="small"
                             onClick={(e) => {
@@ -713,9 +883,10 @@ const EmployeeList = () => {
                 sx={{
                   p: 8,
                   textAlign: 'center',
-                  bgcolor: alpha(theme.palette.primary.main, 0.02),
-                  border: `2px dashed ${alpha(theme.palette.primary.main, 0.2)}`,
-                  borderRadius: 3
+                  bgcolor: 'white',
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  borderRadius: 2
                 }}
               >
                 <PeopleIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
@@ -727,9 +898,9 @@ const EmployeeList = () => {
                 </Typography>
                 {!searchTerm && (
                   <Button
-                    variant="contained"
+                    variant="outlined"
                     startIcon={<AddIcon />}
-                    onClick={() => navigate('/employees/add-modern')}
+                    onClick={() => navigate('/employees/add')}
                   >
                     Add Employee
                   </Button>
@@ -740,6 +911,59 @@ const EmployeeList = () => {
         </Grid>
       ) : (
         renderTableView()
+      )}
+
+      {/* Pagination Controls */}
+      {filteredEmployees.length > 0 && (
+        <Box 
+          sx={{ 
+            mt: 4, 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+            p: 2,
+            bgcolor: 'white',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+              Rows per page:
+            </Typography>
+            <Select
+              value={rowsPerPage}
+              onChange={handleChangeRowsPerPage}
+              size="small"
+              sx={{ minWidth: 80 }}
+            >
+              <MenuItem value={10}>10</MenuItem>
+              <MenuItem value={25}>25</MenuItem>
+              <MenuItem value={50}>50</MenuItem>
+              <MenuItem value={100}>100</MenuItem>
+            </Select>
+            <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+              {Math.min(page * rowsPerPage + 1, filteredEmployees.length)}-{Math.min((page + 1) * rowsPerPage, filteredEmployees.length)} of {filteredEmployees.length}
+            </Typography>
+          </Box>
+          
+          <Pagination 
+            count={Math.ceil(filteredEmployees.length / rowsPerPage)} 
+            page={page + 1}
+            onChange={(e, newPage) => handleChangePage(e, newPage - 1)}
+            color="primary"
+            showFirstButton
+            showLastButton
+            sx={{
+              '& .MuiPaginationItem-root': {
+                fontWeight: 600
+              }
+            }}
+          />
+        </Box>
       )}
       
       {/* Floating Action Button for Mobile */}
@@ -759,7 +983,7 @@ const EmployeeList = () => {
         </Fab>
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Terminate Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
@@ -770,19 +994,19 @@ const EmployeeList = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Avatar 
               sx={{ 
-                bgcolor: 'rgba(239, 68, 68, 0.1)',
+                bgcolor: alpha(theme.palette.error.main, 0.1),
                 width: 48,
                 height: 48
               }}
             >
-              <WarningIcon sx={{ color: '#ef4444', fontSize: 28 }} />
+              <WarningIcon sx={{ color: 'error.main', fontSize: 28 }} />
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Delete Employee?
+                Terminate Employee?
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                This action cannot be undone
+                This will deactivate the employee account
               </Typography>
             </Box>
           </Box>
@@ -790,7 +1014,7 @@ const EmployeeList = () => {
         
         <DialogContent>
           <Typography variant="body1" color="text.secondary">
-            Are you sure you want to delete{' '}
+            Are you sure you want to terminate{' '}
             <Box component="span" sx={{ fontWeight: 600, color: 'text.primary' }}>
               {employeeToDelete?.firstName} {employeeToDelete?.lastName}
             </Box>
@@ -799,8 +1023,21 @@ const EmployeeList = () => {
                 {' '}(ID: <Box component="span" sx={{ fontWeight: 500 }}>{employeeToDelete.employeeId}</Box>)
               </>
             )}
-            ? All associated data will be permanently removed.
+            ?
           </Typography>
+          <Box 
+            sx={{ 
+              mt: 2, 
+              p: 2, 
+              bgcolor: alpha(theme.palette.info.main, 0.1), 
+              borderRadius: 2,
+              border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              <strong>Note:</strong> This is a soft delete. The employee status will be set to "Terminated" and their user account will be deactivated. The employee record will remain in the system for historical purposes.
+            </Typography>
+          </Box>
         </DialogContent>
         
         <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
@@ -817,7 +1054,7 @@ const EmployeeList = () => {
           </Button>
           <Button
             onClick={handleDeleteConfirm}
-            variant="contained"
+            variant="outlined"
             color="error"
             disabled={localLoading}
             sx={{
@@ -826,7 +1063,189 @@ const EmployeeList = () => {
               borderRadius: 2
             }}
           >
-            {localLoading ? 'Deleting...' : 'Delete Employee'}
+            {localLoading ? 'Terminating...' : 'Terminate Employee'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create User Account Dialog */}
+      <Dialog
+        open={userAccountDialogOpen}
+        onClose={handleCloseUserAccountDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ bgcolor: 'white', borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <PersonAddIcon sx={{ color: 'success.main' }} />
+            <Box>
+              <Typography variant="h6" fontWeight="bold">
+                Create User Account
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Enable login access for {selectedEmployee?.firstName} {selectedEmployee?.lastName}
+              </Typography>
+            </Box>
+          </Box>
+        </DialogTitle>
+        
+        <DialogContent sx={{ mt: 3 }}>
+          <Stack spacing={3}>
+            {/* Email Field */}
+            <TextField
+              fullWidth
+              label="Email Address"
+              type="email"
+              value={userAccountData.email}
+              onChange={(e) => handleUserAccountDataChange('email', e.target.value)}
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <EmailIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              helperText="This email will be used for login"
+            />
+
+            {/* Role Selection */}
+            <FormControl fullWidth required>
+              <InputLabel>User Role</InputLabel>
+              <Select
+                value={userAccountData.role}
+                onChange={(e) => handleUserAccountDataChange('role', e.target.value)}
+                label="User Role"
+                startAdornment={
+                  <InputAdornment position="start">
+                    <BusinessIcon color="action" />
+                  </InputAdornment>
+                }
+              >
+                <MenuItem value="employee">
+                  <Box>
+                    <Typography variant="body2" fontWeight="medium">Employee</Typography>
+                    <Typography variant="caption" color="text.secondary">Basic user access</Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="manager">
+                  <Box>
+                    <Typography variant="body2" fontWeight="medium">Manager</Typography>
+                    <Typography variant="caption" color="text.secondary">Team management permissions</Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="hr">
+                  <Box>
+                    <Typography variant="body2" fontWeight="medium">HR Manager</Typography>
+                    <Typography variant="caption" color="text.secondary">HR management access</Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value="admin">
+                  <Box>
+                    <Typography variant="body2" fontWeight="medium">Administrator</Typography>
+                    <Typography variant="caption" color="text.secondary">Full system access</Typography>
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            <Divider>
+              <Typography variant="caption" color="text.secondary">
+                Password Setup
+              </Typography>
+            </Divider>
+
+            {/* Password Field */}
+            <TextField
+              fullWidth
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={userAccountData.password}
+              onChange={(e) => handleUserAccountDataChange('password', e.target.value)}
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      size="small"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              helperText="Minimum 8 characters"
+            />
+
+            {/* Confirm Password Field */}
+            <TextField
+              fullWidth
+              label="Confirm Password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={userAccountData.confirmPassword}
+              onChange={(e) => handleUserAccountDataChange('confirmPassword', e.target.value)}
+              required
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                      size="small"
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Box 
+              sx={{ 
+                p: 2, 
+                bgcolor: alpha(theme.palette.info.main, 0.1), 
+                borderRadius: 2,
+                border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`
+              }}
+            >
+              <Typography variant="caption" color="text.secondary">
+                💡 <strong>Note:</strong> The user will be able to login immediately with these credentials. 
+                Make sure to securely share the password with the employee.
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        
+        <DialogActions sx={{ p: 3, gap: 1 }}>
+          <Button
+            onClick={handleCloseUserAccountDialog}
+            variant="outlined"
+            disabled={creatingUser}
+            sx={{ textTransform: 'none', fontWeight: 500 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateUserSubmit}
+            variant="outlined"
+            color="success"
+            disabled={creatingUser}
+            startIcon={creatingUser ? null : <PersonAddIcon />}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
+          >
+            {creatingUser ? 'Creating Account...' : 'Create User Account'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -27,7 +27,9 @@ import {
   DialogActions,
   DialogContentText,
   Tooltip,
-  IconButton
+  IconButton,
+  useTheme,
+  alpha
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -56,6 +58,7 @@ import { authService } from '../../../services/auth.service';
 import UserAccountManager from './UserAccountManager';
 
 const UserAccountManagementPage = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const { id } = useParams();
   const { user } = useAuth();
@@ -89,7 +92,7 @@ const UserAccountManagementPage = () => {
       setError(null);
       
       console.log('🔍 Loading employee with ID:', id);
-      const response = await employeeService.getById(id);
+      const response = await employeeService.get(id);
       console.log('📦 Raw API Response:', response);
       
       // Handle different response structures
@@ -369,8 +372,8 @@ const UserAccountManagementPage = () => {
               cursor: 'pointer', 
               display: 'flex', 
               alignItems: 'center',
-              color: '#64748b',
-              '&:hover': { color: '#6366f1' },
+              color: theme.palette.text.secondary,
+              '&:hover': { color: theme.palette.primary.main },
               transition: 'color 0.2s ease'
             }}
           >
@@ -383,8 +386,8 @@ const UserAccountManagementPage = () => {
             onClick={() => navigate(`/employees/${id}`)}
             sx={{ 
               cursor: 'pointer',
-              color: '#64748b',
-              '&:hover': { color: '#6366f1' },
+              color: theme.palette.text.secondary,
+              '&:hover': { color: theme.palette.primary.main },
               transition: 'color 0.2s ease'
             }}
           >
@@ -395,7 +398,7 @@ const UserAccountManagementPage = () => {
             sx={{ 
               display: 'flex', 
               alignItems: 'center',
-              color: '#1e293b',
+              color: theme.palette.text.primary,
               fontWeight: 500
             }}
           >
@@ -422,8 +425,8 @@ const UserAccountManagementPage = () => {
                   sx={{ 
                     width: 56, 
                     height: 56, 
-                    bgcolor: 'rgba(99, 102, 241, 0.1)',
-                    color: '#6366f1'
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    color: theme.palette.primary.main
                   }}
                 >
                   <VpnKeyIcon sx={{ fontSize: 32 }} />
@@ -434,7 +437,7 @@ const UserAccountManagementPage = () => {
                     sx={{
                       fontWeight: 700,
                       mb: 0.5,
-                      background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
                       WebkitBackgroundClip: 'text',
                       WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
@@ -453,11 +456,11 @@ const UserAccountManagementPage = () => {
                 startIcon={<ArrowBackIcon />}
                 onClick={() => navigate('/employees')}
                 sx={{
-                  borderColor: '#cbd5e1',
-                  color: '#64748b',
+                  borderColor: theme.palette.divider,
+                  color: theme.palette.text.secondary,
                   '&:hover': {
-                    borderColor: '#94a3b8',
-                    bgcolor: 'rgba(148, 163, 184, 0.05)'
+                    borderColor: alpha(theme.palette.text.secondary, 0.5),
+                    bgcolor: alpha(theme.palette.text.secondary, 0.05)
                   }
                 }}
               >
@@ -488,10 +491,10 @@ const UserAccountManagementPage = () => {
                     alignItems: 'center', 
                     gap: 1,
                     fontWeight: 600,
-                    color: '#1e293b'
+                    color: theme.palette.text.primary
                   }}
                 >
-                  <PersonIcon sx={{ color: '#6366f1' }} />
+                  <PersonIcon sx={{ color: theme.palette.primary.main }} />
                   Employee Information
                 </Typography>
                 <Divider sx={{ my: 2 }} />
@@ -502,14 +505,14 @@ const UserAccountManagementPage = () => {
                       sx={{ 
                         width: 60, 
                         height: 60,
-                        border: '3px solid #e5e7eb',
-                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)'
+                        border: `3px solid ${theme.palette.divider}`,
+                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.15)}`
                       }}
                     >
                       {employee.firstName?.[0]}{employee.lastName?.[0]}
                     </Avatar>
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: '#1e293b' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
                         {employee.firstName} {employee.lastName}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -523,7 +526,7 @@ const UserAccountManagementPage = () => {
                       Email
                     </Typography>
                     <Box display="flex" alignItems="center" gap={1}>
-                      <EmailIcon fontSize="small" sx={{ color: '#64748b' }} />
+                      <EmailIcon fontSize="small" sx={{ color: theme.palette.text.secondary }} />
                       <Typography variant="body1">{employee.email}</Typography>
                     </Box>
                   </Box>
@@ -556,9 +559,9 @@ const UserAccountManagementPage = () => {
                       sx={{
                         fontWeight: 600,
                         bgcolor: employee.status?.toLowerCase() === 'active' 
-                          ? 'rgba(16, 185, 129, 0.1)' 
-                          : 'rgba(148, 163, 184, 0.1)',
-                        color: employee.status?.toLowerCase() === 'active' ? '#10b981' : '#64748b',
+                          ? alpha(theme.palette.success.main, 0.1)
+                          : alpha(theme.palette.text.secondary, 0.1),
+                        color: employee.status?.toLowerCase() === 'active' ? theme.palette.success.main : theme.palette.text.secondary,
                         border: '1px solid',
                         borderColor: employee.status?.toLowerCase() === 'active' 
                           ? 'rgba(16, 185, 129, 0.3)' 
@@ -591,10 +594,10 @@ const UserAccountManagementPage = () => {
                     alignItems: 'center', 
                     gap: 1,
                     fontWeight: 600,
-                    color: '#1e293b'
+                    color: theme.palette.text.primary
                   }}
                 >
-                  <VpnKeyIcon sx={{ color: '#6366f1' }} />
+                  <VpnKeyIcon sx={{ color: theme.palette.primary.main }} />
                   User Account Status
                 </Typography>
                 <Divider sx={{ my: 2 }} />
@@ -606,7 +609,7 @@ const UserAccountManagementPage = () => {
                       icon={<CheckCircleIcon />}
                       sx={{
                         borderRadius: 2,
-                        border: '1px solid rgba(16, 185, 129, 0.2)'
+                        border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`
                       }}
                     >
                       <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
@@ -622,9 +625,9 @@ const UserAccountManagementPage = () => {
                       <Box 
                         sx={{ 
                           p: 2, 
-                          bgcolor: 'rgba(99, 102, 241, 0.05)',
+                          bgcolor: alpha(theme.palette.primary.main, 0.05),
                           borderRadius: 2,
-                          border: '1px solid rgba(99, 102, 241, 0.1)'
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
                         }}
                       >
                         <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontWeight: 500 }}>
@@ -673,13 +676,13 @@ const UserAccountManagementPage = () => {
                             mt: 0.5,
                             fontWeight: 600,
                             bgcolor: employee.user.isActive 
-                              ? 'rgba(16, 185, 129, 0.1)' 
-                              : 'rgba(148, 163, 184, 0.1)',
-                            color: employee.user.isActive ? '#10b981' : '#64748b',
+                              ? alpha(theme.palette.success.main, 0.1)
+                              : alpha(theme.palette.text.secondary, 0.1),
+                            color: employee.user.isActive ? theme.palette.success.main : theme.palette.text.secondary,
                             border: '1px solid',
                             borderColor: employee.user.isActive 
-                              ? 'rgba(16, 185, 129, 0.3)' 
-                              : 'rgba(148, 163, 184, 0.3)'
+                              ? alpha(theme.palette.success.main, 0.3)
+                              : alpha(theme.palette.text.secondary, 0.3)
                           }}
                         />
                       </Box>
@@ -689,9 +692,9 @@ const UserAccountManagementPage = () => {
                       <Box 
                         sx={{ 
                           p: 2, 
-                          bgcolor: 'rgba(99, 102, 241, 0.05)',
+                          bgcolor: alpha(theme.palette.primary.main, 0.05),
                           borderRadius: 2,
-                          border: '1px solid rgba(99, 102, 241, 0.1)'
+                          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
                         }}
                       >
                         <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontWeight: 500 }}>
@@ -704,9 +707,9 @@ const UserAccountManagementPage = () => {
                               size="small"
                               sx={{
                                 fontWeight: 600,
-                                bgcolor: 'rgba(245, 158, 11, 0.1)',
-                                color: '#f59e0b',
-                                border: '1px solid rgba(245, 158, 11, 0.3)'
+                                bgcolor: alpha(theme.palette.warning.main, 0.1),
+                                color: theme.palette.warning.main,
+                                border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`
                               }}
                             />
                           ) : (
@@ -715,9 +718,9 @@ const UserAccountManagementPage = () => {
                               size="small"
                               sx={{
                                 fontWeight: 600,
-                                bgcolor: 'rgba(16, 185, 129, 0.1)',
-                                color: '#10b981',
-                                border: '1px solid rgba(16, 185, 129, 0.3)'
+                                bgcolor: alpha(theme.palette.success.main, 0.1),
+                                color: theme.palette.success.main,
+                                border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`
                               }}
                             />
                           )}
@@ -794,13 +797,13 @@ const UserAccountManagementPage = () => {
                         height: 80,
                         mx: 'auto',
                         mb: 2,
-                        bgcolor: 'rgba(99, 102, 241, 0.1)',
-                        color: '#6366f1'
+                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        color: theme.palette.primary.main
                       }}
                     >
                       <VpnKeyIcon sx={{ fontSize: 40 }} />
                     </Avatar>
-                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: '#1e293b' }}>
+                    <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
                       Create User Account
                     </Typography>
                     <Typography variant="body2" color="text.secondary" paragraph>
@@ -813,14 +816,14 @@ const UserAccountManagementPage = () => {
                       onClick={handleOpenDialog}
                       size="large"
                       sx={{
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
                         color: 'white',
                         fontWeight: 600,
                         px: 4,
                         '&:hover': {
-                          background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.9)} 0%, ${alpha(theme.palette.secondary.main, 0.9)} 100%)`,
                           transform: 'translateY(-2px)',
-                          boxShadow: '0 8px 16px rgba(99, 102, 241, 0.3)'
+                          boxShadow: `0 8px 16px ${alpha(theme.palette.primary.main, 0.3)}`
                         },
                         transition: 'all 0.2s ease'
                       }}
@@ -1152,9 +1155,9 @@ const UserAccountManagementPage = () => {
             onClick={() => setConfirmDialog({ open: false, action: null, title: '', message: '' })}
             disabled={actionLoading}
             sx={{
-              color: '#64748b',
+              color: theme.palette.text.secondary,
               '&:hover': {
-                bgcolor: 'rgba(148, 163, 184, 0.05)'
+                bgcolor: alpha(theme.palette.text.secondary, 0.05)
               }
             }}
           >
@@ -1166,15 +1169,15 @@ const UserAccountManagementPage = () => {
             disabled={actionLoading}
             startIcon={actionLoading ? <CircularProgress size={20} /> : null}
             sx={{
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
               color: 'white',
               fontWeight: 600,
               '&:hover': {
-                background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)'
+                background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.9)} 0%, ${alpha(theme.palette.secondary.main, 0.9)} 100%)`
               },
               '&:disabled': {
-                bgcolor: '#e5e7eb',
-                color: '#9ca3af'
+                bgcolor: theme.palette.action.disabledBackground,
+                color: theme.palette.action.disabled
               }
             }}
           >

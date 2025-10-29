@@ -139,3 +139,44 @@ coverage/
 
 # Prettier cache
 .prettiercache
+
+# Debug/test scripts in root (should be in utils/ or tests/)
+/check-*.js
+/test-*.js
+/debug-*.js
+/add-*.js
+/fix-*.js
+/create-*.js
+/setup-*.js
+/cleanup-*.js
+/reset-*.js
+/remove-*.js
+/update-*.js
+/verify-*.js
+/validate-*.js
+/trace-*.js
+/search-*.js
+/find-*.js
+/investigate-*.js
+/get-*.js
+/submit-*.js
+/simulate-*.js
+/assign-*.js
+/make-*.js
+/quick-*.js
+/simple-*.js
+/final-*.js
+
+# Temporary SQL files
+verify-*.sql
+check-*.sql
+
+# Temporary batch scripts
+check-*.bat
+run-*.bat
+mark-*.bat
+
+# Temporary PowerShell scripts  
+check-*.ps1
+quick-*.ps1
+run-*.ps1

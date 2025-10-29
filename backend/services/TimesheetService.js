@@ -1,6 +1,7 @@
 const BaseService = require('./BaseService');
 const db = require('../models');
 const { Timesheet, Project, Task, Employee, User } = db;
+const { Op } = require('sequelize');
 
 class TimesheetService extends BaseService {
   constructor() {
@@ -143,47 +144,83 @@ class TimesheetService extends BaseService {
   }
 
   async approveTimesheet(timesheetIds, approverId, comments = '') {
-    const approvedEntries = [];
+    // Fetch all timesheets at once to avoid N+1
+    const timeEntries = await this.model.findAll({
+      where: { id: { [Op.in]: timesheetIds } }
+    });
+
+    // Create a map for quick lookup
+    const entriesMap = new Map(timeEntries.map(entry => [entry.id, entry]));
     
+    // Validate all entries first
     for (const id of timesheetIds) {
-      const timeEntry = await this.findById(id);
-      
+      const timeEntry = entriesMap.get(id);
+      if (!timeEntry) {
+        throw new Error(`Time entry ${id} not found`);
+      }
       if (timeEntry.status !== 'Submitted') {
         throw new Error(`Time entry ${id} is not in submitted status`);
       }
+    }
 
-      const updated = await super.update(id, {
+    // Bulk update all valid entries
+    await this.model.update(
+      {
         status: 'Approved',
         approverId,
         approvedAt: new Date(),
         approverComments: comments
-      });
-      
-      approvedEntries.push(updated);
-    }
+      },
+      {
+        where: { id: { [Op.in]: timesheetIds } }
+      }
+    );
+
+    // Fetch and return updated entries
+    const approvedEntries = await this.model.findAll({
+      where: { id: { [Op.in]: timesheetIds } }
+    });
 
     return approvedEntries;
   }
 
   async rejectTimesheet(timesheetIds, approverId, comments) {
-    const rejectedEntries = [];
+    // Fetch all timesheets at once to avoid N+1
+    const timeEntries = await this.model.findAll({
+      where: { id: { [Op.in]: timesheetIds } }
+    });
+
+    // Create a map for quick lookup
+    const entriesMap = new Map(timeEntries.map(entry => [entry.id, entry]));
     
+    // Validate all entries first
     for (const id of timesheetIds) {
-      const timeEntry = await this.findById(id);
-      
+      const timeEntry = entriesMap.get(id);
+      if (!timeEntry) {
+        throw new Error(`Time entry ${id} not found`);
+      }
       if (timeEntry.status !== 'Submitted') {
         throw new Error(`Time entry ${id} is not in submitted status`);
       }
+    }
 
-      const updated = await super.update(id, {
+    // Bulk update all valid entries
+    await this.model.update(
+      {
         status: 'Rejected',
         approverId,
         approvedAt: new Date(),
         approverComments: comments
-      });
-      
-      rejectedEntries.push(updated);
-    }
+      },
+      {
+        where: { id: { [Op.in]: timesheetIds } }
+      }
+    );
+
+    // Fetch and return updated entries
+    const rejectedEntries = await this.model.findAll({
+      where: { id: { [Op.in]: timesheetIds } }
+    });
 
     return rejectedEntries;
   }

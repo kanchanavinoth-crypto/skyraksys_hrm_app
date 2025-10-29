@@ -7,6 +7,32 @@ const Department = db.Department;
 const Employee = db.Employee;
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/positions:
+ *   get:
+ *     summary: Get all positions
+ *     description: Retrieve all positions with department and employee details
+ *     tags: [Positions]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Positions retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Position'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 // Get all positions
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -38,6 +64,39 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/positions/{id}:
+ *   get:
+ *     summary: Get position by ID
+ *     description: Retrieve detailed information about a specific position
+ *     tags: [Positions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Position retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Position'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // Get position by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -76,6 +135,57 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/positions:
+ *   post:
+ *     summary: Create new position
+ *     description: Create a new position - Admin/HR only
+ *     tags: [Positions]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - departmentId
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Senior Software Engineer
+ *               description:
+ *                 type: string
+ *               departmentId:
+ *                 type: string
+ *                 format: uuid
+ *               level:
+ *                 type: string
+ *                 example: Senior
+ *     responses:
+ *       201:
+ *         description: Position created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Position'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create new position (admin/hr only)
 router.post('/', authenticateToken, async (req, res) => {
   try {
@@ -136,6 +246,89 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/positions/{id}:
+ *   put:
+ *     summary: Update position
+ *     description: Update position details - Admin/HR only
+ *     tags: [Positions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               departmentId:
+ *                 type: string
+ *                 format: uuid
+ *               level:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Position updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Position'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *   delete:
+ *     summary: Delete position
+ *     description: Delete a position - Admin only
+ *     tags: [Positions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Position deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // Update position (admin/hr only)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {

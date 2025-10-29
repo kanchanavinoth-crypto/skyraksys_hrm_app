@@ -7,6 +7,33 @@ const Employee = db.Employee;
 const Position = db.Position;
 const router = express.Router();
 
+/**
+ * @swagger
+ * /api/departments:
+ *   get:
+ *     summary: Get all departments
+ *     description: Retrieve all departments with employees and positions
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Departments retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Department'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 // Get all departments
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -38,6 +65,39 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/departments/{id}:
+ *   get:
+ *     summary: Get department by ID
+ *     description: Retrieve detailed information about a specific department
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Department retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Department'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // Get department by ID
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
@@ -76,6 +136,51 @@ router.get('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/departments:
+ *   post:
+ *     summary: Create new department
+ *     description: Create a new department - Admin/HR only
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: Engineering
+ *               description:
+ *                 type: string
+ *                 example: Software development and engineering team
+ *     responses:
+ *       201:
+ *         description: Department created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Department'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 // Create new department (admin/hr only)
 router.post('/', authenticateToken, async (req, res) => {
   try {
@@ -114,6 +219,54 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/departments/{id}:
+ *   put:
+ *     summary: Update department
+ *     description: Update department details - Admin/HR only
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Department updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Department'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // Update department (admin/hr only)
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
@@ -153,6 +306,41 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/departments/{id}:
+ *   delete:
+ *     summary: Delete department
+ *     description: Delete a department - Admin only
+ *     tags: [Departments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Department deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // Delete department (admin only)
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {

@@ -19,9 +19,10 @@ export const useApi = (apiFunction, initialData = null) => {
       setData(response.data);
       return response;
     } catch (err) {
-      console.error('API Error:', err);
-      setError(err.message || 'An error occurred');
-      throw err;
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred';
+      console.error('API Error:', errorMessage, err);
+      setError(errorMessage);
+      throw err; // Re-throw so components can handle with notifications
     } finally {
       setLoading(false);
     }
@@ -72,11 +73,15 @@ export const useForm = (initialValues, validationSchema = null) => {
       try {
         await onSubmit(values);
       } catch (error) {
-        console.error('Submit error:', error);
+        console.error('Form submit error:', error);
+        // Re-throw so component can show user-friendly error message
+        throw error;
+      } finally {
+        setIsSubmitting(false);
       }
+    } else {
+      setIsSubmitting(false);
     }
-    
-    setIsSubmitting(false);
   };
 
   const reset = () => {
@@ -111,7 +116,9 @@ export const useLocalStorage = (key, initialValue) => {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Error reading localStorage key "${key}":`, error);
+      }
       return initialValue;
     }
   });
@@ -122,7 +129,10 @@ export const useLocalStorage = (key, initialValue) => {
       setStoredValue(valueToStore);
       window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`Error setting localStorage key "${key}":`, error);
+      }
+      // Silent fail in production - localStorage might be disabled/full
     }
   };
 

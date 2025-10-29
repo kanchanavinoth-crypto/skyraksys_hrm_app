@@ -63,6 +63,7 @@ import {
 import { useSnackbar } from 'notistack';
 import { useAuth } from '../../../contexts/AuthContext';
 import http from '../../../http-common';
+import EditPayslipDialog from './EditPayslipDialog';
 
 const ModernPayrollManagement = () => {
   const { enqueueSnackbar } = useSnackbar();
@@ -80,6 +81,9 @@ const ModernPayrollManagement = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalRecords, setTotalRecords] = useState(0);
   
+  // Search
+  const [searchQuery, setSearchQuery] = useState('');
+  
   // Filters
   const [filters, setFilters] = useState({
     month: new Date().getMonth() + 1,
@@ -94,6 +98,15 @@ const ModernPayrollManagement = () => {
   const [viewDialog, setViewDialog] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [editDialog, setEditDialog] = useState(false);
+  const [payslipToEdit, setPayslipToEdit] = useState(null);
+  
+  // Validation
+  const [validationDialog, setValidationDialog] = useState(false);
+  const [validationResults, setValidationResults] = useState(null);
+  
+  // Bulk operations
+  const [selectedPayslipIds, setSelectedPayslipIds] = useState([]);
   
   // Stats
   const [stats, setStats] = useState({
@@ -193,8 +206,62 @@ const ModernPayrollManagement = () => {
     setStats(newStats);
   };
 
-  const handleGeneratePayslips = async () => {
+  // =====================================================
+  // VALIDATION
+  // =====================================================
+
+  const handleValidateAndGenerate = async () => {
     if (selectedEmployees.length === 0) {
+      enqueueSnackbar('Please select at least one employee', { variant: 'warning' });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await http.post('/payslips/validate', {
+        employeeIds: selectedEmployees,
+        month: filters.month,
+        year: filters.year
+      });
+
+      if (response.data.success) {
+        setValidationResults(response.data.validation);
+        setValidationDialog(true);
+      }
+    } catch (error) {
+      console.error('Validation error:', error);
+      enqueueSnackbar(
+        error.response?.data?.message || 'Validation failed',
+        { variant: 'error' }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProceedWithValidEmployees = () => {
+    if (!validationResults || validationResults.validEmployees.length === 0) {
+      enqueueSnackbar('No valid employees to generate payslips', { variant: 'warning' });
+      return;
+    }
+
+    // Update selected employees to only valid ones
+    const validIds = validationResults.validEmployees.map(emp => emp.id);
+    setSelectedEmployees(validIds);
+    setValidationDialog(false);
+    
+    // Proceed with generation
+    handleGeneratePayslips(validIds);
+  };
+
+  // =====================================================
+  // PAYSLIP GENERATION
+  // =====================================================
+
+  const handleGeneratePayslips = async (employeeIdsToGenerate = null) => {
+    const idsToUse = employeeIdsToGenerate || selectedEmployees;
+    
+    if (idsToUse.length === 0) {
       enqueueSnackbar('Please select at least one employee', { variant: 'warning' });
       return;
     }
@@ -203,7 +270,7 @@ const ModernPayrollManagement = () => {
       setLoading(true);
       
       const payload = {
-        employeeIds: selectedEmployees,
+        employeeIds: idsToUse,
         month: filters.month,
         year: filters.year
       };
@@ -222,6 +289,7 @@ const ModernPayrollManagement = () => {
         );
         setGenerateDialog(false);
         setSelectedEmployees([]);
+        setValidationResults(null);
         loadPayslips();
       } else {
         enqueueSnackbar(response.data.message || 'Generation failed', { variant: 'error' });
@@ -362,6 +430,183 @@ const ModernPayrollManagement = () => {
   };
 
   // =====================================================
+  // BULK OPERATIONS
+  // =====================================================
+
+  const handleSelectPayslip = (payslipId, checked) => {
+    if (checked) {
+      setSelectedPayslipIds([...selectedPayslipIds, payslipId]);
+    } else {
+      setSelectedPayslipIds(selectedPayslipIds.filter(id => id !== payslipId));
+    }
+  };
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedPayslipIds(payslips.map(p => p.id));
+    } else {
+      setSelectedPayslipIds([]);
+    }
+  };
+
+  const handleBulkFinalize = async () => {
+    if (selectedPayslipIds.length === 0) {
+      enqueueSnackbar('Please select payslips to finalize', { variant: 'warning' });
+      return;
+    }
+
+    if (!window.confirm(`Finalize ${selectedPayslipIds.length} payslip(s)? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await http.post('/payslips/bulk-finalize', {
+        payslipIds: selectedPayslipIds
+      });
+
+      if (response.data.success) {
+        enqueueSnackbar(
+          `${response.data.successCount} payslip(s) finalized successfully`,
+          { variant: 'success' }
+        );
+        if (response.data.failedCount > 0) {
+          enqueueSnackbar(
+            `${response.data.failedCount} payslip(s) failed (only drafts can be finalized)`,
+            { variant: 'warning' }
+          );
+        }
+        setSelectedPayslipIds([]);
+        loadPayslips();
+      }
+    } catch (error) {
+      console.error('Bulk finalize error:', error);
+      enqueueSnackbar(
+        error.response?.data?.message || 'Failed to finalize payslips',
+        { variant: 'error' }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkMarkPaid = async () => {
+    if (selectedPayslipIds.length === 0) {
+      enqueueSnackbar('Please select payslips to mark as paid', { variant: 'warning' });
+      return;
+    }
+
+    if (!window.confirm(`Mark ${selectedPayslipIds.length} payslip(s) as paid?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await http.post('/payslips/bulk-paid', {
+        payslipIds: selectedPayslipIds,
+        paymentDate: new Date().toISOString(),
+        paymentMethod: 'Bank Transfer'
+      });
+
+      if (response.data.success) {
+        enqueueSnackbar(
+          `${response.data.successCount} payslip(s) marked as paid`,
+          { variant: 'success' }
+        );
+        if (response.data.failedCount > 0) {
+          enqueueSnackbar(
+            `${response.data.failedCount} payslip(s) failed (only finalized can be marked paid)`,
+            { variant: 'warning' }
+          );
+        }
+        setSelectedPayslipIds([]);
+        loadPayslips();
+      }
+    } catch (error) {
+      console.error('Bulk mark paid error:', error);
+      enqueueSnackbar(
+        error.response?.data?.message || 'Failed to mark payslips as paid',
+        { variant: 'error' }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedPayslipIds.length === 0) {
+      enqueueSnackbar('Please select payslips to delete', { variant: 'warning' });
+      return;
+    }
+
+    if (!window.confirm(`Delete ${selectedPayslipIds.length} payslip(s)? This action cannot be undone. Only draft payslips will be deleted.`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await http.delete('/payslips/bulk', {
+        data: { payslipIds: selectedPayslipIds }
+      });
+
+      if (response.data.success) {
+        enqueueSnackbar(
+          `${response.data.successCount} payslip(s) deleted`,
+          { variant: 'success' }
+        );
+        if (response.data.failedCount > 0) {
+          enqueueSnackbar(
+            `${response.data.failedCount} payslip(s) could not be deleted (only drafts can be deleted)`,
+            { variant: 'warning' }
+          );
+        }
+        setSelectedPayslipIds([]);
+        loadPayslips();
+      }
+    } catch (error) {
+      console.error('Error deleting payslips:', error);
+      enqueueSnackbar('Failed to delete payslips', { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditPayslip = (payslip) => {
+    if (payslip.status !== 'draft') {
+      enqueueSnackbar('Only draft payslips can be edited', { variant: 'warning' });
+      return;
+    }
+    setPayslipToEdit(payslip);
+    setEditDialog(true);
+  };
+
+  const handleSaveEdit = async (editData) => {
+    try {
+      setLoading(true);
+      const response = await http.put(`/payslips/${editData.payslipId}`, {
+        earnings: editData.earnings,
+        deductions: editData.deductions,
+        reason: editData.reason
+      });
+
+      if (response.data.success) {
+        enqueueSnackbar('Payslip updated successfully', { variant: 'success' });
+        setEditDialog(false);
+        setPayslipToEdit(null);
+        loadPayslips();
+      }
+    } catch (error) {
+      console.error('Error updating payslip:', error);
+      enqueueSnackbar(
+        error.response?.data?.message || 'Failed to update payslip',
+        { variant: 'error' }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =====================================================
   // TAB: OVERVIEW / DASHBOARD
   // =====================================================
 
@@ -496,8 +741,8 @@ const ModernPayrollManagement = () => {
                 onChange={(e) => setFilters({ ...filters, year: e.target.value })}
                 label="Year"
               >
-                {Array.from({ length: 5 }, (_, i) => {
-                  const year = new Date().getFullYear() - 2 + i;
+                {Array.from({ length: 11 }, (_, i) => {
+                  const year = new Date().getFullYear() - 5 + i;
                   return <MenuItem key={year} value={year}>{year}</MenuItem>;
                 })}
               </Select>
@@ -576,11 +821,11 @@ const ModernPayrollManagement = () => {
               variant="contained"
               size="large"
               startIcon={<GenerateIcon />}
-              onClick={handleGeneratePayslips}
+              onClick={handleValidateAndGenerate}
               disabled={loading || selectedEmployees.length === 0}
               fullWidth
             >
-              Generate {selectedEmployees.length} Payslip(s)
+              Validate & Generate {selectedEmployees.length} Payslip(s)
             </Button>
           </Grid>
         </Grid>
@@ -592,9 +837,29 @@ const ModernPayrollManagement = () => {
   // PAYSLIPS TABLE
   // =====================================================
 
-  const PayslipsTable = () => (
+  const PayslipsTable = ({ statusFilter = null, title = null }) => (
     <Paper>
-      <Box sx={{ p: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+      {title && (
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="h6">{title}</Typography>
+        </Box>
+      )}
+      <Box sx={{ p: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        <TextField
+          placeholder="Search employee name or ID..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          size="small"
+          sx={{ minWidth: 250 }}
+          InputProps={{
+            startAdornment: (
+              <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                🔍
+              </Box>
+            )
+          }}
+        />
+        
         <FormControl sx={{ minWidth: 120 }}>
           <InputLabel>Month</InputLabel>
           <Select
@@ -619,8 +884,8 @@ const ModernPayrollManagement = () => {
             label="Year"
             size="small"
           >
-            {Array.from({ length: 5 }, (_, i) => {
-              const year = new Date().getFullYear() - 2 + i;
+            {Array.from({ length: 11 }, (_, i) => {
+              const year = new Date().getFullYear() - 5 + i;
               return <MenuItem key={year} value={year}>{year}</MenuItem>;
             })}
           </Select>
@@ -658,12 +923,65 @@ const ModernPayrollManagement = () => {
         </FormControl>
       </Box>
       
+      {/* Bulk Actions Toolbar */}
+      {selectedPayslipIds.length > 0 && (
+        <Paper sx={{ p: 2, m: 2, bgcolor: 'primary.light' }}>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Typography variant="body1" fontWeight="bold">
+              {selectedPayslipIds.length} payslip(s) selected
+            </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<LockIcon />}
+              onClick={handleBulkFinalize}
+              disabled={loading}
+            >
+              Bulk Finalize
+            </Button>
+            <Button
+              variant="contained"
+              color="success"
+              size="small"
+              startIcon={<PaymentIcon />}
+              onClick={handleBulkMarkPaid}
+              disabled={loading}
+            >
+              Bulk Mark Paid
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              size="small"
+              startIcon={<DeleteIcon />}
+              onClick={handleBulkDelete}
+              disabled={loading}
+            >
+              Bulk Delete
+            </Button>
+            <Button 
+              size="small" 
+              onClick={() => setSelectedPayslipIds([])}
+            >
+              Clear Selection
+            </Button>
+          </Stack>
+        </Paper>
+      )}
+      
       {loading && <LinearProgress />}
       
       <TableContainer>
         <Table>
           <TableHead>
             <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={payslips.length > 0 && selectedPayslipIds.length === payslips.length}
+                  indeterminate={selectedPayslipIds.length > 0 && selectedPayslipIds.length < payslips.length}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                />
+              </TableCell>
               <TableCell>Employee</TableCell>
               <TableCell>Pay Period</TableCell>
               <TableCell align="right">Gross Earnings</TableCell>
@@ -676,13 +994,31 @@ const ModernPayrollManagement = () => {
           <TableBody>
             {payslips.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   No payslips found
                 </TableCell>
               </TableRow>
             ) : (
-              payslips.map((payslip) => (
+              payslips
+                .filter(p => statusFilter ? p.status === statusFilter : true)
+                .filter(p => {
+                  if (!searchQuery) return true;
+                  const query = searchQuery.toLowerCase();
+                  const empId = (p.employee?.employeeId || '').toLowerCase();
+                  const firstName = (p.employee?.firstName || '').toLowerCase();
+                  const lastName = (p.employee?.lastName || '').toLowerCase();
+                  const fullName = `${firstName} ${lastName}`;
+                  return empId.includes(query) || fullName.includes(query) || 
+                         firstName.includes(query) || lastName.includes(query);
+                })
+                .map((payslip) => (
                 <TableRow key={payslip.id} hover>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedPayslipIds.includes(payslip.id)}
+                      onChange={(e) => handleSelectPayslip(payslip.id, e.target.checked)}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Typography variant="body2">
                       {payslip.employee?.employeeId}
@@ -732,6 +1068,17 @@ const ModernPayrollManagement = () => {
                           onClick={() => handleFinalizePayslip(payslip.id)}
                         >
                           <LockIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {payslip.status === 'draft' && (
+                      <Tooltip title="Edit Payslip">
+                        <IconButton
+                          size="small"
+                          color="warning"
+                          onClick={() => handleEditPayslip(payslip)}
+                        >
+                          <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     )}
@@ -786,7 +1133,7 @@ const ModernPayrollManagement = () => {
                 {selectedPayslip.employeeInfo?.name} ({selectedPayslip.employeeInfo?.employeeId})
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                {selectedPayslip.employeeInfo?.designation} | {selectedPayslip.employeeInfo?.department}
+                {selectedPayslip.employeeInfo?.designation || 'N/A'} | {selectedPayslip.employeeInfo?.department?.name || selectedPayslip.employeeInfo?.department || 'N/A'}
               </Typography>
             </Grid>
             
@@ -871,6 +1218,139 @@ const ModernPayrollManagement = () => {
     return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
   };
 
+  // =====================================================
+  // VALIDATION DIALOG
+  // =====================================================
+
+  const ValidationDialog = () => (
+    <Dialog open={validationDialog} onClose={() => setValidationDialog(false)} maxWidth="md" fullWidth>
+      <DialogTitle>
+        Pre-Generation Validation Results
+      </DialogTitle>
+      <DialogContent dividers>
+        {validationResults && (
+          <>
+            <Alert 
+              severity={validationResults.canProceed ? 'success' : 'error'} 
+              sx={{ mb: 3 }}
+            >
+              <Typography variant="body1" fontWeight="bold">
+                {validationResults.message}
+              </Typography>
+              <Typography variant="body2">
+                Success Rate: {validationResults.successRate}%
+              </Typography>
+            </Alert>
+
+            <Grid container spacing={3}>
+              {/* Valid Employees */}
+              {validationResults.validEmployees.length > 0 && (
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}>
+                    <Typography variant="h6" gutterBottom>
+                      ✅ Valid Employees ({validationResults.validEmployees.length})
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                      These employees are ready for payslip generation
+                    </Typography>
+                    <Box sx={{ maxHeight: 200, overflow: 'auto' }}>
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Employee ID</TableCell>
+                              <TableCell>Name</TableCell>
+                              <TableCell>Department</TableCell>
+                              <TableCell>Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {validationResults.validEmployees.map((emp) => (
+                              <TableRow key={emp.id}>
+                                <TableCell>{emp.employeeId}</TableCell>
+                                <TableCell>{emp.name}</TableCell>
+                                <TableCell>{emp.department?.name || emp.department || 'N/A'}</TableCell>
+                                <TableCell>
+                                  <Chip label={emp.status} color="success" size="small" />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
+                  </Paper>
+                </Grid>
+              )}
+
+              {/* Invalid Employees */}
+              {validationResults.invalidEmployees.length > 0 && (
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 2, bgcolor: 'error.light', color: 'error.contrastText' }}>
+                    <Typography variant="h6" gutterBottom>
+                      ❌ Invalid Employees ({validationResults.invalidEmployees.length})
+                    </Typography>
+                    <Typography variant="body2" sx={{ mb: 2 }}>
+                      These employees have issues that prevent payslip generation
+                    </Typography>
+                    <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                      <TableContainer>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              <TableCell>Employee ID</TableCell>
+                              <TableCell>Name</TableCell>
+                              <TableCell>Issues</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {validationResults.invalidEmployees.map((emp) => (
+                              <TableRow key={emp.id}>
+                                <TableCell>{emp.employeeId}</TableCell>
+                                <TableCell>{emp.name}</TableCell>
+                                <TableCell>
+                                  <Stack spacing={0.5}>
+                                    {emp.issues.map((issue, idx) => (
+                                      <Chip 
+                                        key={idx} 
+                                        label={issue} 
+                                        color="error" 
+                                        size="small" 
+                                        sx={{ fontSize: '0.75rem' }}
+                                      />
+                                    ))}
+                                  </Stack>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
+                  </Paper>
+                </Grid>
+              )}
+            </Grid>
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setValidationDialog(false)}>
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={handleProceedWithValidEmployees}
+          disabled={!validationResults?.canProceed || loading}
+          startIcon={<GenerateIcon />}
+        >
+          Generate {validationResults?.validEmployees.length || 0} Payslip(s)
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
   // Main Render
   if (!isAdmin && !isHR) {
     return (
@@ -903,11 +1383,72 @@ const ModernPayrollManagement = () => {
       <Box sx={{ mt: 3 }}>
         {activeTab === 0 && <OverviewTab />}
         {activeTab === 1 && <GenerateTab />}
-        {activeTab === 2 && <PayslipsTable />}
-        {activeTab === 3 && <PayslipsTable />}
+        {activeTab === 2 && (
+          <PayslipsTable 
+            statusFilter="finalized" 
+            title="Finalized Payslips - Ready for Payment Processing"
+          />
+        )}
+        {activeTab === 3 && (
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>Reports & Analytics</Typography>
+            <Alert severity="info" sx={{ mb: 3 }}>
+              Comprehensive reporting features coming soon. For now, use the Export Excel button in the Overview tab.
+            </Alert>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={4}>
+                <Card>
+                  <CardContent>
+                    <Typography color="textSecondary" gutterBottom>
+                      Department Summary
+                    </Typography>
+                    <Typography variant="body2">
+                      View payroll breakdown by department
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card>
+                  <CardContent>
+                    <Typography color="textSecondary" gutterBottom>
+                      Month-over-Month Variance
+                    </Typography>
+                    <Typography variant="body2">
+                      Compare payroll costs across months
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Card>
+                  <CardContent>
+                    <Typography color="textSecondary" gutterBottom>
+                      Statutory Deductions
+                    </Typography>
+                    <Typography variant="body2">
+                      PF, ESI, PT, TDS summary reports
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Paper>
+        )}
       </Box>
       
       <ViewPayslipDialog />
+      <ValidationDialog />
+      <EditPayslipDialog 
+        open={editDialog}
+        payslip={payslipToEdit}
+        onClose={() => {
+          setEditDialog(false);
+          setPayslipToEdit(null);
+        }}
+        onSave={handleSaveEdit}
+        loading={loading}
+      />
     </Container>
   );
 };

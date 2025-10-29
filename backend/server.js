@@ -1,14 +1,58 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const responseTime = require('response-time');
+const statusMonitor = require('express-status-monitor');
 const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const { logger, accessLogStream } = require('./config/logger');
 
 const app = express();
+
+// Performance monitoring dashboard - must be before other middleware
+app.use(statusMonitor({
+  title: 'SkyrakSys HRM - Server Status',
+  path: '/status',
+  spans: [{
+    interval: 1,      // Every second
+    retention: 60     // Keep 60 datapoints (1 minute)
+  }, {
+    interval: 5,      // Every 5 seconds
+    retention: 60     // Keep 60 datapoints (5 minutes)
+  }, {
+    interval: 15,     // Every 15 seconds
+    retention: 60     // Keep 60 datapoints (15 minutes)
+  }],
+  chartVisibility: {
+    cpu: true,
+    mem: true,
+    load: true,
+    responseTime: true,
+    rps: true,
+    statusCodes: true
+  },
+  healthChecks: [{
+    protocol: 'http',
+    host: 'localhost',
+    path: '/api/health',
+    port: process.env.PORT || 5000
+  }]
+}));
+
+// Response time tracking
+app.use(responseTime((req, res, time) => {
+  // Log slow requests (>500ms)
+  if (time > 500) {
+    logger.warn(`Slow request: ${req.method} ${req.url} - ${time.toFixed(2)}ms`);
+  }
+  
+  // Add response time header
+  res.setHeader('X-Response-Time', `${time.toFixed(2)}ms`);
+}));
 
 // Security middleware
 app.use(helmet());
@@ -65,7 +109,7 @@ app.use(cors({
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-access-token', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'Set-Cookie'],
   maxAge: 600
 }));
 
@@ -104,6 +148,9 @@ if (process.env.RATE_LIMIT_ENABLED === 'true') {
 // Parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Cookie parser middleware for httpOnly cookies
+app.use(cookieParser());
 
 // Request logging middleware (adds request IDs and structured logging)
 const requestLogger = require('./middleware/requestLogger');
@@ -184,6 +231,29 @@ async function initializeDatabase() {
 }
 
 // Routes
+// Health check endpoint (for monitoring and load balancers)
+app.get('/api/health', async (req, res) => {
+  try {
+    // Check database connection
+    await db.sequelize.authenticate();
+    
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || '1.0.0',
+      database: 'connected'
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: 'Database connection failed'
+    });
+  }
+});
+
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const employeeRoutes = require('./routes/employee.routes');
@@ -233,8 +303,13 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/email', emailRoutes);
 
-// Debug Routes (development only, no authentication)
-app.use('/api/debug', debugRoutes);
+// Debug Routes (conditionally enabled for development only)
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/debug', debugRoutes);
+  logger.warn('⚠️  Debug routes enabled (development mode only)');
+} else {
+  logger.info('🔒 Debug routes disabled in production');
+}
 
 // Admin Config Routes (protected)
 const adminConfigRoutes = require('./routes/admin-config.routes');
@@ -305,11 +380,22 @@ app.get('*', (req, res) => {
 // Error handling middleware
 // First, centralized error logging middleware
 const errorLogger = require('./middleware/errorLogger');
+const { AppError } = require('./utils/errors');
+
 app.use(errorLogger);
 
 // Then, error response handler
 app.use((error, req, res, next) => {
   // Note: Error already logged by errorLogger middleware above
+  
+  // Handle custom AppError instances (includes ValidationError, NotFoundError, etc.)
+  if (error instanceof AppError) {
+    return res.status(error.statusCode).json({
+      success: false,
+      message: error.message,
+      errors: error.errors
+    });
+  }
   
   // Handle Sequelize validation errors
   if (error.name === 'SequelizeValidationError') {
@@ -329,6 +415,22 @@ app.use((error, req, res, next) => {
     });
   }
   
+  // Handle JWT errors
+  if (error.name === 'JsonWebTokenError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid token'
+    });
+  }
+  
+  if (error.name === 'TokenExpiredError') {
+    return res.status(401).json({
+      success: false,
+      message: 'Token expired'
+    });
+  }
+  
+  // Default error response
   res.status(error.status || 500).json({
     success: false,
     message: error.message || 'Internal server error',

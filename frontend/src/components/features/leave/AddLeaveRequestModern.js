@@ -424,18 +424,19 @@ const AddLeaveRequestModern = () => {
         sx={{
           p: 3,
           mb: 3,
-          bgcolor: 'primary.main',
-          color: 'white',
-          borderRadius: 2
+          bgcolor: 'white',
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider'
         }}
       >
         <Stack direction="row" alignItems="center" spacing={2}>
-          <CalendarIcon sx={{ fontSize: 40 }} />
+          <CalendarIcon sx={{ fontSize: 40, color: 'primary.main' }} />
           <Box>
-            <Typography variant="h4" fontWeight="bold">
+            <Typography variant="h4" fontWeight="bold" color="text.primary">
               Leave Request
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
+            <Typography variant="body2" color="text.secondary">
               Submit your leave application for approval
             </Typography>
           </Box>
@@ -617,11 +618,6 @@ const AddLeaveRequestModern = () => {
                                 }}
                               />
                               <Typography>{type.name}</Typography>
-                              {type.maxDaysPerYear && (
-                                <Typography variant="caption" color="text.secondary">
-                                  (Max: {type.maxDaysPerYear} days/year)
-                                </Typography>
-                              )}
                             </Stack>
                           </MenuItem>
                         ))}
@@ -743,7 +739,7 @@ const AddLeaveRequestModern = () => {
               </Button>
               <Button
                 type="submit"
-                variant="contained"
+                variant="outlined"
                 color={requestType === 'cancellation' ? 'warning' : 'primary'}
                 size="large"
                 startIcon={loading ? <CircularProgress size={20} /> : <SendIcon />}

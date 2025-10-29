@@ -1,3 +1,17 @@
+const { logger } = require('./logger');
+
+// Custom query logger with timing
+const queryLogger = (sql, timing) => {
+  const duration = timing || 0;
+  
+  // Log slow queries (>100ms)
+  if (duration > 100) {
+    logger.warn(`🐌 Slow Query (${duration}ms): ${sql.substring(0, 200)}...`);
+  } else if (process.env.LOG_ALL_QUERIES === 'true') {
+    logger.debug(`⚡ Query (${duration}ms): ${sql.substring(0, 200)}...`);
+  }
+};
+
 module.exports = {
   development: {
     username: process.env.DB_USER || 'hrm_user',
@@ -7,7 +21,8 @@ module.exports = {
     port: process.env.DB_PORT || 5432,
     dialect: process.env.DB_DIALECT || 'postgres',
     storage: process.env.DB_STORAGE || null, // For SQLite
-    logging: process.env.NODE_ENV === 'production' ? false : console.log,
+    logging: process.env.ENABLE_QUERY_LOGGING === 'true' ? queryLogger : false,
+    benchmark: true, // Enable query timing
     pool: {
       max: 10,
       min: 2,

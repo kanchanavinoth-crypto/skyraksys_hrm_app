@@ -106,14 +106,29 @@ const EmployeeLeaveRequests = () => {
   };
 
   const getLeaveTypeLabel = (type) => {
+    // Handle both object (with name property) and string types
+    const typeString = typeof type === 'object' ? type?.name?.toLowerCase() : type;
+    
     const types = {
       annual: 'Annual Leave',
+      'annual leave': 'Annual Leave',
       sick: 'Sick Leave',
+      'sick leave': 'Sick Leave',
       personal: 'Personal Leave',
+      'personal leave': 'Personal Leave',
       maternity: 'Maternity Leave',
-      emergency: 'Emergency Leave'
+      'maternity leave': 'Maternity Leave',
+      emergency: 'Emergency Leave',
+      'emergency leave': 'Emergency Leave'
     };
-    return types[type] || type;
+    return types[typeString] || (typeof type === 'object' ? type?.name : type) || typeString;
+  };
+
+  const getLeaveTypeColor = (type) => {
+    const typeString = typeof type === 'object' ? type?.name?.toLowerCase() : type?.toLowerCase();
+    if (typeString?.includes('annual')) return 'primary';
+    if (typeString?.includes('sick')) return 'error';
+    return 'warning';
   };
 
   return (
@@ -126,31 +141,28 @@ const EmployeeLeaveRequests = () => {
             sx={{
               p: 3,
               mb: 3,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              borderRadius: 3
+              bgcolor: 'white',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <CalendarIcon sx={{ fontSize: 40, mr: 2 }} />
+                <CalendarIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
                 <Box>
-                  <Typography variant="h4" fontWeight="bold">
+                  <Typography variant="h4" fontWeight="bold" color="text.primary">
                     My Leave Requests
                   </Typography>
-                  <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+                  <Typography variant="subtitle1" color="text.secondary">
                     Track your leave applications and balance
                   </Typography>
                 </Box>
               </Box>
               <Button
-                variant="contained"
+                variant="outlined"
                 startIcon={<AddIcon />}
                 onClick={() => navigate('/add-leave-request')}
-                sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)', 
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                }}
               >
                 New Request
               </Button>
@@ -275,7 +287,7 @@ const EmployeeLeaveRequests = () => {
                               <TableCell>
                                 <Chip
                                   label={getLeaveTypeLabel(request.leaveType)}
-                                  color={request.leaveType === 'annual' ? 'primary' : request.leaveType === 'sick' ? 'error' : 'warning'}
+                                  color={getLeaveTypeColor(request.leaveType)}
                                   size="small"
                                 />
                               </TableCell>

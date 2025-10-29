@@ -11,6 +11,7 @@ const Joi = require('joi');
 const PDFDocument = require('pdfkit');
 const ExcelJS = require('exceljs');
 const db = require('../models');
+const { sequelize } = db;
 
 // Models
 const { Payslip, Employee, PayslipTemplate, SalaryStructure, Timesheet, LeaveRequest } = db;
@@ -98,6 +99,12 @@ router.get('/', async (req, res) => {
     
     // Role-based filtering
     if (req.userRole === 'employee') {
+      if (!req.employeeId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Employee record not found for this user'
+        });
+      }
       where.employeeId = req.employeeId;
     } else if (employeeId) {
       where.employeeId = employeeId;
@@ -121,7 +128,7 @@ router.get('/', async (req, res) => {
         {
           model: PayslipTemplate,
           as: 'template',
-          attributes: ['id', 'name', 'version']
+          attributes: ['id', 'name']
         }
       ],
       order: [[sortBy, sortOrder.toUpperCase()]],
@@ -156,6 +163,13 @@ router.get('/', async (req, res) => {
  */
 router.get('/my', async (req, res) => {
   try {
+    if (!req.employeeId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Employee record not found for this user'
+      });
+    }
+    
     const { month, year, page = 1, limit = 20 } = req.query;
     
     const where = { employeeId: req.employeeId };
@@ -170,7 +184,7 @@ router.get('/my', async (req, res) => {
         {
           model: PayslipTemplate,
           as: 'template',
-          attributes: ['id', 'name', 'version']
+          attributes: ['id', 'name']
         }
       ],
       order: [['year', 'DESC'], ['month', 'DESC']],
@@ -249,6 +263,290 @@ router.get('/:id', async (req, res) => {
 // =====================================================
 // PAYSLIP GENERATION
 // =====================================================
+
+/**
+ * PUT /api/payslips/:id
+ * Manually edit a draft payslip (Admin/HR only)
+ * Only draft payslips can be edited
+ * All changes are logged for audit trail
+ */
+router.put('/:id', isAdminOrHR, async (req, res) => {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const { earnings, deductions, reason } = req.body;
+    
+    // Validation
+    if (!earnings || typeof earnings !== 'object' || Object.keys(earnings).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Earnings object is required and must have at least one component'
+      });
+    }
+    
+    if (!reason || reason.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Detailed reason is required (minimum 10 characters) for audit trail'
+      });
+    }
+    
+    // Fetch payslip
+    const payslip = await Payslip.findByPk(req.params.id, {
+      include: [
+        {
+          model: Employee,
+          as: 'employee',
+          attributes: ['id', 'employeeId', 'firstName', 'lastName', 'email']
+        }
+      ],
+      transaction
+    });
+    
+    if (!payslip) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: 'Payslip not found'
+      });
+    }
+    
+    // Security check: Only draft payslips can be edited
+    if (payslip.status !== 'draft') {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `Cannot edit payslip with status "${payslip.status}". Only draft payslips can be edited.`
+      });
+    }
+    
+    // Calculate new totals
+    const grossEarnings = Object.values(earnings).reduce((sum, val) => sum + parseFloat(val || 0), 0);
+    const totalDeductions = deductions 
+      ? Object.values(deductions).reduce((sum, val) => sum + parseFloat(val || 0), 0)
+      : 0;
+    const netPay = grossEarnings - totalDeductions;
+    
+    // Validate net pay
+    if (netPay < 0) {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: 'Net pay cannot be negative. Please adjust earnings or deductions.'
+      });
+    }
+    
+    // Store original values for audit log
+    const originalValues = {
+      earnings: payslip.earnings,
+      deductions: payslip.deductions,
+      grossEarnings: payslip.grossEarnings,
+      totalDeductions: payslip.totalDeductions,
+      netPay: payslip.netPay
+    };
+    
+    // Update payslip
+    await payslip.update({
+      earnings,
+      deductions: deductions || {},
+      grossEarnings,
+      totalDeductions,
+      netPay,
+      manuallyEdited: true,
+      lastEditedBy: req.user.id,
+      lastEditedAt: new Date()
+    }, { transaction });
+    
+    // Create audit log entry
+    await sequelize.models.PayslipAuditLog.create({
+      payslipId: payslip.id,
+      action: 'manual_edit',
+      performedBy: req.user.id,
+      reason: reason.trim(),
+      changes: {
+        before: originalValues,
+        after: {
+          earnings,
+          deductions: deductions || {},
+          grossEarnings,
+          totalDeductions,
+          netPay
+        }
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    }, { transaction });
+    
+    await transaction.commit();
+    
+    // Reload with associations
+    await payslip.reload({
+      include: [
+        {
+          model: Employee,
+          as: 'employee',
+          attributes: ['id', 'employeeId', 'firstName', 'lastName', 'email', 'departmentId']
+        }
+      ]
+    });
+    
+    res.json({
+      success: true,
+      message: 'Payslip updated successfully',
+      data: payslip
+    });
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('Edit payslip error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update payslip',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * POST /api/payslips/validate
+ * Validate employees before payslip generation (Admin/HR only)
+ * Checks: salary structure, timesheet data, existing payslips
+ */
+router.post('/validate', isAdminOrHR, async (req, res) => {
+  try {
+    const { employeeIds, month, year } = req.body;
+    
+    // Validation
+    if (!Array.isArray(employeeIds) || employeeIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'employeeIds array is required and cannot be empty'
+      });
+    }
+    
+    if (!month || !year) {
+      return res.status(400).json({
+        success: false,
+        message: 'month and year are required'
+      });
+    }
+    
+    // Fetch all employees with related data
+    const employees = await Employee.findAll({
+      where: { id: { [Op.in]: employeeIds } },
+      include: [
+        { 
+          model: SalaryStructure, 
+          as: 'salaryStructure',
+          required: false 
+        },
+        {
+          model: db.Department,
+          as: 'department',
+          attributes: ['id', 'name'],
+          required: false
+        }
+      ]
+    });
+    
+    const validation = {
+      totalEmployees: employees.length,
+      validEmployees: [],
+      invalidEmployees: [],
+      warnings: []
+    };
+    
+    // Validate each employee
+    for (const emp of employees) {
+      const issues = [];
+      
+      // Check 1: Salary structure exists
+      if (!emp.salaryStructure) {
+        issues.push('No salary structure configured');
+      } else if (!emp.salaryStructure.isActive) {
+        issues.push('Salary structure is inactive');
+      }
+      
+      // Check 2: Timesheet data exists
+      const timesheet = await Timesheet.findOne({
+        where: {
+          employeeId: emp.id,
+          month,
+          year
+        }
+      });
+      
+      if (!timesheet) {
+        issues.push('No timesheet data for this period');
+      } else if (timesheet.status !== 'approved') {
+        issues.push(`Timesheet not approved (status: ${timesheet.status})`);
+      }
+      
+      // Check 3: Payslip already exists
+      const existing = await Payslip.findOne({
+        where: { 
+          employeeId: emp.id, 
+          month, 
+          year 
+        }
+      });
+      
+      if (existing) {
+        issues.push(`Payslip already exists (${existing.payslipNumber}, status: ${existing.status})`);
+      }
+      
+      // Check 4: Employee status
+      if (emp.status !== 'Active') {
+        issues.push(`Employee status is ${emp.status}`);
+      }
+      
+      // Categorize employee
+      const employeeData = {
+        id: emp.id,
+        employeeId: emp.employeeId,
+        name: `${emp.firstName} ${emp.lastName}`,
+        department: emp.department ? emp.department.name : 'N/A',
+        status: emp.status
+      };
+      
+      if (issues.length > 0) {
+        validation.invalidEmployees.push({
+          ...employeeData,
+          issues
+        });
+      } else {
+        validation.validEmployees.push(employeeData);
+      }
+    }
+    
+    // Calculate success rate
+    validation.canProceed = validation.validEmployees.length > 0;
+    validation.successRate = validation.totalEmployees > 0 
+      ? ((validation.validEmployees.length / validation.totalEmployees) * 100).toFixed(1)
+      : '0.0';
+    
+    // Add summary message
+    if (validation.validEmployees.length === validation.totalEmployees) {
+      validation.message = 'All employees are valid for payslip generation';
+    } else if (validation.validEmployees.length === 0) {
+      validation.message = 'No employees are valid for payslip generation';
+    } else {
+      validation.message = `${validation.validEmployees.length} out of ${validation.totalEmployees} employees are valid`;
+    }
+    
+    res.json({
+      success: true,
+      validation
+    });
+  } catch (error) {
+    console.error('Validation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Validation failed',
+      error: error.message
+    });
+  }
+});
 
 /**
  * POST /api/payslips/generate
@@ -415,7 +713,7 @@ router.post('/generate', isAdminOrHR, validate(payslipSchemas.generate), async (
           payPeriodStart: startDate,
           payPeriodEnd: endDate,
           templateId: template.id || null,
-          templateVersion: template.version || '1.0',
+          templateVersion: '1.0',  // Fixed: template.version column doesn't exist
           employeeInfo,
           companyInfo,
           earnings: calculation.earnings,
@@ -946,17 +1244,14 @@ function generatePayslipPDF(doc, payslip) {
   let y = 50;
   
   // Company Header
-  doc.fontSize(20).font('Helvetica-Bold')
-     .text(payslip.companyInfo?.name || 'Company Name', marginLeft, y);
+  doc.fontSize(20).text(payslip.companyInfo?.name || 'Company Name', marginLeft, y, { continued: false });
   y += 25;
   
-  doc.fontSize(10).font('Helvetica')
-     .text(payslip.companyInfo?.address || '', marginLeft, y);
+  doc.fontSize(10).text(payslip.companyInfo?.address || '', marginLeft, y);
   y += 40;
   
   // Title
-  doc.fontSize(16).font('Helvetica-Bold')
-     .text('PAYSLIP', marginLeft, y, { align: 'center', width: 500 });
+  doc.fontSize(16).text('PAYSLIP', marginLeft, y, { align: 'center', width: 500 });
   y += 30;
   
   // Period and Employee Info
@@ -982,7 +1277,7 @@ function generatePayslipPDF(doc, payslip) {
   const col4 = 450;
   
   // Table Header
-  doc.font('Helvetica-Bold').fontSize(11);
+  doc.fontSize(11);
   doc.rect(col1, y, 500, 25).fillAndStroke('#f0f0f0', '#000');
   doc.fillColor('#000').text('Earnings', col1 + 5, y + 8);
   doc.text('Amount', col2 + 5, y + 8);
@@ -1024,7 +1319,7 @@ function generatePayslipPDF(doc, payslip) {
   
   // Totals
   y += 10;
-  doc.font('Helvetica-Bold').fontSize(11);
+  doc.fontSize(11);
   doc.rect(col1, y, 500, 25).fillAndStroke('#e0e0e0', '#000');
   doc.fillColor('#000').text('Gross Earnings', col1 + 5, y + 8);
   doc.text(`₹${parseFloat(payslip.grossEarnings).toFixed(2)}`, col2 + 5, y + 8);
@@ -1033,23 +1328,23 @@ function generatePayslipPDF(doc, payslip) {
   y += 35;
   
   // Net Pay
-  doc.fontSize(14).font('Helvetica-Bold');
+  doc.fontSize(14);
   doc.rect(col1, y, 500, 30).fillAndStroke('#4CAF50', '#000');
   doc.fillColor('#fff').text('NET PAY', col1 + 5, y + 10);
   doc.text(`₹${parseFloat(payslip.netPay).toFixed(2)}`, col4 + 5, y + 10);
   y += 40;
   
   // Net Pay in Words
-  doc.fillColor('#000').fontSize(10).font('Helvetica-Italic');
+  doc.fillColor('#000').fontSize(10);
   doc.text(`Amount in words: ${payslip.netPayInWords}`, marginLeft, y);
   y += 30;
   
   // Attendance (if available)
   if (payslip.attendance) {
-    doc.font('Helvetica-Bold').fontSize(11);
+    doc.fontSize(11);
     doc.text('Attendance Summary:', marginLeft, y);
     y += 15;
-    doc.font('Helvetica').fontSize(10);
+    doc.fontSize(10);
     doc.text(`Working Days: ${payslip.attendance.totalWorkingDays || 0}`, marginLeft + 20, y);
     doc.text(`Present: ${payslip.attendance.presentDays || 0}`, marginLeft + 200, y);
     doc.text(`LOP: ${payslip.attendance.lopDays || 0}`, marginLeft + 350, y);
@@ -1057,7 +1352,7 @@ function generatePayslipPDF(doc, payslip) {
   }
   
   // Footer
-  doc.fontSize(9).font('Helvetica-Italic')
+  doc.fontSize(9).font('Helvetica')
      .text('This is a computer-generated payslip and does not require a signature.', marginLeft, y, {
        align: 'center',
        width: 500
@@ -1073,5 +1368,184 @@ function formatLabel(key) {
     .replace(/^./, str => str.toUpperCase())
     .trim();
 }
+
+// =====================================================
+// BULK OPERATIONS
+// =====================================================
+
+/**
+ * POST /api/payslips/bulk-finalize
+ * Finalize multiple payslips at once (admin/HR only)
+ */
+router.post('/bulk-finalize', isAdminOrHR, async (req, res) => {
+  try {
+    const { payslipIds } = req.body;
+    
+    // Validation
+    if (!Array.isArray(payslipIds) || payslipIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'payslipIds array is required and cannot be empty'
+      });
+    }
+    
+    // Find all draft payslips with the provided IDs
+    const payslips = await Payslip.findAll({
+      where: {
+        id: { [Op.in]: payslipIds },
+        status: 'draft'
+      }
+    });
+    
+    if (payslips.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No draft payslips found with the provided IDs',
+        successCount: 0,
+        failedCount: payslipIds.length
+      });
+    }
+    
+    // Bulk update status to finalized
+    await Payslip.update(
+      {
+        status: 'finalized',
+        finalizedAt: new Date(),
+        finalizedBy: req.userId
+      },
+      {
+        where: { id: { [Op.in]: payslips.map(p => p.id) } }
+      }
+    );
+    
+    const successCount = payslips.length;
+    const failedCount = payslipIds.length - successCount;
+    
+    res.json({
+      success: true,
+      message: `${successCount} payslip(s) finalized successfully`,
+      successCount,
+      failedCount,
+      data: { finalizedIds: payslips.map(p => p.id) }
+    });
+  } catch (error) {
+    console.error('Bulk finalize error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to finalize payslips',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/payslips/bulk-paid
+ * Mark multiple payslips as paid (admin/HR only)
+ */
+router.post('/bulk-paid', isAdminOrHR, async (req, res) => {
+  try {
+    const { payslipIds, paymentDate, paymentMethod, paymentReference } = req.body;
+    
+    // Validation
+    if (!Array.isArray(payslipIds) || payslipIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'payslipIds array is required and cannot be empty'
+      });
+    }
+    
+    // Find all finalized payslips (only finalized can be marked as paid)
+    const payslips = await Payslip.findAll({
+      where: {
+        id: { [Op.in]: payslipIds },
+        status: 'finalized'
+      }
+    });
+    
+    if (payslips.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No finalized payslips found. Only finalized payslips can be marked as paid.',
+        successCount: 0,
+        failedCount: payslipIds.length
+      });
+    }
+    
+    // Bulk update to paid
+    await Payslip.update(
+      {
+        status: 'paid',
+        paidAt: paymentDate || new Date(),
+        paidBy: req.userId,
+        paymentMethod: paymentMethod || 'Bank Transfer',
+        paymentReference: paymentReference || null
+      },
+      {
+        where: { id: { [Op.in]: payslips.map(p => p.id) } }
+      }
+    );
+    
+    const successCount = payslips.length;
+    const failedCount = payslipIds.length - successCount;
+    
+    res.json({
+      success: true,
+      message: `${successCount} payslip(s) marked as paid`,
+      successCount,
+      failedCount,
+      data: { paidIds: payslips.map(p => p.id) }
+    });
+  } catch (error) {
+    console.error('Bulk mark paid error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to mark payslips as paid',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * DELETE /api/payslips/bulk
+ * Delete multiple payslips (draft only, admin/HR only)
+ */
+router.delete('/bulk', isAdminOrHR, async (req, res) => {
+  try {
+    const { payslipIds } = req.body;
+    
+    // Validation
+    if (!Array.isArray(payslipIds) || payslipIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'payslipIds array is required and cannot be empty'
+      });
+    }
+    
+    // Only allow deleting draft payslips (safety measure)
+    const deletedCount = await Payslip.destroy({
+      where: {
+        id: { [Op.in]: payslipIds },
+        status: 'draft' // Safety: only drafts can be deleted
+      }
+    });
+    
+    const failedCount = payslipIds.length - deletedCount;
+    
+    res.json({
+      success: true,
+      message: `${deletedCount} payslip(s) deleted successfully`,
+      successCount: deletedCount,
+      failedCount,
+      data: { deletedCount }
+    });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete payslips',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

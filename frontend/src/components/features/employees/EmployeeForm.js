@@ -19,6 +19,8 @@ import {
   Card,
   CardContent,
   Divider,
+  useTheme,
+  alpha,
   FormHelperText,
   Avatar,
   Chip,
@@ -105,6 +107,7 @@ function TabPanel({ children, value, index, ...other }) {
 }
 
 const TabBasedEmployeeForm = () => {
+  const theme = useTheme();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -173,7 +176,7 @@ const TabBasedEmployeeForm = () => {
       // Basic Salary Components
       basicSalary: '',
       currency: 'INR',
-      payFrequency: 'Monthly',
+      payFrequency: 'monthly',
       effectiveFrom: '',
       
       // Allowances (NESTED)
@@ -205,7 +208,7 @@ const TabBasedEmployeeForm = () => {
       
       // Tax Information (NESTED)
       taxInformation: {
-        taxRegime: 'Old',
+        taxRegime: 'old',
         ctc: '',
         takeHome: ''
       },
@@ -338,9 +341,48 @@ const TabBasedEmployeeForm = () => {
           );
           
           if (shouldRestore) {
-            setFormData(savedFormData);
+            // Merge saved draft with default values to ensure required defaults are present
+            const mergedFormData = {
+              ...savedFormData,
+              salary: {
+                currency: 'INR',
+                payFrequency: 'monthly',
+                ...savedFormData.salary,
+                allowances: {
+                  hra: '',
+                  transport: '',
+                  medical: '',
+                  food: '',
+                  communication: '',
+                  special: '',
+                  other: '',
+                  ...savedFormData.salary?.allowances
+                },
+                deductions: {
+                  pf: '',
+                  professionalTax: '',
+                  incomeTax: '',
+                  esi: '',
+                  other: '',
+                  ...savedFormData.salary?.deductions
+                },
+                benefits: {
+                  bonus: '',
+                  incentive: '',
+                  overtime: '',
+                  ...savedFormData.salary?.benefits
+                },
+                taxInformation: {
+                  taxRegime: 'old',
+                  ctc: '',
+                  takeHome: '',
+                  ...savedFormData.salary?.taxInformation
+                }
+              }
+            };
+            setFormData(mergedFormData);
             setActiveTab(savedTab || 0);
-            console.log('✅ Draft restored');
+            console.log('✅ Draft restored with default values merged');
           } else {
             localStorage.removeItem(draftKey);
           }
@@ -434,8 +476,21 @@ const TabBasedEmployeeForm = () => {
       [fieldName]: true
     }));
     
+    // Get the field value (handle nested paths like 'salary.currency')
+    let fieldValue;
+    if (fieldName.includes('.')) {
+      const fieldPath = fieldName.split('.');
+      fieldValue = formData;
+      for (const key of fieldPath) {
+        fieldValue = fieldValue?.[key];
+        if (fieldValue === undefined) break;
+      }
+    } else {
+      fieldValue = formData[fieldName];
+    }
+    
     // Validate field on blur
-    const fieldError = validateField(fieldName, formData[fieldName], formData);
+    const fieldError = validateField(fieldName, fieldValue, formData);
     if (fieldError) {
       setErrors(prevErrors => ({
         ...prevErrors,
@@ -849,7 +904,7 @@ const TabBasedEmployeeForm = () => {
                   sx={{ 
                     fontWeight: 600,
                     bgcolor: 'rgba(99, 102, 241, 0.08)',
-                    color: '#6366f1',
+                    color: theme.palette.primary.main,
                     border: '1px solid rgba(99, 102, 241, 0.2)',
                     '& .MuiChip-label': {
                       px: 1.5
@@ -867,12 +922,12 @@ const TabBasedEmployeeForm = () => {
                   py: 1,
                   textTransform: 'none',
                   fontWeight: 600,
-                  borderColor: '#e2e8f0',
-                  color: '#475569',
+                  borderColor: theme.palette.divider,
+                  color: theme.palette.text.secondary,
                   '&:hover': {
-                    borderColor: '#6366f1',
+                    bordercolor: theme.palette.primary.main,
                     bgcolor: 'rgba(99, 102, 241, 0.04)',
-                    color: '#6366f1'
+                    color: theme.palette.primary.main
                   },
                   transition: 'all 0.2s ease'
                 }}
@@ -895,7 +950,7 @@ const TabBasedEmployeeForm = () => {
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: '#64748b',
+                  color: theme.palette.text.secondary,
                   fontSize: '0.875rem',
                   display: 'flex',
                   alignItems: 'center',
@@ -967,19 +1022,19 @@ const TabBasedEmployeeForm = () => {
                 fontWeight: 600,
                 textTransform: 'none',
                 fontSize: '0.95rem',
-                color: '#64748b',
+                color: theme.palette.text.secondary,
                 transition: 'all 0.2s ease',
                 borderBottom: '3px solid transparent',
                 '&:hover': {
                   bgcolor: 'rgba(99, 102, 241, 0.04)',
-                  color: '#6366f1',
+                  color: theme.palette.primary.main,
                   borderBottomColor: 'rgba(99, 102, 241, 0.2)'
                 },
                 '&.Mui-selected': {
-                  color: '#6366f1',
-                  borderBottomColor: '#6366f1',
+                  color: theme.palette.primary.main,
+                  borderBottomcolor: theme.palette.primary.main,
                   '& .MuiSvgIcon-root': {
-                    color: '#6366f1'
+                    color: theme.palette.primary.main
                   }
                 }
               },
@@ -987,7 +1042,7 @@ const TabBasedEmployeeForm = () => {
                 display: 'none'
               },
               '& .MuiTabs-scrollButtons': {
-                color: '#6366f1',
+                color: theme.palette.primary.main,
                 '&.Mui-disabled': {
                   opacity: 0.3
                 }
@@ -1202,8 +1257,8 @@ const TabBasedEmployeeForm = () => {
                   textTransform: 'none',
                   fontWeight: 600,
                   fontSize: '0.95rem',
-                  borderColor: '#e2e8f0',
-                  color: '#64748b',
+                  borderColor: theme.palette.divider,
+                  color: theme.palette.text.secondary,
                   '&:hover': {
                     borderColor: '#cbd5e1',
                     bgcolor: '#f8fafc'
@@ -1729,20 +1784,20 @@ const EmploymentInformationTab = ({ formData, errors, touchedFields = {}, onChan
         fullWidth
         id="noticePeriod"
         name="noticePeriod"
-        label="Notice Period (months)"
+        label="Notice Period (days)"
         type="number"
         value={formData.noticePeriod}
         onChange={(e) => {
           const value = parseInt(e.target.value) || 0;
-          if (value >= 0 && value <= 12) {
+          if (value >= 0 && value <= 365) {
             onChange('noticePeriod', value);
           }
         }}
         onBlur={() => onBlur && onBlur('noticePeriod')}
         error={touchedFields.noticePeriod && !!errors.noticePeriod}
-        helperText={errors.noticePeriod || "Number of months (0-12)"}
-        inputProps={{ min: 0, max: 12 }}
-        placeholder="2"
+        helperText={errors.noticePeriod || "Number of days (0-365)"}
+        inputProps={{ min: 0, max: 365 }}
+        placeholder="30"
       />
     </Grid>
   </Grid>
@@ -1765,18 +1820,18 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
         id="salary.basicSalary"
         name="salary.basicSalary"
         label="Basic Salary *"
-        type="number"
+        type="text"
         value={formData.salary?.basicSalary || ''}
         onChange={(e) => {
-          const value = parseFloat(e.target.value) || 0;
-          if (value >= 0) {
-            onChange('salary.basicSalary', value);
-          }
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.basicSalary', value);
         }}
         onBlur={() => onBlur && onBlur('salary.basicSalary')}
         error={touchedFields['salary.basicSalary'] && !!errors['salary.basicSalary']}
         helperText={touchedFields['salary.basicSalary'] && errors['salary.basicSalary'] ? errors['salary.basicSalary'] : 'Enter basic salary amount'}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
         placeholder="50000"
       />
     </Grid>
@@ -1851,13 +1906,18 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
         id="salary.allowances.hra"
         name="salary.allowances.hra"
         label="House Rent Allowance (HRA)"
-        type="number"
+        type="text"
         value={formData.salary?.allowances?.hra || ''}
-        onChange={(e) => onChange('salary.allowances.hra', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.allowances.hra', value);
+        }}
         onBlur={() => onBlur && onBlur('salary.allowances.hra')}
         error={touchedFields['salary.allowances.hra'] && !!errors['salary.allowances.hra']}
         helperText={touchedFields['salary.allowances.hra'] && errors['salary.allowances.hra'] ? errors['salary.allowances.hra'] : ''}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1867,13 +1927,18 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
         id="salary.allowances.transport"
         name="salary.allowances.transport"
         label="Transport Allowance"
-        type="number"
+        type="text"
         value={formData.salary?.allowances?.transport || ''}
-        onChange={(e) => onChange('salary.allowances.transport', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.allowances.transport', value);
+        }}
         onBlur={() => onBlur && onBlur('salary.allowances.transport')}
         error={touchedFields['salary.allowances.transport'] && !!errors['salary.allowances.transport']}
         helperText={touchedFields['salary.allowances.transport'] && errors['salary.allowances.transport'] ? errors['salary.allowances.transport'] : ''}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1881,12 +1946,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Medical Allowance"
-        type="number"
+        type="text"
         value={formData.salary?.allowances?.medical || ''}
-        onChange={(e) => onChange('salary.allowances.medical', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.allowances.medical', value);
+        }}
         error={!!errors['salary.allowances.medical']}
         helperText={errors['salary.allowances.medical']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1894,12 +1964,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Food Allowance"
-        type="number"
+        type="text"
         value={formData.salary?.allowances?.food || ''}
-        onChange={(e) => onChange('salary.allowances.food', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.allowances.food', value);
+        }}
         error={!!errors['salary.allowances.food']}
         helperText={errors['salary.allowances.food']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1907,12 +1982,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Communication Allowance"
-        type="number"
+        type="text"
         value={formData.salary?.allowances?.communication || ''}
-        onChange={(e) => onChange('salary.allowances.communication', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.allowances.communication', value);
+        }}
         error={!!errors['salary.allowances.communication']}
         helperText={errors['salary.allowances.communication']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1920,12 +2000,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Special Allowance"
-        type="number"
+        type="text"
         value={formData.salary?.allowances?.special || ''}
-        onChange={(e) => onChange('salary.allowances.special', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.allowances.special', value);
+        }}
         error={!!errors['salary.allowances.special']}
         helperText={errors['salary.allowances.special']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1933,12 +2018,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Other Allowance"
-        type="number"
+        type="text"
         value={formData.salary?.allowances?.other || ''}
-        onChange={(e) => onChange('salary.allowances.other', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.allowances.other', value);
+        }}
         error={!!errors['salary.allowances.other']}
         helperText={errors['salary.allowances.other']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
 
@@ -1954,12 +2044,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Provident Fund (PF)"
-        type="number"
+        type="text"
         value={formData.salary?.deductions?.pf || ''}
-        onChange={(e) => onChange('salary.deductions.pf', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.deductions.pf', value);
+        }}
         error={!!errors['salary.deductions.pf']}
         helperText={errors['salary.deductions.pf']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1967,12 +2062,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Professional Tax"
-        type="number"
+        type="text"
         value={formData.salary?.deductions?.professionalTax || ''}
-        onChange={(e) => onChange('salary.deductions.professionalTax', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.deductions.professionalTax', value);
+        }}
         error={!!errors['salary.deductions.professionalTax']}
         helperText={errors['salary.deductions.professionalTax']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1980,12 +2080,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Income Tax"
-        type="number"
+        type="text"
         value={formData.salary?.deductions?.incomeTax || ''}
-        onChange={(e) => onChange('salary.deductions.incomeTax', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.deductions.incomeTax', value);
+        }}
         error={!!errors['salary.deductions.incomeTax']}
         helperText={errors['salary.deductions.incomeTax']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -1993,12 +2098,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="ESI (Employee State Insurance)"
-        type="number"
+        type="text"
         value={formData.salary?.deductions?.esi || ''}
-        onChange={(e) => onChange('salary.deductions.esi', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.deductions.esi', value);
+        }}
         error={!!errors['salary.deductions.esi']}
         helperText={errors['salary.deductions.esi']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -2006,12 +2116,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Other Deductions"
-        type="number"
+        type="text"
         value={formData.salary?.deductions?.other || ''}
-        onChange={(e) => onChange('salary.deductions.other', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.deductions.other', value);
+        }}
         error={!!errors['salary.deductions.other']}
         helperText={errors['salary.deductions.other']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
 
@@ -2027,12 +2142,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Bonus"
-        type="number"
+        type="text"
         value={formData.salary?.benefits?.bonus || ''}
-        onChange={(e) => onChange('salary.benefits.bonus', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.benefits.bonus', value);
+        }}
         error={!!errors['salary.benefits.bonus']}
         helperText={errors['salary.benefits.bonus']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -2040,12 +2160,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Incentive"
-        type="number"
+        type="text"
         value={formData.salary?.benefits?.incentive || ''}
-        onChange={(e) => onChange('salary.benefits.incentive', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.benefits.incentive', value);
+        }}
         error={!!errors['salary.benefits.incentive']}
         helperText={errors['salary.benefits.incentive']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
     
@@ -2053,12 +2178,17 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
       <TextField
         fullWidth
         label="Overtime"
-        type="number"
+        type="text"
         value={formData.salary?.benefits?.overtime || ''}
-        onChange={(e) => onChange('salary.benefits.overtime', parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          const value = e.target.value.replace(/[^0-9.]/g, '');
+          onChange('salary.benefits.overtime', value);
+        }}
         error={!!errors['salary.benefits.overtime']}
         helperText={errors['salary.benefits.overtime']}
-        inputProps={{ min: 0, step: 0.01 }}
+        InputProps={{
+          startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+        }}
       />
     </Grid>
 
@@ -2269,14 +2399,18 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
         name="uanNumber"
         label="UAN Number"
         value={formData.uanNumber}
-        onChange={(e) => onChange('uanNumber', e.target.value)}
+        onChange={(e) => {
+          // Allow alphanumeric only, uppercase, 12+ characters
+          const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+          onChange('uanNumber', value);
+        }}
         onBlur={() => onBlur && onBlur('uanNumber')}
         error={touchedFields.uanNumber && !!errors.uanNumber}
-        helperText={touchedFields.uanNumber && errors.uanNumber ? errors.uanNumber : 'Universal Account Number for EPF'}
+        helperText={touchedFields.uanNumber && errors.uanNumber ? errors.uanNumber : 'Universal Account Number for EPF (12+ alphanumeric)'}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
-              <Tooltip title="UAN (Universal Account Number) is a 12-digit number allotted by EPFO for tracking EPF contributions" arrow>
+              <Tooltip title="UAN (Universal Account Number) is a unique number allotted by EPFO for tracking EPF contributions. Format: 12 or more alphanumeric characters" arrow>
                 <IconButton edge="end" size="small">
                   <HelpIcon fontSize="small" color="action" />
                 </IconButton>
@@ -2297,6 +2431,35 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
         onBlur={() => onBlur && onBlur('pfNumber')}
         error={touchedFields.pfNumber && !!errors.pfNumber}
         helperText={touchedFields.pfNumber && errors.pfNumber ? errors.pfNumber : 'Employee Provident Fund number'}
+      />
+    </Grid>
+    <Grid item xs={12} sm={6}>
+      <TextField
+        fullWidth
+        id="esiNumber"
+        name="esiNumber"
+        label="ESI Number"
+        value={formData.esiNumber}
+        onChange={(e) => {
+          // Allow alphanumeric only, uppercase, 10-17 characters
+          const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 17);
+          onChange('esiNumber', value);
+        }}
+        onBlur={() => onBlur && onBlur('esiNumber')}
+        error={touchedFields.esiNumber && !!errors.esiNumber}
+        helperText={touchedFields.esiNumber && errors.esiNumber ? errors.esiNumber : 'Employee State Insurance number (10-17 alphanumeric)'}
+        placeholder="ESI00000001234"
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Tooltip title="ESI Number is a unique identification number for Employee State Insurance. Format: 10-17 alphanumeric characters" arrow>
+                <IconButton edge="end" size="small">
+                  <HelpIcon fontSize="small" color="action" />
+                </IconButton>
+              </Tooltip>
+            </InputAdornment>
+          )
+        }}
       />
     </Grid>
     

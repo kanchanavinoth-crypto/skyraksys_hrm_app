@@ -28,6 +28,62 @@ const calculateWorkingDaysInMonth = (year, month) => {
     return workingDays;
 };
 
+/**
+ * @swagger
+ * /api/payroll:
+ *   get:
+ *     summary: Get all payroll records
+ *     description: Retrieve payroll records with role-based filtering - employees see their own, admin/HR see all
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: employeeId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Payroll records retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/PayrollData'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/PaginationMeta'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 // GET all payroll records with filtering and role-based access
 router.get('/', async (req, res) => {
     try {
@@ -112,6 +168,65 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST to generate payroll for employees (Admin or HR only)
+/**
+ * @swagger
+ * /api/payroll/generate:
+ *   post:
+ *     summary: Generate payroll for a period
+ *     description: Generate payroll records for all employees for a specified month/year - Admin/HR only
+ *     tags: [Payroll]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - month
+ *               - year
+ *             properties:
+ *               month:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 12
+ *                 example: 10
+ *               year:
+ *                 type: integer
+ *                 example: 2024
+ *               employeeIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Optional - specific employees (leave empty for all)
+ *     responses:
+ *       201:
+ *         description: Payroll generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     generated:
+ *                       type: integer
+ *                     skipped:
+ *                       type: integer
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.post('/generate', isAdminOrHR, async (req, res) => {
     const transaction = await db.sequelize.transaction();
     try {
@@ -138,21 +253,62 @@ router.post('/generate', isAdminOrHR, async (req, res) => {
         const payPeriodEnd = dayjs(`${year}-${month}-01`).endOf('month').toDate();
         const workingDaysInMonth = calculateWorkingDaysInMonth(year, month);
 
+        // Pre-fetch all related data to avoid N+1 queries
+        const [salaryStructures, approvedTimesheets, approvedLeaves] = await Promise.all([
+            SalaryStructure.findAll({ 
+                where: { 
+                    employeeId: { [Op.in]: targetEmployeeIds }, 
+                    isActive: true 
+                } 
+            }),
+            Timesheet.findAll({
+                where: { 
+                    employeeId: { [Op.in]: targetEmployeeIds }, 
+                    weekStartDate: { [Op.between]: [payPeriodStart, payPeriodEnd] }, 
+                    status: 'Approved' 
+                }
+            }),
+            LeaveRequest.findAll({
+                where: { 
+                    employeeId: { [Op.in]: targetEmployeeIds }, 
+                    status: 'Approved', 
+                    startDate: { [Op.between]: [payPeriodStart, payPeriodEnd] } 
+                }
+            })
+        ]);
+
+        // Create lookup maps for efficient access
+        const salaryStructureMap = new Map(salaryStructures.map(ss => [ss.employeeId, ss]));
+        
+        // Group timesheets and leaves by employee
+        const timesheetsByEmployee = {};
+        approvedTimesheets.forEach(ts => {
+            if (!timesheetsByEmployee[ts.employeeId]) {
+                timesheetsByEmployee[ts.employeeId] = [];
+            }
+            timesheetsByEmployee[ts.employeeId].push(ts);
+        });
+        
+        const leavesByEmployee = {};
+        approvedLeaves.forEach(lr => {
+            if (!leavesByEmployee[lr.employeeId]) {
+                leavesByEmployee[lr.employeeId] = 0;
+            }
+            leavesByEmployee[lr.employeeId] += lr.totalDays;
+        });
+
         let generatedPayrolls = [];
 
         for (const employee of targetEmployees) {
-            const salaryStructure = await SalaryStructure.findOne({ where: { employeeId: employee.id, isActive: true } });
+            const salaryStructure = salaryStructureMap.get(employee.id);
             if (!salaryStructure) continue;
 
-            const approvedTimesheets = await Timesheet.findAll({
-                where: { employeeId: employee.id, workDate: { [Op.between]: [payPeriodStart, payPeriodEnd] }, status: 'Approved' },
-            });
-            const actualWorkedHours = approvedTimesheets.reduce((sum, ts) => sum + ts.hoursWorked, 0);
-            const actualWorkedDays = new Set(approvedTimesheets.map(ts => ts.workDate)).size;
+            const employeeTimesheets = timesheetsByEmployee[employee.id] || [];
+            const actualWorkedHours = employeeTimesheets.reduce((sum, ts) => sum + parseFloat(ts.totalHoursWorked || 0), 0);
+            // Calculate worked days from total hours (assuming 8 hours = 1 day)
+            const actualWorkedDays = Math.floor(actualWorkedHours / 8);
 
-            const approvedLeaveDays = (await LeaveRequest.findAll({
-                where: { employeeId: employee.id, status: 'Approved', startDate: { [Op.between]: [payPeriodStart, payPeriodEnd] } },
-            })).reduce((sum, lr) => sum + lr.totalDays, 0);
+            const approvedLeaveDays = leavesByEmployee[employee.id] || 0;
 
             const payableDays = actualWorkedDays + approvedLeaveDays;
             
@@ -197,7 +353,8 @@ router.post('/generate', isAdminOrHR, async (req, res) => {
     } catch (error) {
         await transaction.rollback();
         console.error('Generate Payroll Error:', error);
-        res.status(500).json({ success: false, message: 'Failed to generate payroll.' });
+        console.error('Error Stack:', error.stack);
+        res.status(500).json({ success: false, message: 'Failed to generate payroll.', error: error.message });
     }
 });
 

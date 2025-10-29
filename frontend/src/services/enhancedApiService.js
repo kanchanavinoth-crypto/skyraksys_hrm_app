@@ -19,6 +19,7 @@ class EnhancedApiService {
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: this.options.timeout,
+      withCredentials: true,  // Enable sending cookies with requests
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
@@ -45,7 +46,8 @@ class EnhancedApiService {
     // Request interceptor for auth tokens and request logging
     this.api.interceptors.request.use(
       (config) => {
-        // Add auth token
+        // Add auth token from localStorage as fallback (for backward compatibility)
+        // Cookie will be sent automatically due to withCredentials: true
         const token = localStorage.getItem('accessToken');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;

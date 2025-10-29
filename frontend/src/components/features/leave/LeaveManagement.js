@@ -239,7 +239,7 @@ const ModernLeaveManagement = () => {
             Export
           </Button>
           <Button
-            variant="contained"
+            variant="outlined"
             startIcon={<AddIcon />}
             onClick={() => navigate('/add-leave-request')}
           >
@@ -249,7 +249,7 @@ const ModernLeaveManagement = () => {
       </Box>
 
       {/* Filters */}
-      <Card sx={{ mb: 3 }}>
+      <Card sx={{ mb: 3, border: '1px solid', borderColor: 'divider' }}>
         <CardContent>
           <Grid container spacing={3} alignItems="center">
             <Grid item xs={12} md={4}>
@@ -319,9 +319,6 @@ const ModernLeaveManagement = () => {
               textTransform: 'none',
               fontWeight: 600,
               minWidth: 100
-            },
-            '& .Mui-selected': {
-              color: theme.palette.primary.main
             }
           }}
         >
@@ -334,6 +331,7 @@ const ModernLeaveManagement = () => {
                   <Chip
                     label={getCountByStatus(tab)}
                     size="small"
+                    variant="outlined"
                     color={tab === 'Pending' ? 'warning' : 'default'}
                     sx={{ height: 20, fontSize: '0.7rem' }}
                   />
@@ -354,18 +352,18 @@ const ModernLeaveManagement = () => {
       </Box>
 
       {/* Requests Table */}
-      <Card>
-        <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
+      <Card sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
           <Table>
-            <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
+            <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Leave Type</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Duration</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Days</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Reason</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700 }}>Actions</TableCell>
+                <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Employee</TableCell>
+                <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Leave Type</TableCell>
+                <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Duration</TableCell>
+                <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Days</TableCell>
+                <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Reason</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, borderBottom: '2px solid', borderColor: 'divider' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -412,6 +410,7 @@ const ModernLeaveManagement = () => {
                             label={leaveTypeInfo.label}
                             color={leaveTypeInfo.color}
                             size="small"
+                            variant="outlined"
                           />
                         </TableCell>
                         
@@ -427,11 +426,9 @@ const ModernLeaveManagement = () => {
                           <Chip
                             label={`${leave.totalDays} ${leave.totalDays === 1 ? 'day' : 'days'}`}
                             size="small"
-                            sx={{
-                              bgcolor: alpha(theme.palette.info.main, 0.1),
-                              color: 'info.main',
-                              fontWeight: 600
-                            }}
+                            variant="outlined"
+                            color="info"
+                            sx={{ fontWeight: 600 }}
                           />
                         </TableCell>
                         
@@ -439,6 +436,7 @@ const ModernLeaveManagement = () => {
                           <Chip
                             label={leave.status}
                             size="small"
+                            variant="outlined"
                             color={
                               leave.status === 'Approved' ? 'success' :
                               leave.status === 'Pending' ? 'warning' :
@@ -552,7 +550,7 @@ const ModernLeaveManagement = () => {
             
             return (
               <Grid item xs={12} md={6} lg={4} key={balance.id || index}>
-                <Card sx={{ height: '100%' }}>
+                <Card sx={{ height: '100%', border: '1px solid', borderColor: 'divider' }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <Avatar sx={{ mr: 2, bgcolor: 'secondary.main' }}>
@@ -581,6 +579,7 @@ const ModernLeaveManagement = () => {
                               (balance.balance || 0) >= 5 ? 'warning' : 'error'
                             }
                             size="small"
+                            variant="outlined"
                           />
                         </Box>
                         
@@ -655,18 +654,20 @@ const ModernLeaveManagement = () => {
             sx={{
               p: 3,
               mb: 3,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              borderRadius: 3
+              bgcolor: 'white',
+              color: 'text.primary',
+              borderRadius: 2,
+              border: '1px solid',
+              borderColor: 'divider'
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <CalendarIcon sx={{ fontSize: 40, mr: 2 }} />
+              <CalendarIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
               <Box>
                 <Typography variant="h4" fontWeight="bold">
                   Leave Management
                 </Typography>
-                <Typography variant="subtitle1" sx={{ opacity: 0.9 }}>
+                <Typography variant="subtitle1" color="text.secondary">
                   Manage employee leave requests and balances
                 </Typography>
               </Box>
@@ -674,7 +675,7 @@ const ModernLeaveManagement = () => {
           </Paper>
 
           {/* Tabs */}
-          <Paper sx={{ borderRadius: 3 }}>
+          <Paper sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
             <Tabs
               value={activeTab}
               onChange={(e, newValue) => setActiveTab(newValue)}
@@ -730,9 +731,9 @@ const ModernLeaveManagement = () => {
               )}
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setApprovalDialog(false)}>Cancel</Button>
+              <Button onClick={() => setApprovalDialog(false)} variant="outlined">Cancel</Button>
               <Button
-                variant="contained"
+                variant="outlined"
                 color={approvalAction === 'approved' ? 'success' : 'error'}
                 onClick={() => handleApprovalAction(approvalAction)}
               >

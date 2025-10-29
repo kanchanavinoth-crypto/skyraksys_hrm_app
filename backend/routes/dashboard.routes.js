@@ -2,6 +2,8 @@ const express = require('express');
 const { Op } = require('sequelize');
 const dayjs = require('dayjs');
 const { authenticateToken, isAdminOrHR } = require('../middleware/auth.simple');
+const LogHelper = require('../utils/logHelper');
+const { logger } = require('../config/logger');
 const db = require('../models');
 
 const router = express.Router();
@@ -154,7 +156,7 @@ router.get('/employee-stats', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error fetching employee dashboard stats:', error);
+        LogHelper.logError(error, { context: 'Fetching employee dashboard stats', employeeId: req.employeeId }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to fetch employee dashboard statistics.' 
@@ -165,7 +167,7 @@ router.get('/employee-stats', authenticateToken, async (req, res) => {
 // General dashboard stats (accessible to all authenticated users)
 router.get('/stats', authenticateToken, async (req, res) => {
     try {
-        console.log('🎯 Dashboard stats requested by:', {
+        logger.info('Dashboard stats requested', {
             userId: req.user.id,
             role: req.user.role,
             email: req.user.email
@@ -176,7 +178,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
         const userRole = req.user.role?.toLowerCase();
         
         if (['admin', 'hr'].includes(userRole)) {
-            console.log('✅ Admin/HR user detected, fetching full stats...');
+            logger.debug('Admin/HR user detected, fetching full stats', { userId: req.user.id, role: userRole });
             
             const currentMonthStart = dayjs().startOf('month').toDate();
             
@@ -184,12 +186,12 @@ router.get('/stats', authenticateToken, async (req, res) => {
             const totalEmployees = await db.Employee.count({ 
                 where: { deletedAt: null } 
             });
-            console.log(`📊 Total employees: ${totalEmployees}`);
+            logger.debug('Total employees count', { count: totalEmployees });
             
             const activeEmployees = await db.Employee.count({ 
                 where: { deletedAt: null, status: 'Active' } 
             });
-            console.log(`📊 Active employees: ${activeEmployees}`);
+            logger.debug('Active employees count', { count: activeEmployees });
             
             const onLeaveToday = await db.LeaveRequest.count({
                 where: {
@@ -198,7 +200,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
                     endDate: { [Op.gte]: new Date() }
                 }
             });
-            console.log(`📊 On leave today: ${onLeaveToday}`);
+            logger.debug('Employees on leave today', { count: onLeaveToday });
             
             const newHiresThisMonth = await db.Employee.count({
                 where: {
@@ -206,7 +208,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
                     deletedAt: null
                 }
             });
-            console.log(`📊 New hires: ${newHiresThisMonth}`);
+            logger.debug('New hires this month', { count: newHiresThisMonth });
 
             // Leave Stats
             const pendingLeaves = await db.LeaveRequest.count({ 
@@ -276,7 +278,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
                 }
             };
 
-            console.log('📊 Returning stats:', JSON.stringify(statsData, null, 2));
+            logger.debug('Returning admin/HR stats', { hasAdminStats: true, userId: req.user.id });
 
             return res.json({
                 success: true,
@@ -285,7 +287,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
         }
 
         // For non-admin users, return basic stats
-        console.log('ℹ️ Non-admin user, returning basic stats');
+        logger.debug('Non-admin user, returning basic stats', { userId: req.user.id, role: req.user.role });
         const basicStats = {
             userInfo: {
                 id: req.user.id,
@@ -301,7 +303,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
             data: basicStats
         });
     } catch (error) {
-        console.error('❌ Error fetching dashboard stats:', error);
+        LogHelper.logError(error, { context: 'Fetching dashboard stats', userId: req.user?.id, role: req.user?.role }, req);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to fetch dashboard statistics.',
@@ -406,7 +408,7 @@ router.get('/admin-stats', authenticateToken, isAdminOrHR, async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
+        LogHelper.logError(error, { context: 'Fetching admin dashboard stats' }, req);
         res.status(500).json({ success: false, message: "Failed to fetch dashboard statistics." });
     }
 });

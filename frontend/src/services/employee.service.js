@@ -27,6 +27,14 @@ class EmployeeService {
     return response.data?.data || response.data;
   }
 
+  // Get current user's employee profile
+  async getMyProfile() {
+    console.log('getMyProfile called');
+    const response = await http.get('/employees/me');
+    console.log('getMyProfile response:', response.data);
+    return response.data;
+  }
+
   // Get audit history for employee (placeholder)
   async getAuditHistory(employeeId) {
     // Return empty audit history for now since the endpoint doesn't exist yet

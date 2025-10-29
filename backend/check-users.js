@@ -1,26 +1,23 @@
 const { User } = require('./models');
-const { sequelize } = require('./config/database');
 
 async function checkUsers() {
-    try {
-        await sequelize.authenticate();
-        console.log('🔌 Database connected');
-        
-        const users = await User.findAll({
-            attributes: ['id', 'email', 'role', 'isActive'],
-            limit: 10
-        });
-        
-        console.log('\n👥 Available users:');
-        users.forEach(user => {
-            console.log(`  📧 ${user.email} | Role: ${user.role} | Active: ${user.isActive}`);
-        });
-        
-    } catch (error) {
-        console.error('❌ Error:', error.message);
-    } finally {
-        process.exit(0);
-    }
+  try {
+    const users = await User.findAll({
+      attributes: ['id', 'email', 'role', 'firstName', 'lastName'],
+      limit: 10
+    });
+    
+    console.log('📋 Users in database:\n');
+    users.forEach(u => {
+      console.log(`  ${u.email.padEnd(35)} | Role: ${u.role.padEnd(10)} | Name: ${u.firstName} ${u.lastName}`);
+    });
+    
+    console.log(`\n📊 Total users found: ${users.length}`);
+    process.exit(0);
+  } catch (error) {
+    console.error('Error:', error.message);
+    process.exit(1);
+  }
 }
 
 checkUsers();

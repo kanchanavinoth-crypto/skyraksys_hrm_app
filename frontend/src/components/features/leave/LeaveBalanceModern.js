@@ -41,7 +41,8 @@ import {
   Refresh as RefreshIcon,
   EventNote as EventNoteIcon,
   GroupAdd as GroupAddIcon,
-  FilterList as FilterListIcon
+  FilterList as FilterListIcon,
+  Download as DownloadIcon
 } from '@mui/icons-material';
 import { leaveBalanceAdminService } from '../../../services/leave-balance-admin.service';
 
@@ -63,6 +64,7 @@ const LeaveBalanceModern = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [selectedLeaveType, setSelectedLeaveType] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Bulk initialization
   const [showBulkInit, setShowBulkInit] = useState(false);
@@ -81,6 +83,10 @@ const LeaveBalanceModern = () => {
   // Edit mode
   const [editingBalance, setEditingBalance] = useState(null);
   const [editData, setEditData] = useState({});
+
+  // Delete confirmation
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [balanceToDelete, setBalanceToDelete] = useState(null);
 
   // Load initial data on mount
   useEffect(() => {
@@ -145,12 +151,23 @@ const LeaveBalanceModern = () => {
     setSuccess('');
 
     try {
-      await leaveBalanceAdminService.bulkInitialize({
+      const response = await leaveBalanceAdminService.bulkInitialize({
         year: selectedYear,
         leaveAllocations: bulkInitData
       });
 
-      setSuccess('Leave balances initialized successfully!');
+      const { created = 0, updated = 0 } = response.data || {};
+      let message = 'Leave balances initialized successfully!';
+      
+      if (created > 0 && updated > 0) {
+        message = `Created ${created} new balances and updated ${updated} existing balances`;
+      } else if (created > 0) {
+        message = `Created ${created} new leave balances`;
+      } else if (updated > 0) {
+        message = `Updated ${updated} existing leave balances (allocations added to current balances)`;
+      }
+
+      setSuccess(message);
       setShowBulkInit(false);
       setBulkInitData({});
       await loadData();
@@ -206,19 +223,23 @@ const LeaveBalanceModern = () => {
   };
 
   const handleDelete = async (balanceId) => {
-    // eslint-disable-next-line no-restricted-globals
-    if (!confirm('Are you sure you want to delete this leave balance?')) {
-      return;
-    }
+    setBalanceToDelete(balanceId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!balanceToDelete) return;
 
     setLoading(true);
     setError('');
     setSuccess('');
+    setDeleteConfirmOpen(false);
 
     try {
-      await leaveBalanceAdminService.delete(balanceId);
+      await leaveBalanceAdminService.delete(balanceToDelete);
 
       setSuccess('Leave balance deleted successfully!');
+      setBalanceToDelete(null);
       await loadData();
     } catch (err) {
       setError('Failed to delete leave balance: ' + err.message);
@@ -246,6 +267,44 @@ const LeaveBalanceModern = () => {
     setSelectedEmployee('');
     setSelectedLeaveType('');
     setSelectedYear(new Date().getFullYear());
+    setSearchQuery('');
+    setSuccess('Filters cleared');
+  };
+
+  const handleExportCSV = () => {
+    const csvContent = [
+      ['Employee ID', 'Employee Name', 'Leave Type', 'Year', 'Total Allocated', 'Carry Forward', 'Taken', 'Pending', 'Balance'],
+      ...filteredBalances.map(b => [
+        b.employee?.employeeId || '',
+        `${b.employee?.firstName || ''} ${b.employee?.lastName || ''}`,
+        b.leaveType?.name || 'Unknown',
+        selectedYear,
+        b.totalAccrued || 0,
+        b.carryForward || 0,
+        b.totalTaken || 0,
+        b.totalPending || 0,
+        b.balance || 0
+      ])
+    ].map(row => row.join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leave_balances_${selectedYear}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    setSuccess('Leave balances exported successfully');
+  };
+
+  const getYearOptions = () => {
+    const currentYear = new Date().getFullYear();
+    return [
+      currentYear - 2,
+      currentYear - 1,
+      currentYear,
+      currentYear + 1
+    ];
   };
 
   const getBalanceColor = (balance) => {
@@ -254,20 +313,28 @@ const LeaveBalanceModern = () => {
     return 'error';
   };
 
+  const filteredBalances = balances.filter(balance => {
+    if (!searchQuery) return true;
+    const searchLower = searchQuery.toLowerCase();
+    const employeeName = `${balance.employee.firstName} ${balance.employee.lastName}`.toLowerCase();
+    const employeeId = balance.employee.employeeId.toLowerCase();
+    return employeeName.includes(searchLower) || employeeId.includes(searchLower);
+  });
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header Section */}
       <Fade in timeout={500}>
-        <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <Card sx={{ mb: 3, bgcolor: 'white', border: '1px solid', borderColor: 'divider' }}>
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', color: 'white' }}>
-                <EventNoteIcon sx={{ fontSize: 40, mr: 2 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <EventNoteIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
                 <Box>
-                  <Typography variant="h4" fontWeight="bold">
+                  <Typography variant="h4" fontWeight="bold" color="text.primary">
                     Leave Balance Administration
                   </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     Manage employee leave allocations and balances
                   </Typography>
                 </Box>
@@ -275,31 +342,21 @@ const LeaveBalanceModern = () => {
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Tooltip title="Bulk Initialize Leave Balances">
                   <Button
-                    variant="contained"
+                    variant="outlined"
                     color="success"
                     startIcon={<GroupAddIcon />}
                     onClick={() => setShowBulkInit(true)}
                     disabled={loading}
-                    sx={{ 
-                      bgcolor: 'rgba(255,255,255,0.2)',
-                      backdropFilter: 'blur(10px)',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.3)' }
-                    }}
                   >
                     Bulk Initialize
                   </Button>
                 </Tooltip>
                 <Tooltip title="Add Individual Leave Balance">
                   <Button
-                    variant="contained"
+                    variant="outlined"
                     startIcon={<AddIcon />}
                     onClick={() => setShowCreateForm(true)}
                     disabled={loading}
-                    sx={{ 
-                      bgcolor: 'white',
-                      color: 'primary.main',
-                      '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' }
-                    }}
                   >
                     Add Balance
                   </Button>
@@ -330,25 +387,70 @@ const LeaveBalanceModern = () => {
       {/* Filters Section */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <FilterListIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6" fontWeight="bold">
-              Filters
-            </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <FilterListIcon sx={{ mr: 1, color: 'primary.main' }} />
+              <Typography variant="h6" fontWeight="bold">
+                Filters & Search
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<RefreshIcon />}
+                onClick={() => loadData(currentPage)}
+                disabled={loading}
+              >
+                Refresh
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                color="secondary"
+                onClick={handleResetFilters}
+                disabled={!selectedEmployee && !selectedLeaveType && !searchQuery && selectedYear === new Date().getFullYear()}
+              >
+                Clear Filters
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                onClick={handleExportCSV}
+                disabled={balances.length === 0}
+              >
+                Export CSV
+              </Button>
+            </Stack>
           </Box>
           <Divider sx={{ mb: 2 }} />
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
-                label="Year"
-                type="number"
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number.parseInt(e.target.value, 10))}
+                label="Search Employee"
+                placeholder="Name or ID..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
-                  inputProps: { min: 2020, max: 2030 }
+                  startAdornment: <FilterListIcon sx={{ mr: 1, color: 'action.disabled' }} />
                 }}
               />
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <FormControl fullWidth>
+                <InputLabel>Year</InputLabel>
+                <Select
+                  value={selectedYear}
+                  label="Year"
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                >
+                  {getYearOptions().map(year => (
+                    <MenuItem key={year} value={year}>{year}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth>
@@ -408,14 +510,14 @@ const LeaveBalanceModern = () => {
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ bgcolor: 'primary.main' }}>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Employee</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Leave Type</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Total Allocated</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Taken</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Pending</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Available</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold' }} align="center">Actions</TableCell>
+                <TableRow sx={{ bgcolor: 'grey.50', borderBottom: '2px solid', borderColor: 'divider' }}>
+                  <TableCell sx={{ color: 'text.primary', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.85rem' }}>Employee</TableCell>
+                  <TableCell sx={{ color: 'text.primary', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.85rem' }}>Leave Type</TableCell>
+                  <TableCell sx={{ color: 'text.primary', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.85rem' }}>Total Allocated</TableCell>
+                  <TableCell sx={{ color: 'text.primary', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.85rem' }}>Taken</TableCell>
+                  <TableCell sx={{ color: 'text.primary', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.85rem' }}>Pending</TableCell>
+                  <TableCell sx={{ color: 'text.primary', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.85rem' }}>Available</TableCell>
+                  <TableCell sx={{ color: 'text.primary', fontWeight: 'bold', textTransform: 'uppercase', fontSize: '0.85rem' }} align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -427,18 +529,51 @@ const LeaveBalanceModern = () => {
                     </TableCell>
                   </TableRow>
                 )}
-                {!loading && balances.length === 0 && (
+                {!loading && filteredBalances.length === 0 && balances.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                      <EventNoteIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+                      <Typography variant="h6" color="text.secondary" gutterBottom>
+                        No Leave Balances Found
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Get started by initializing leave balances for all employees or adding individual balances
+                      </Typography>
+                      <Stack direction="row" spacing={2} justifyContent="center">
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          startIcon={<GroupAddIcon />}
+                          onClick={() => setShowBulkInit(true)}
+                        >
+                          Bulk Initialize
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          startIcon={<AddIcon />}
+                          onClick={() => setShowCreateForm(true)}
+                        >
+                          Add Balance
+                        </Button>
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                )}
+                {!loading && filteredBalances.length === 0 && balances.length > 0 && (
                   <TableRow>
                     <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                      <EventNoteIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+                      <FilterListIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
                       <Typography variant="body1" color="text.secondary">
-                        No leave balances found
+                        No results match your search or filters
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Try adjusting your filters or search query
                       </Typography>
                     </TableCell>
                   </TableRow>
                 )}
-                {!loading && balances.length > 0 && (
-                  balances.map((balance, index) => (
+                {!loading && filteredBalances.length > 0 && (
+                  filteredBalances.map((balance, index) => (
                     <Fade in key={balance.id} timeout={300} style={{ transitionDelay: `${index * 50}ms` }}>
                       <TableRow hover sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
                         <TableCell>
@@ -453,10 +588,11 @@ const LeaveBalanceModern = () => {
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={balance.leaveType.name}
-                            color="info"
+                            label={balance.leaveType?.name || 'Unknown'}
+                            variant="outlined"
+                            color="primary"
                             size="small"
-                            sx={{ fontWeight: 'bold' }}
+                            sx={{ fontWeight: '500' }}
                           />
                         </TableCell>
                         <TableCell>
@@ -512,7 +648,7 @@ const LeaveBalanceModern = () => {
                               sx={{ width: '100px' }}
                             />
                           ) : (
-                            <Typography variant="body2" color="warning.main" fontWeight="bold">
+                            <Typography variant="body2" color="warning.main" fontWeight="500">
                               {balance.totalTaken} days
                             </Typography>
                           )}
@@ -531,7 +667,7 @@ const LeaveBalanceModern = () => {
                               sx={{ width: '100px' }}
                             />
                           ) : (
-                            <Typography variant="body2" color="info.main" fontWeight="bold">
+                            <Typography variant="body2" color="info.main" fontWeight="500">
                               {balance.totalPending} days
                             </Typography>
                           )}
@@ -539,9 +675,10 @@ const LeaveBalanceModern = () => {
                         <TableCell>
                           <Chip
                             label={`${balance.balance} days`}
+                            variant="outlined"
                             color={getBalanceColor(balance.balance)}
                             size="small"
-                            sx={{ fontWeight: 'bold' }}
+                            sx={{ fontWeight: '500' }}
                           />
                         </TableCell>
                         <TableCell align="center">
@@ -626,19 +763,21 @@ const LeaveBalanceModern = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle sx={{ bgcolor: 'success.main', color: 'white' }}>
+        <DialogTitle sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <GroupAddIcon sx={{ mr: 1 }} />
+            <GroupAddIcon sx={{ mr: 1, color: 'success.main' }} />
             Bulk Initialize Leave Balances
           </Box>
         </DialogTitle>
         <DialogContent sx={{ mt: 2 }}>
           <Alert severity="info" sx={{ mb: 3 }}>
-            <strong>Set total leave allocation for all active employees for year {selectedYear}.</strong>
+            <strong>Add leave allocation for all active employees for year {selectedYear}.</strong>
             <br />
-            Enter the total days to allocate (this will be set as "Accrued" with 0 carry forward).
+            • For <strong>new employees</strong>: Creates new leave balance records
             <br />
-            This will only create balances for employees who don't already have them for this year.
+            • For <strong>existing employees</strong>: Adds the days to their current "Total Accrued" balance
+            <br />
+            <em>Example: If an employee has 10 days accrued and you allocate 5 more days, they will have 15 days total.</em>
           </Alert>
 
           <Grid container spacing={2}>
@@ -646,7 +785,7 @@ const LeaveBalanceModern = () => {
               <Grid item xs={12} sm={6} key={type.id}>
                 <TextField
                   fullWidth
-                  label={`${type.name} - Total Days to Allocate`}
+                  label={`${type.name} - Days to Add`}
                   type="number"
                   inputProps={{ step: 0.5, min: 0 }}
                   value={bulkInitData[type.id] || ''}
@@ -654,7 +793,7 @@ const LeaveBalanceModern = () => {
                     ...bulkInitData,
                     [type.id]: e.target.value
                   })}
-                  helperText={`e.g., ${type.maxDaysPerYear || 20} days`}
+                  helperText={`Will be added to existing balances (e.g., ${type.maxDaysPerYear || 20} days)`}
                 />
               </Grid>
             ))}
@@ -667,11 +806,12 @@ const LeaveBalanceModern = () => {
               setBulkInitData({});
             }}
             disabled={loading}
+            variant="outlined"
           >
             Cancel
           </Button>
           <Button
-            variant="contained"
+            variant="outlined"
             color="success"
             onClick={handleBulkInit}
             disabled={loading || Object.keys(bulkInitData).length === 0}
@@ -698,9 +838,9 @@ const LeaveBalanceModern = () => {
         maxWidth="sm"
         fullWidth
       >
-        <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>
+        <DialogTitle sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <AddIcon sx={{ mr: 1 }} />
+            <AddIcon sx={{ mr: 1, color: 'primary.main' }} />
             Create Leave Balance
           </Box>
         </DialogTitle>
@@ -795,17 +935,59 @@ const LeaveBalanceModern = () => {
               });
             }}
             disabled={loading}
+            variant="outlined"
           >
             Cancel
           </Button>
           <Button
-            variant="contained"
+            variant="outlined"
             color="primary"
             onClick={handleCreate}
             disabled={loading || !createData.employeeId || !createData.leaveTypeId}
             startIcon={loading ? <CircularProgress size={20} /> : <AddIcon />}
           >
             {loading ? 'Creating...' : 'Create Balance'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={deleteConfirmOpen} 
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ borderBottom: '1px solid', borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 1 }}>
+          <DeleteIcon sx={{ color: 'error.main' }} />
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            This action cannot be undone!
+          </Alert>
+          <Typography>
+            Are you sure you want to delete this leave balance record? This will permanently remove the balance information for this employee and leave type.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button 
+            onClick={() => {
+              setDeleteConfirmOpen(false);
+              setBalanceToDelete(null);
+            }}
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmDelete}
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            disabled={loading}
+          >
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

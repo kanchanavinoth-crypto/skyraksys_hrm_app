@@ -31,7 +31,10 @@ const FIELD_PERMISSIONS = {
       'bankName', 'bankAccountNumber', 'ifscCode', 'bankBranch', 'accountHolderName',
       
       // Salary Information
-      'salary', 'salaryStructure'
+      'salary', 'salaryStructure',
+      
+      // User Account Information
+      'userId', 'user'
     ],
     edit: [
       'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender',
@@ -55,7 +58,10 @@ const FIELD_PERMISSIONS = {
       'emergencyContactName', 'emergencyContactPhone',
       
       // Work-related address
-      'workLocation', 'address', 'city', 'state'
+      'workLocation', 'address', 'city', 'state',
+      
+      // User Account Information
+      'userId', 'user'
     ],
     edit: [
       'departmentId', 'positionId', 'workLocation', 'status'
@@ -70,7 +76,10 @@ const FIELD_PERMISSIONS = {
       'address', 'city', 'state', 'pinCode', 'photoUrl',
       'dateOfBirth', 'gender', 'maritalStatus', 'nationality',
       'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation',
-      'bankName', 'ifscCode', 'bankBranch' // Can see bank name but not account number
+      'bankName', 'ifscCode', 'bankBranch', // Can see bank name but not account number
+      
+      // User Account Information (own only)
+      'userId', 'user'
     ],
     edit: [
       'phone', 'address', 'city', 'state', 'pinCode',
