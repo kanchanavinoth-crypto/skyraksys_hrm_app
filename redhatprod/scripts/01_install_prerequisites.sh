@@ -74,19 +74,28 @@ print_status "NPM version: $NPM_VERSION"
 print_status "Installing PM2 process manager..."
 npm install -g pm2
 
-# Install PostgreSQL 15
+# Install PostgreSQL 17
 print_header "POSTGRESQL INSTALLATION"
-print_status "Installing PostgreSQL 15..."
-dnf install -y postgresql15-server postgresql15-contrib postgresql15-devel
+print_status "Installing PostgreSQL 17..."
+
+# Add PostgreSQL 17 official repository
+print_status "Adding PostgreSQL official repository..."
+dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
+# Disable built-in PostgreSQL module
+dnf -qy module disable postgresql
+
+# Install PostgreSQL 17
+dnf install -y postgresql17-server postgresql17-contrib postgresql17-devel
 
 # Initialize PostgreSQL
 print_status "Initializing PostgreSQL database..."
-/usr/pgsql-15/bin/postgresql-15-setup initdb
+/usr/pgsql-17/bin/postgresql-17-setup initdb
 
 # Enable and start PostgreSQL
 print_status "Starting PostgreSQL service..."
-systemctl enable postgresql-15
-systemctl start postgresql-15
+systemctl enable postgresql-17
+systemctl start postgresql-17
 
 # Install Nginx
 print_header "NGINX INSTALLATION"
@@ -172,11 +181,11 @@ print_header "POSTGRESQL CONFIGURATION"
 print_status "Configuring PostgreSQL for application..."
 
 # Backup original configuration
-cp /var/lib/pgsql/15/data/postgresql.conf /var/lib/pgsql/15/data/postgresql.conf.backup
-cp /var/lib/pgsql/15/data/pg_hba.conf /var/lib/pgsql/15/data/pg_hba.conf.backup
+cp /var/lib/pgsql/17/data/postgresql.conf /var/lib/pgsql/17/data/postgresql.conf.backup
+cp /var/lib/pgsql/17/data/pg_hba.conf /var/lib/pgsql/17/data/pg_hba.conf.backup
 
 # Update PostgreSQL configuration
-cat >> /var/lib/pgsql/15/data/postgresql.conf << EOF
+cat >> /var/lib/pgsql/17/data/postgresql.conf << EOF
 
 # Custom configuration for HRM application
 listen_addresses = 'localhost'
@@ -213,7 +222,7 @@ statement_timeout = 0
 EOF
 
 # Update pg_hba.conf for application access
-cat >> /var/lib/pgsql/15/data/pg_hba.conf << EOF
+cat >> /var/lib/pgsql/17/data/pg_hba.conf << EOF
 
 # HRM Application access
 local   skyraksys_hrm_prod    hrm_app                     md5
@@ -221,7 +230,7 @@ host    skyraksys_hrm_prod    hrm_app     127.0.0.1/32    md5
 EOF
 
 # Restart PostgreSQL to apply changes
-systemctl restart postgresql-15
+systemctl restart postgresql-17
 
 # Configure Nginx basic setup
 print_status "Creating basic Nginx configuration..."
@@ -371,7 +380,7 @@ chown $APP_USER:$APP_USER /opt/skyraksys-hrm/.env.template
 
 # Display service status
 print_header "SERVICE STATUS"
-print_status "PostgreSQL: $(systemctl is-active postgresql-15)"
+print_status "PostgreSQL: $(systemctl is-active postgresql-17)"
 print_status "Nginx: $(systemctl is-active nginx)"
 print_status "Redis: $(systemctl is-active redis)"
 print_status "Firewalld: $(systemctl is-active firewalld)"

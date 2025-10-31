@@ -3,60 +3,72 @@ const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-
-    // Create departments
-    const departmentIds = {
-      hr: uuidv4(),
-      engineering: uuidv4(),
-      sales: uuidv4(),
-      marketing: uuidv4(),
-      finance: uuidv4()
-    };
-
-    await queryInterface.bulkInsert('departments', [
-      {
-        id: departmentIds.hr,
-        name: 'Human Resources',
-        description: 'Employee management and HR services',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: departmentIds.engineering,
-        name: 'Engineering',
-        description: 'Software development and engineering',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: departmentIds.sales,
-        name: 'Sales',
-        description: 'Sales and business development',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: departmentIds.marketing,
-        name: 'Marketing',
-        description: 'Marketing and brand management',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      {
-        id: departmentIds.finance,
-        name: 'Finance',
-        description: 'Financial planning and accounting',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
+    try {
+      // Check if data already exists
+      const [existingUsers] = await queryInterface.sequelize.query(
+        `SELECT COUNT(*) as count FROM users;`
+      );
+      
+      if (existingUsers[0].count > 0) {
+        console.log('⚠ Database already contains data. Skipping seeding to prevent duplicates.');
+        console.log('💡 To re-seed, first run: npx sequelize-cli db:seed:undo:all');
+        return;
       }
-    ]);
 
+      const hashedPassword = await bcrypt.hash('admin123', 12);
+
+      // Create departments
+      const departmentIds = {
+        hr: uuidv4(),
+        engineering: uuidv4(),
+        sales: uuidv4(),
+        marketing: uuidv4(),
+        finance: uuidv4()
+      };
+
+      await queryInterface.bulkInsert('departments', [
+        {
+          id: departmentIds.hr,
+          name: 'Human Resources',
+          description: 'Employee management and HR services',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: departmentIds.engineering,
+          name: 'Engineering',
+          description: 'Software development and engineering',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: departmentIds.sales,
+          name: 'Sales',
+          description: 'Sales and business development',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: departmentIds.marketing,
+          name: 'Marketing',
+          description: 'Marketing and brand management',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          id: departmentIds.finance,
+          name: 'Finance',
+          description: 'Financial planning and accounting',
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ]);
+      console.log('✓ Created departments');
     // Create positions
     const positionIds = {
       hrManager: uuidv4(),
@@ -202,6 +214,8 @@ module.exports = {
     await queryInterface.bulkInsert('users', [
       {
         id: userIds.admin,
+        firstName: 'System',
+        lastName: 'Administrator',
         email: 'admin@skyraksys.com',
         password: hashedPassword,
         role: 'admin',
@@ -211,6 +225,8 @@ module.exports = {
       },
       {
         id: userIds.hrManager,
+        firstName: 'Sarah',
+        lastName: 'Johnson',
         email: 'hr@skyraksys.com',
         password: hashedPassword,
         role: 'hr',
@@ -220,6 +236,8 @@ module.exports = {
       },
       {
         id: userIds.teamLead,
+        firstName: 'John',
+        lastName: 'Smith',
         email: 'lead@skyraksys.com',
         password: hashedPassword,
         role: 'manager',
@@ -229,6 +247,8 @@ module.exports = {
       },
       {
         id: userIds.employee1,
+        firstName: 'Michael',
+        lastName: 'Brown',
         email: 'employee1@skyraksys.com',
         password: hashedPassword,
         role: 'employee',
@@ -238,6 +258,8 @@ module.exports = {
       },
       {
         id: userIds.employee2,
+        firstName: 'Emily',
+        lastName: 'Davis',
         email: 'employee2@skyraksys.com',
         password: hashedPassword,
         role: 'employee',
@@ -601,7 +623,17 @@ module.exports = {
       }
     ]);
 
-    console.log('Initial data seeded successfully!');
+    console.log('✓ Initial data seeded successfully!');
+    
+    } catch (error) {
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        console.log('⚠ Some data already exists, skipping duplicates...');
+        console.log('✓ Seeding completed with existing data');
+      } else {
+        console.error('✗ Seeding error:', error.message);
+        throw error;
+      }
+    }
   },
 
   down: async (queryInterface, Sequelize) => {
