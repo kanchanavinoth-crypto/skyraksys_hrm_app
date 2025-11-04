@@ -2,7 +2,7 @@
 # Quick Migration Report Generator (Local Testing)
 # Usage: bash migration-report.sh
 
-DB_NAME="skyraksys_hrm_dev"  # Change to skyraksys_hrm_prod for production
+DB_NAME="skyraksys_hrm_prod"  # Production database
 
 echo "========================================"
 echo "DATABASE MIGRATION REPORT"

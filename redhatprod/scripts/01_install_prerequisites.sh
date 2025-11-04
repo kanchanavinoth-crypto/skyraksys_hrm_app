@@ -58,10 +58,10 @@ print_status "Installing development tools..."
 dnf groupinstall -y "Development Tools"
 dnf install -y gcc-c++ make git curl wget unzip vim nano htop tree
 
-# Install Node.js 18.x LTS
+# Install Node.js 22.16.0 LTS (Latest Production)
 print_header "NODE.JS INSTALLATION"
-print_status "Installing Node.js 18.x LTS..."
-curl -fsSL https://rpm.nodesource.com/setup_18.x | bash -
+print_status "Installing Node.js 22.16.0 LTS (Latest Production)..."
+curl -fsSL https://rpm.nodesource.com/setup_22.x | bash -
 dnf install -y nodejs
 
 # Verify Node.js installation

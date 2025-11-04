@@ -124,7 +124,7 @@ fi
 print_header "SERVICE STATUS"
 
 # Check PostgreSQL
-if systemctl is-active --quiet postgresql-15; then
+if systemctl is-active --quiet postgresql-17; then
     PG_VERSION=$(sudo -u postgres psql --version | head -1 | awk '{print $3}')
     record_check "PASS" "PostgreSQL service: Running (Version: $PG_VERSION)"
     

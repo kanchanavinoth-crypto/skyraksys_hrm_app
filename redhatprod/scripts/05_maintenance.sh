@@ -201,7 +201,7 @@ print_header "SERVICE HEALTH VERIFICATION"
 print_status "Verifying all services are healthy..."
 
 # Check and restart services if needed
-services=("postgresql-15" "redis" "nginx" "hrm-backend" "hrm-frontend")
+services=("postgresql-17" "redis" "nginx" "hrm-backend" "hrm-frontend")
 for service in "${services[@]}"; do
     if systemctl is-active --quiet "$service"; then
         print_status "Service $service: Running"
@@ -255,7 +255,7 @@ CURRENT_SHARED_BUFFERS=$(sudo -u postgres psql -d skyraksys_hrm_prod -t -c "SHOW
 if [ "$POSTGRES_MEMORY" -gt $((CURRENT_SHARED_BUFFERS + 100)) ] || [ "$POSTGRES_MEMORY" -lt $((CURRENT_SHARED_BUFFERS - 100)) ]; then
     print_status "Optimizing PostgreSQL memory settings..."
     sed -i "s/shared_buffers = .*/shared_buffers = ${POSTGRES_MEMORY}MB/" /var/lib/pgsql/15/data/postgresql.conf
-    systemctl reload postgresql-15
+    systemctl reload postgresql-17
     log_message "Updated PostgreSQL shared_buffers to ${POSTGRES_MEMORY}MB"
 fi
 
@@ -332,7 +332,7 @@ CURRENT SYSTEM STATUS:
 - Security Events: $SUSPICIOUS_LOGINS failed attempts (last 7 days)
 
 SERVICES STATUS:
-- PostgreSQL: $(systemctl is-active postgresql-15)
+- PostgreSQL: $(systemctl is-active postgresql-17)
 - Redis: $(systemctl is-active redis)
 - Nginx: $(systemctl is-active nginx)
 - HRM Backend: $(systemctl is-active hrm-backend)

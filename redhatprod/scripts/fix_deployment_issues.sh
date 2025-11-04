@@ -148,9 +148,9 @@ cat > /etc/systemd/system/hrm-backend.service << 'EOF'
 [Unit]
 Description=Skyraksys HRM Backend API Service
 Documentation=https://github.com/your-org/skyraksys-hrm
-After=network-online.target postgresql-15.service
-Wants=network-online.target postgresql-15.service
-Requires=postgresql-15.service
+After=network-online.target postgresql-17.service
+Wants=network-online.target postgresql-17.service
+Requires=postgresql-17.service
 
 [Service]
 Type=simple

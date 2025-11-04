@@ -274,8 +274,8 @@ print_header "CREATING SYSTEMD SERVICES"
 cat > /etc/systemd/system/hrm-backend.service << EOF
 [Unit]
 Description=Skyraksys HRM Backend API
-After=network.target postgresql-15.service redis.service
-Wants=postgresql-15.service redis.service
+After=network.target postgresql-17.service redis.service
+Wants=postgresql-17.service redis.service
 
 [Service]
 Type=simple
@@ -462,7 +462,7 @@ echo "Nginx Service:"
 systemctl status nginx --no-pager -l
 echo ""
 echo "PostgreSQL Service:"
-systemctl status postgresql-15 --no-pager -l
+systemctl status postgresql-17 --no-pager -l
 echo ""
 
 echo "=== Port Status ==="
@@ -501,7 +501,7 @@ print_status "Enabling services to start on boot..."
 systemctl enable hrm-backend
 systemctl enable hrm-frontend
 systemctl enable nginx
-systemctl enable postgresql-15
+systemctl enable postgresql-17
 
 print_header "STARTING SERVICES"
 print_status "Starting application services..."
