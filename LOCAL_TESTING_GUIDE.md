@@ -8,7 +8,7 @@ Before deploying to production, run these commands to ensure everything works:
 # From D:\skyraksys_hrm\backend directory
 
 # Step 1: Validate current database state
-node validate-local-database.js
+node scripts/validate-database-local.js
 
 # Step 2: If validation fails, reset and seed
 node reset-database.js
@@ -16,7 +16,7 @@ npx sequelize-cli db:migrate
 npx sequelize-cli db:seed:all
 
 # Step 3: Validate again
-node validate-local-database.js
+node scripts/validate-database-local.js
 
 # Step 4: Test user creation
 node check-users.js
@@ -32,7 +32,7 @@ Run the validation script to check everything:
 
 ```powershell
 cd D:\skyraksys_hrm\backend
-node validate-local-database.js
+node scripts/validate-database-local.js
 ```
 
 **What it checks:**
@@ -255,7 +255,7 @@ node -e "const {Sequelize} = require('sequelize'); const config = require('./con
 Before deploying to production, verify:
 
 ### Database Structure
-- [ ] ✅ All 15+ tables exist (`validate-local-database.js`)
+- [ ] ✅ All 15+ tables exist (`node scripts/validate-database-local.js`)
 - [ ] ✅ Primary keys on all tables
 - [ ] ✅ Foreign keys: 39+ found
 - [ ] ✅ Indexes created
@@ -360,7 +360,7 @@ npx sequelize-cli db:seed:all
 
 ```powershell
 # Validate everything
-node validate-local-database.js
+node scripts/validate-database-local.js
 
 # Reset and start fresh
 node reset-database.js
@@ -387,7 +387,7 @@ npx sequelize-cli db:seed:status
 
 Your local database is ready for production when:
 
-1. ✅ `node validate-local-database.js` shows **0 errors**
+1. ✅ `node scripts/validate-database-local.js` shows **0 errors**
 2. ✅ All 15+ tables exist
 3. ✅ All foreign keys present (39+)
 4. ✅ 5 users created including admin
