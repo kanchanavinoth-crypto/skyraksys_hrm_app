@@ -79,3 +79,7 @@ backend/test-screenshots/
 # Backup files
 *.backup
 *.bak
+
+# Archive folders
+archive/
+archive_prod_folders_*/
