@@ -112,6 +112,17 @@ sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw skyraksys_hrm_prod
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Database exists${NC}"
     
+    # Get default password from backend .env
+    cd /opt/skyraksys-hrm/backend
+    if [ -f .env ]; then
+        DEFAULT_PASSWORD=$(grep "^SEED_DEFAULT_PASSWORD=" .env 2>/dev/null | cut -d '=' -f 2)
+        if [ -z "$DEFAULT_PASSWORD" ]; then
+            DEFAULT_PASSWORD="admin123"
+        fi
+    else
+        DEFAULT_PASSWORD="admin123"
+    fi
+    
     # Check if users table has data
     USER_COUNT=$(sudo -u postgres psql -d skyraksys_hrm_prod -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | xargs)
     
@@ -123,7 +134,7 @@ if [ $? -eq 0 ]; then
         echo ""
         echo -e "${GREEN}Default Credentials:${NC}"
         echo "  Email: admin@skyraksys.com"
-        echo "  Password: admin123"
+        echo "  Password: ${DEFAULT_PASSWORD}"
         echo ""
     else
         echo -e "${GREEN}✅ Users exist ($USER_COUNT users)${NC}"
@@ -314,7 +325,7 @@ echo ""
 echo "🔐 Login Credentials:"
 echo "  URL: http://95.216.14.232"
 echo "  Email: admin@skyraksys.com"
-echo "  Password: admin123"
+echo "  Password: ${DEFAULT_PASSWORD}"
 echo ""
 echo "🔍 Verify in Browser:"
 echo "  1. Open: http://95.216.14.232"
@@ -325,7 +336,7 @@ echo "📊 Quick Tests:"
 echo "  Health check: curl http://95.216.14.232/api/health"
 echo "  Login test: curl -X POST http://95.216.14.232/api/auth/login \\"
 echo "              -H 'Content-Type: application/json' \\"
-echo "              -d '{\"email\":\"admin@skyraksys.com\",\"password\":\"admin123\"}'"
+echo "              -d '{\"email\":\"admin@skyraksys.com\",\"password\":\"${DEFAULT_PASSWORD}\"}'"
 echo ""
 echo "📝 Logs:"
 echo "  Backend: sudo journalctl -u hrm-backend -f"

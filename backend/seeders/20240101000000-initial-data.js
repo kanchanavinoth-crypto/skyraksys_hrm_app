@@ -15,7 +15,13 @@ module.exports = {
         return;
       }
 
-      const hashedPassword = await bcrypt.hash('admin123', 12);
+      // Get default password from environment or use fallback
+      const defaultPassword = process.env.SEED_DEFAULT_PASSWORD || 'admin123';
+      const bcryptRounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+      const hashedPassword = await bcrypt.hash(defaultPassword, bcryptRounds);
+      
+      console.log('ℹ️  Using default password from SEED_DEFAULT_PASSWORD environment variable');
+      console.log(`ℹ️  Bcrypt rounds: ${bcryptRounds}`);
 
       // Create departments
       const departmentIds = {
@@ -623,7 +629,26 @@ module.exports = {
       }
     ]);
 
-    console.log('✓ Initial data seeded successfully!');
+    // Success summary
+    console.log('\n✅ Initial data seeded successfully!');
+    console.log('\n📊 Data Summary:');
+    console.log('   • 5 Departments (HR, Engineering, Sales, Marketing, Finance)');
+    console.log('   • 11 Positions (Manager, Executive, Engineer, etc.)');
+    console.log('   • 5 Users (Admin, HR, Manager, 2 Employees)');
+    console.log('   • 5 Employees (linked to users)');
+    console.log('   • 5 Leave Types (Annual, Sick, Casual, etc.)');
+    console.log('   • Leave Balances (for all employees)');
+    console.log('   • 3 Projects (ERP Implementation, Mobile App, Website Redesign)');
+    console.log('   • Tasks (for each project)');
+    console.log('   • 5 Salary Structures (with PF, TDS, etc.)');
+    console.log('\n🔐 Default Credentials:');
+    console.log(`   Password: ${defaultPassword}`);
+    console.log('   • admin@skyraksys.com (Admin)');
+    console.log('   • hr@skyraksys.com (HR)');
+    console.log('   • lead@skyraksys.com (Manager)');
+    console.log('   • employee1@skyraksys.com (Employee)');
+    console.log('   • employee2@skyraksys.com (Employee)');
+    console.log('');
     
     } catch (error) {
       if (error.name === 'SequelizeUniqueConstraintError') {

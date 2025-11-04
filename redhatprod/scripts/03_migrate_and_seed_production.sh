@@ -303,6 +303,20 @@ echo "--------------------------"
     echo ""
 } >> "$REPORT_FILE"
 
+# Get default password from backend .env
+cd /opt/skyraksys-hrm/backend
+if [ -f .env ]; then
+    DEFAULT_PASSWORD=$(grep "^SEED_DEFAULT_PASSWORD=" .env 2>/dev/null | cut -d '=' -f 2)
+    if [ -z "$DEFAULT_PASSWORD" ]; then
+        DEFAULT_PASSWORD="admin123"
+    fi
+else
+    DEFAULT_PASSWORD="admin123"
+fi
+
+echo -e "${CYAN}ℹ️  Demo password set to: ${DEFAULT_PASSWORD}${NC}"
+echo ""
+
 # Check if users already exist
 USER_COUNT=$(sudo -u postgres psql -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM users;" 2>/dev/null | xargs || echo "0")
 
@@ -431,17 +445,17 @@ if [ "$USERS_FINAL" -gt 0 ]; then
         echo ""
         echo -e "${CYAN}🔐 Default Demo Credentials:${NC}"
         echo "----------------------------------------"
-        echo "Admin:     admin@skyraksys.com / admin123"
-        echo "HR:        hr@skyraksys.com / admin123"
-        echo "Manager:   lead@skyraksys.com / admin123"
-        echo "Employee1: employee1@skyraksys.com / admin123"
-        echo "Employee2: employee2@skyraksys.com / admin123"
+        echo "Admin:     admin@skyraksys.com / ${DEFAULT_PASSWORD}"
+        echo "HR:        hr@skyraksys.com / ${DEFAULT_PASSWORD}"
+        echo "Manager:   lead@skyraksys.com / ${DEFAULT_PASSWORD}"
+        echo "Employee1: employee1@skyraksys.com / ${DEFAULT_PASSWORD}"
+        echo "Employee2: employee2@skyraksys.com / ${DEFAULT_PASSWORD}"
         echo ""
         
         {
             echo "🔐 Demo Credentials:"
             echo "----------------------------------------"
-            echo "All passwords: admin123"
+            echo "All passwords: ${DEFAULT_PASSWORD}"
             echo "Admin:     admin@skyraksys.com"
             echo "HR:        hr@skyraksys.com"
             echo "Manager:   lead@skyraksys.com"
