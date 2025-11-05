@@ -75,20 +75,66 @@ skyraksys_hrm/
 │   ├── middleware/         # Authentication & validation
 │   ├── models/            # Sequelize models
 │   ├── routes/            # API routes
+│   ├── migrations/        # Database migrations (Sequelize)
+│   ├── seeders/           # Database seeders
+│   ├── README.md          # Backend documentation
 │   └── server.js          # Entry point
+│
 ├── frontend/               # React frontend
 │   ├── public/            # Static assets
 │   ├── src/               # Source code
-│   └── build/             # Production build
-├── scripts/               # Utility scripts
-│   ├── development/       # Development utilities
-│   ├── database/         # Database scripts
-│   ├── testing/          # Test scripts
-│   └── deployment/       # Deployment scripts
-├── docs/                 # Documentation
-├── archive/              # Archived files
-└── uploads/              # File uploads
+│   └── e2e/               # Playwright E2E tests
+│       ├── README.md      # E2E testing guide
+│       └── QUICK_START.md # Quick reference
+│
+├── redhatprod/            # 🎯 Production deployment (RHEL 9.6)
+│   ├── START_HERE.md      # ⭐ Quick start
+│   ├── PRODUCTION_DEPLOYMENT_GUIDE.md  # Complete guide
+│   ├── MIGRATION_GUIDE.md # Database migrations
+│   ├── scripts/           # Automated deployment scripts
+│   └── templates/         # Configuration templates
+│
+├── docs/                  # 📚 Documentation
+│   ├── README.md          # Documentation index
+│   ├── api/               # API documentation
+│   ├── deployment/        # Deployment guides
+│   ├── development/       # Developer guides
+│   ├── features/          # Feature documentation
+│   └── production/        # Production checklists
+│
+├── admin-debug-panel/     # 🔧 Database debug tool (dev only)
+├── tests/                 # Backend test suites
+├── obsolete/              # 📦 Archived documentation
+│   └── README.md          # Archive index
+│
+├── README.md              # ⭐ This file
+├── CHANGELOG.md           # Version history
+└── .github/
+    └── copilot-instructions.md  # AI assistance config
 ```
+
+## 📚 Documentation
+
+### For Production Deployment
+🎯 **Start Here:** [`redhatprod/START_HERE.md`](redhatprod/START_HERE.md)
+
+**Essential Guides:**
+- 📘 [Complete Deployment Guide](redhatprod/PRODUCTION_DEPLOYMENT_GUIDE.md)
+- 📘 [Database Migrations](redhatprod/MIGRATION_GUIDE.md)
+- 📘 [Manual Installation](redhatprod/MANUAL_INSTALLATION_GUIDE.md)
+
+**Automated Scripts:** [`redhatprod/scripts/`](redhatprod/scripts/)
+
+### For Development
+📖 **Backend:** [`backend/README.md`](backend/README.md)  
+📖 **Frontend E2E:** [`frontend/e2e/README.md`](frontend/e2e/README.md)  
+📖 **Admin Panel:** [`admin-debug-panel/README.md`](admin-debug-panel/README.md)
+
+### For Features & Guides
+📚 **Documentation:** [`docs/README.md`](docs/README.md)
+
+### Historical
+📦 **Archived:** [`obsolete/README.md`](obsolete/README.md) - Completed fixes and superseded guides
 
 ## 🔧 Available Scripts
 
