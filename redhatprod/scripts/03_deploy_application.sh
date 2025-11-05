@@ -127,9 +127,29 @@ systemctl stop hrm-backend 2>/dev/null || true
 systemctl stop hrm-frontend 2>/dev/null || true
 pm2 stop all 2>/dev/null || true
 
-# Remove existing application files
-rm -rf "$BACKEND_DIR"/*
-rm -rf "$FRONTEND_DIR"/*
+# Safety checks before removing files
+if [ -z "$BACKEND_DIR" ] || [ "$BACKEND_DIR" = "/" ] || [ "$BACKEND_DIR" = "/opt" ]; then
+    print_error "BACKEND_DIR is not properly set or is a protected directory. Aborting for safety."
+    print_error "BACKEND_DIR value: '${BACKEND_DIR}'"
+    exit 1
+fi
+
+if [ -z "$FRONTEND_DIR" ] || [ "$FRONTEND_DIR" = "/" ] || [ "$FRONTEND_DIR" = "/opt" ]; then
+    print_error "FRONTEND_DIR is not properly set or is a protected directory. Aborting for safety."
+    print_error "FRONTEND_DIR value: '${FRONTEND_DIR}'"
+    exit 1
+fi
+
+# Remove existing application files (safe with validation above)
+if [ -d "$BACKEND_DIR" ] && [ "$(ls -A "$BACKEND_DIR" 2>/dev/null)" ]; then
+    print_status "Cleaning backend directory..."
+    rm -rf "${BACKEND_DIR:?}"/*
+fi
+
+if [ -d "$FRONTEND_DIR" ] && [ "$(ls -A "$FRONTEND_DIR" 2>/dev/null)" ]; then
+    print_status "Cleaning frontend directory..."
+    rm -rf "${FRONTEND_DIR:?}"/*
+fi
 
 # Create necessary directories
 mkdir -p "$BACKEND_DIR"

@@ -279,10 +279,12 @@ create_database_and_user() {
     if sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
         warn "User '$DB_USER' already exists"
         info "Updating user password..."
-        sudo -u postgres psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+        # Use stdin to avoid password exposure in process list
+        echo "ALTER USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" | sudo -u postgres psql
     else
         info "Creating user: $DB_USER"
-        sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+        # Use stdin to avoid password exposure in process list
+        echo "CREATE USER $DB_USER WITH ENCRYPTED PASSWORD '$DB_PASSWORD';" | sudo -u postgres psql
         log "✓ User '$DB_USER' created"
     fi
     
