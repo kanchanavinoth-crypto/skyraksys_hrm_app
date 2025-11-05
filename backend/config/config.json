@@ -24,14 +24,18 @@
     "logging": false
   },
   "production": {
-    "use_env_variable": "DATABASE_URL",
+    "username": "hrm_app",
+    "password": null,
+    "database": "skyraksys_hrm_prod",
+    "host": "localhost",
+    "port": 5432,
     "dialect": "postgres",
-    "dialectOptions": {
-      "ssl": {
-        "require": true,
-        "rejectUnauthorized": false
-      }
-    },
-    "logging": false
+    "logging": false,
+    "pool": {
+      "max": 10,
+      "min": 2,
+      "acquire": 60000,
+      "idle": 30000
+    }
   }
 }
