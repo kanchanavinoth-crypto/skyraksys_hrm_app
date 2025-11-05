@@ -117,17 +117,17 @@ generate_backend_env() {
         DB_PASSWORD=$(cat "${APP_DIR}/.db_password")
         info "Using existing database password"
     else
-        warn "Database password file not found, generating temporary password"
-        DB_PASSWORD=$(generate_secret 32)
+        info "Using hardcoded production database password"
+        DB_PASSWORD="SkyRakDB#2025!Prod@HRM$Secure"
         echo "$DB_PASSWORD" > "${APP_DIR}/.db_password"
         chmod 600 "${APP_DIR}/.db_password"
     fi
     
-    # Generate secrets
-    info "Generating secure JWT and session secrets..."
-    local JWT_SECRET=$(generate_secret 64)
-    local JWT_REFRESH_SECRET=$(generate_secret 64)
-    local SESSION_SECRET=$(generate_secret 48)
+    # Use hardcoded production secrets
+    info "Using hardcoded production JWT and session secrets..."
+    local JWT_SECRET="SkyRak2025JWT@Prod!Secret#HRM$Key&Secure*System^Auth%Token"
+    local JWT_REFRESH_SECRET="SkyRak2025Refresh@JWT!Secret#HRM$Renew&Key*Secure^Token%Auth"
+    local SESSION_SECRET="SkyRak2025Session@Secret!HRM#Prod$Key&Secure"
     
     # Generate .env file
     cat > "$ENV_FILE" <<EOF

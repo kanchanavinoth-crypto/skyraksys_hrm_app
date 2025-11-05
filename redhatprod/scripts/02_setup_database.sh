@@ -133,27 +133,23 @@ check_postgres_installed() {
 ################################################################################
 
 generate_db_password() {
-    log "Generating secure database password..."
+    log "Setting up database password..."
     
     if [[ -f "$DB_PASSWORD_FILE" ]]; then
         warn "Database password file already exists: $DB_PASSWORD_FILE"
         info "Using existing password. Delete this file to regenerate."
         DB_PASSWORD=$(cat "$DB_PASSWORD_FILE")
     else
-        # Generate a secure random password (32 characters)
-        if command -v openssl &> /dev/null; then
-            DB_PASSWORD=$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9!@#$%^&*' | head -c 32)
-        else
-            DB_PASSWORD=$(< /dev/urandom tr -dc 'A-Za-z0-9!@#$%^&*' | head -c 32)
-        fi
+        # Use hardcoded production password
+        DB_PASSWORD="SkyRakDB#2025!Prod@HRM$Secure"
         
         # Save password securely
         echo "$DB_PASSWORD" > "$DB_PASSWORD_FILE"
         chmod 600 "$DB_PASSWORD_FILE"
         chown hrmapp:hrmapp "$DB_PASSWORD_FILE" 2>/dev/null || true
         
-        log "✓ Database password generated and saved to: $DB_PASSWORD_FILE"
-        info "IMPORTANT: Save this password in a secure location!"
+        log "✓ Database password saved to: $DB_PASSWORD_FILE"
+        info "Using hardcoded production password"
     fi
 }
 
