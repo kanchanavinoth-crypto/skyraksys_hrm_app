@@ -112,11 +112,11 @@ When seeded, the following demo data is created:
 ### Users (5 accounts)
 | Email | Password | Role | Name |
 |-------|----------|------|------|
-| admin@skyraksys.com | admin123 | admin | System Administrator |
-| hr@skyraksys.com | admin123 | hr | Sarah Johnson |
-| lead@skyraksys.com | admin123 | manager | John Smith |
-| employee1@skyraksys.com | admin123 | employee | Michael Brown |
-| employee2@skyraksys.com | admin123 | employee | Emily Davis |
+| admin@skyraksys.com | SkyRak@Prod2025!Secure#HRM | admin | System Administrator |
+| hr@skyraksys.com | SkyRak@Prod2025!Secure#HRM | hr | Sarah Johnson |
+| lead@skyraksys.com | SkyRak@Prod2025!Secure#HRM | manager | John Smith |
+| employee1@skyraksys.com | SkyRak@Prod2025!Secure#HRM | employee | Michael Brown |
+| employee2@skyraksys.com | SkyRak@Prod2025!Secure#HRM | employee | Emily Davis |
 
 ### Additional Demo Data
 - **5 Departments:** HR, Engineering, Sales, Marketing, Finance
@@ -329,8 +329,8 @@ cat /opt/skyraksys-hrm/migration-reports/migration_report_20250104_143022.txt
 4. ✅ **Test login with demo accounts**
    ```bash
    curl -X POST http://95.216.14.232/api/auth/login \
-     -H "Content-Type: application/json" \
-     -d '{"email":"admin@skyraksys.com","password":"admin123"}'
+   -H "Content-Type: application/json" \
+   -d '{"email":"admin@skyraksys.com","password":"SkyRak@Prod2025!Secure#HRM"}'
    ```
 
 ---
@@ -339,7 +339,7 @@ cat /opt/skyraksys-hrm/migration-reports/migration_report_20250104_143022.txt
 
 ⚠️ **IMPORTANT:** Demo data is for testing only!
 
-- Default password `admin123` is **NOT secure** for production
+- Default password `SkyRak@Prod2025!Secure#HRM` should be changed after first login
 - After testing, either:
   - Delete demo accounts
   - Change all passwords
