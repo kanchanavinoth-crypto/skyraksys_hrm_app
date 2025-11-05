@@ -125,15 +125,27 @@ sudo -u postgres psql -d skyraksys_hrm_prod -c "SELECT name FROM \"SequelizeMeta
 sudo -u postgres psql -d skyraksys_hrm_prod -c "\dt"
 # Should show 18-19 tables
 
-# 3. Test backend health
+# 3. Check table ownership (should all be hrm_app)
+sudo -u postgres psql -d skyraksys_hrm_prod -c "\dt"
+# Owner column should show: hrm_app
+
+# 4. Test backend health
 curl http://localhost:5000/api/health
 # Should return: {"status":"healthy","database":"connected"}
 
-# 4. Test authentication
+# 5. Test authentication
 curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@skyraksys.com","password":"admin123"}'
 # Should return access token
+
+# 6. Verify .env configuration
+cat /opt/skyraksys-hrm/backend/.env | grep DB_USER
+# Should show: DB_USER=hrm_app
+
+# 7. Verify config.js exists (Nov 5, 2025 fix)
+ls -la /opt/skyraksys-hrm/backend/config/config.js
+# Should exist (config.json is legacy, not used anymore)
 ```
 
 ---
