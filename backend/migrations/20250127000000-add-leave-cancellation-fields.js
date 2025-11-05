@@ -2,8 +2,15 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    const tableDescription = await queryInterface.describeTable('leave_requests');
-    
+    let tableDescription;
+    try {
+      tableDescription = await queryInterface.describeTable('leave_requests');
+    } catch (err) {
+      // Table doesn't exist yet (migration ordering). Skip this migration safely.
+      console.log('⚠️  Table `leave_requests` does not exist yet. Skipping add-leave-cancellation-fields migration.');
+      return;
+    }
+
     // Add isCancellation column if it doesn't exist
     if (!tableDescription.isCancellation) {
       await queryInterface.addColumn('leave_requests', 'isCancellation', {
