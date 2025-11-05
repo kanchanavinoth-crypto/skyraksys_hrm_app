@@ -308,10 +308,10 @@ cd /opt/skyraksys-hrm/backend
 if [ -f .env ]; then
     DEFAULT_PASSWORD=$(grep "^SEED_DEFAULT_PASSWORD=" .env 2>/dev/null | cut -d '=' -f 2)
     if [ -z "$DEFAULT_PASSWORD" ]; then
-        DEFAULT_PASSWORD="SkyRak@Prod2025!Secure#HRM"
+        DEFAULT_PASSWORD="admin123"
     fi
 else
-    DEFAULT_PASSWORD="SkyRak@Prod2025!Secure#HRM"
+    DEFAULT_PASSWORD="admin123"
 fi
 
 echo -e "${CYAN}ℹ️  Demo password set to: ${DEFAULT_PASSWORD}${NC}"

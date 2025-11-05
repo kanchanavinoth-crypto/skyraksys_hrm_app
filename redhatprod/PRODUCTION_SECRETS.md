@@ -47,13 +47,13 @@
 ### Demo User Credentials
 | Email | Password | Role |
 |-------|----------|------|
-| `admin@skyraksys.com` | `SkyRak@Prod2025!Secure#HRM` | Administrator |
-| `hr@skyraksys.com` | `SkyRak@Prod2025!Secure#HRM` | HR Manager |
-| `lead@skyraksys.com` | `SkyRak@Prod2025!Secure#HRM` | Team Lead |
-| `employee1@skyraksys.com` | `SkyRak@Prod2025!Secure#HRM` | Employee |
-| `employee2@skyraksys.com` | `SkyRak@Prod2025!Secure#HRM` | Employee |
+| `admin@skyraksys.com` | `admin123` | Administrator |
+| `hr@skyraksys.com` | `admin123` | HR Manager |
+| `lead@skyraksys.com` | `admin123` | Team Lead |
+| `employee1@skyraksys.com` | `admin123` | Employee |
+| `employee2@skyraksys.com` | `admin123` | Employee |
 
-**Demo Password:** 28 characters, change after first login
+**Demo Password:** `admin123` - **NOT secure, change immediately after first login!**
 
 ---
 
