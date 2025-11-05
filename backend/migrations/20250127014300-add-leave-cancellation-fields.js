@@ -79,18 +79,38 @@ module.exports = {
     console.log('🔄 Rolling back migration: Remove leave cancellation fields...');
     
     try {
-      // Remove columns in reverse order
-      await queryInterface.removeColumn('leave_requests', 'cancelledAt');
-      console.log('✅ Removed column: cancelledAt');
+      // Check if table exists before attempting to drop columns
+      const tableExists = await queryInterface.showAllTables().then(tables => 
+        tables.includes('leave_requests')
+      );
       
-      await queryInterface.removeColumn('leave_requests', 'cancellationNote');
-      console.log('✅ Removed column: cancellationNote');
+      if (!tableExists) {
+        console.log('⏭️  leave_requests table does not exist, skipping rollback');
+        return;
+      }
+
+      // Check which columns exist before removing
+      const tableDescription = await queryInterface.describeTable('leave_requests');
       
-      await queryInterface.removeColumn('leave_requests', 'originalLeaveRequestId');
-      console.log('✅ Removed column: originalLeaveRequestId');
+      if (tableDescription.cancelledAt) {
+        await queryInterface.removeColumn('leave_requests', 'cancelledAt');
+        console.log('✅ Removed column: cancelledAt');
+      }
       
-      await queryInterface.removeColumn('leave_requests', 'isCancellation');
-      console.log('✅ Removed column: isCancellation');
+      if (tableDescription.cancellationNote) {
+        await queryInterface.removeColumn('leave_requests', 'cancellationNote');
+        console.log('✅ Removed column: cancellationNote');
+      }
+      
+      if (tableDescription.originalLeaveRequestId) {
+        await queryInterface.removeColumn('leave_requests', 'originalLeaveRequestId');
+        console.log('✅ Removed column: originalLeaveRequestId');
+      }
+      
+      if (tableDescription.isCancellation) {
+        await queryInterface.removeColumn('leave_requests', 'isCancellation');
+        console.log('✅ Removed column: isCancellation');
+      }
 
       console.log('✅ Successfully removed all leave cancellation columns');
     } catch (error) {

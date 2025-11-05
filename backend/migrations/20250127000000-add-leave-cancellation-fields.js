@@ -58,11 +58,31 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    // Remove columns in reverse order
-    await queryInterface.removeColumn('leave_requests', 'cancelledAt');
-    await queryInterface.removeColumn('leave_requests', 'cancellationNote');
-    await queryInterface.removeColumn('leave_requests', 'originalLeaveRequestId');
-    await queryInterface.removeColumn('leave_requests', 'isCancellation');
+    // Check if table exists before attempting to drop columns
+    const tableExists = await queryInterface.showAllTables().then(tables => 
+      tables.includes('leave_requests')
+    );
+    
+    if (!tableExists) {
+      console.log('⏭️  leave_requests table does not exist, skipping rollback');
+      return;
+    }
+
+    const tableDescription = await queryInterface.describeTable('leave_requests');
+    
+    // Remove columns only if they exist
+    if (tableDescription.cancelledAt) {
+      await queryInterface.removeColumn('leave_requests', 'cancelledAt');
+    }
+    if (tableDescription.cancellationNote) {
+      await queryInterface.removeColumn('leave_requests', 'cancellationNote');
+    }
+    if (tableDescription.originalLeaveRequestId) {
+      await queryInterface.removeColumn('leave_requests', 'originalLeaveRequestId');
+    }
+    if (tableDescription.isCancellation) {
+      await queryInterface.removeColumn('leave_requests', 'isCancellation');
+    }
 
     console.log('✅ Successfully removed leave cancellation columns');
   }

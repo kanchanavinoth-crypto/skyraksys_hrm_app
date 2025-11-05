@@ -12,6 +12,17 @@ module.exports = {
     const transaction = await queryInterface.sequelize.transaction();
     
     try {
+      console.log('🔄 Checking for weekly timesheet columns...');
+      
+      // Check if columns already exist (created by base migration)
+      const tableDescription = await queryInterface.describeTable('timesheets');
+      
+      if (tableDescription.weekStartDate) {
+        console.log('⏭️  Weekly timesheet columns already exist, skipping');
+        await transaction.commit();
+        return;
+      }
+
       console.log('🔄 Adding weekly timesheet columns...');
       
       // Add new weekly columns to existing timesheets table

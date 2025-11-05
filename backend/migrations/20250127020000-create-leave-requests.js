@@ -2,6 +2,16 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    // Check if table already exists (created by base migration)
+    const tableExists = await queryInterface.showAllTables().then(tables => 
+      tables.includes('leave_requests')
+    );
+    
+    if (tableExists) {
+      console.log('⏭️  leave_requests table already exists, skipping creation');
+      return;
+    }
+
     await queryInterface.createTable('leave_requests', {
       id: {
         type: Sequelize.UUID,
