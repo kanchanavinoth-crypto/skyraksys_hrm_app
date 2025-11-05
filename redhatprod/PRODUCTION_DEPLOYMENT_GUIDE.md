@@ -1,9 +1,10 @@
 # Skyraksys HRM - Production Deployment Guide
 ## For RHEL 9.6 with PostgreSQL, Nginx, and Node.js
 
-**Last Updated:** January 2025  
+**Last Updated:** November 5, 2025  
 **Target Audience:** System administrators and novice users  
-**Deployment Method:** Automated scripts with Sequelize migrations
+**Deployment Method:** Automated scripts with Sequelize migrations  
+**⚠️ IMPORTANT:** Includes critical migration fixes (commit cb801fa) - See [Migration Updates](#migration-updates)
 
 ---
 
@@ -247,6 +248,23 @@ chown hrmapp:hrmapp /opt/skyraksys-hrm/.db_password
 
 ## Database Setup (Sequelize)
 
+### ⚠️ Migration Updates (November 5, 2025)
+
+**CRITICAL FIX:** Migration system has been completely overhauled to fix production deployment issues:
+
+- ✅ **New base migration (20241201000000-create-base-tables.js)** - Creates all 15 core tables in one atomic transaction
+- ✅ **Idempotent migrations** - All migrations now check if tables/columns exist before creating
+- ✅ **Fresh database support** - Tested successfully from empty database
+- ✅ **Fixed ordering issues** - Base migration runs first, preventing dependency errors
+- ✅ **10 working migrations** - All migrations updated with existence checks
+
+**What changed:**
+- Previous: Application used `sequelize.sync()` + partial migrations (only 3 migrations created tables)
+- Now: Complete migration-based architecture (all 15 tables created via migrations)
+- Result: Production deployments now work reliably from fresh databases
+
+**Before deploying:** Ensure you have the latest code (commit cb801fa or later) with these migration fixes.
+
 ### Understanding Sequelize Migrations
 
 This application uses **Sequelize ORM** with **migration-based schema management**:
@@ -254,8 +272,9 @@ This application uses **Sequelize ORM** with **migration-based schema management
 - ✅ **No manual SQL files** - Schema is defined in migration files
 - ✅ **Version controlled** - All schema changes tracked in Git
 - ✅ **Automatic execution** - Setup script runs migrations automatically
-- ✅ **Idempotent** - Safe to run multiple times
+- ✅ **Idempotent** - Safe to run multiple times (with new fixes)
 - ✅ **Rollback support** - Can undo migrations if needed
+- ✅ **Fresh database tested** - Works correctly on empty databases
 
 ### Automated Database Setup
 

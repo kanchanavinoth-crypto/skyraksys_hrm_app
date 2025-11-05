@@ -2,9 +2,10 @@
 
 This directory contains all the necessary components for deploying and maintaining the Skyraksys HRM system on Red Hat Enterprise Linux 9.6 with PostgreSQL 17.x and Sequelize ORM.
 
-**Last Updated**: November 4, 2025  
-**Production IP**: 95.216.14.232 (default, configurable)  
-**Database**: PostgreSQL 17.x with Sequelize migrations
+**Last Updated:** November 5, 2025  
+**Production IP:** 95.216.14.232 (default, configurable)  
+**Database:** PostgreSQL 17.x with Sequelize migrations  
+**⚠️ CRITICAL UPDATE:** Read [MIGRATION_FIX_NOTICE.md](MIGRATION_FIX_NOTICE.md) and [DEPLOY_UPDATE_REQUIRED.md](DEPLOY_UPDATE_REQUIRED.md) before next deployment
 
 ---
 

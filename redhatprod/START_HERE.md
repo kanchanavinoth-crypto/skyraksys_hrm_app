@@ -151,7 +151,21 @@ For step-by-step instructions, see:
 
 ---
 
-## ✅ What's New (January 2025 Update)
+## ✅ What's New (November 5, 2025 Update)
+
+### 🔥 Critical Migration Fixes
+
+**Production deployment migration issues RESOLVED:**
+
+- ✅ **Complete migration architecture** - New base migration creates all 15 core tables
+- ✅ **Idempotent migrations** - All migrations now safe to run multiple times
+- ✅ **Fresh database support** - Tested successfully from empty database
+- ✅ **Fixed ordering bugs** - Migrations now run in correct dependency order
+- ✅ **10 working migrations** - All migration files updated with existence checks
+
+**Action Required:** Pull commit `cb801fa` or later before deploying to production.
+
+### Previous Updates (January 2025)
 
 ### Database Setup
 - ✅ **Sequelize migrations** (no manual SQL files)
