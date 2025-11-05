@@ -250,20 +250,32 @@ chown hrmapp:hrmapp /opt/skyraksys-hrm/.db_password
 
 ### ⚠️ Migration Updates (November 5, 2025)
 
-**CRITICAL FIX:** Migration system has been completely overhauled to fix production deployment issues:
+**CRITICAL FIXES:** Migration system and database configuration have been completely overhauled to fix production deployment issues:
 
+#### Migration Architecture Fix (Commit cb801fa)
 - ✅ **New base migration (20241201000000-create-base-tables.js)** - Creates all 15 core tables in one atomic transaction
 - ✅ **Idempotent migrations** - All migrations now check if tables/columns exist before creating
 - ✅ **Fresh database support** - Tested successfully from empty database
 - ✅ **Fixed ordering issues** - Base migration runs first, preventing dependency errors
-- ✅ **10 working migrations** - All migrations updated with existence checks
+- ✅ **10 working migrations** - All migration files updated with existence checks
 
 **What changed:**
 - Previous: Application used `sequelize.sync()` + partial migrations (only 3 migrations created tables)
 - Now: Complete migration-based architecture (all 15 tables created via migrations)
 - Result: Production deployments now work reliably from fresh databases
 
-**Before deploying:** Ensure you have the latest code (commit cb801fa or later) with these migration fixes.
+#### Database User Configuration Fix (Commit 17c00a1)
+- ✅ **config.json → config.js** - Replaced static config with dynamic environment variable loading
+- ✅ **DATABASE_URL removed** - No longer needed, migrations now read DB_USER/DB_PASSWORD from `.env`
+- ✅ **Consistent credentials** - Migrations, seeders, and application all use same database user (hrm_app)
+- ✅ **.sequelizerc updated** - Now points to `config.js` for Sequelize CLI commands
+
+**What changed:**
+- Previous: `config.json` expected `DATABASE_URL` env var (never set), causing migration failures
+- Now: `config.js` loads all DB credentials from `.env` via dotenv (same source as application)
+- Result: No more configuration mismatches between migrations and runtime
+
+**Before deploying:** Ensure you have the latest code (commit cb801fa and 17c00a1 or later) with these fixes.
 
 ### Understanding Sequelize Migrations
 

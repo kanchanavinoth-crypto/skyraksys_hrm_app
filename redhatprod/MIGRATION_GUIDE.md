@@ -4,6 +4,8 @@
 
 This guide covers running database migrations in production with comprehensive before/after reporting and demo data seeding.
 
+**⚠️ IMPORTANT (Nov 5, 2025):** Migrations now use `backend/config/config.js` which loads database credentials from `.env` file (same as application). No need to set DATABASE_URL - migrations read DB_USER/DB_PASSWORD directly from environment via dotenv. See commit 17c00a1 for details.
+
 ## Scripts Available
 
 ### 1. `03_migrate_and_seed_production.sh` (Production - Full)

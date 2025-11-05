@@ -162,8 +162,13 @@ For step-by-step instructions, see:
 - ✅ **Fresh database support** - Tested successfully from empty database
 - ✅ **Fixed ordering bugs** - Migrations now run in correct dependency order
 - ✅ **10 working migrations** - All migration files updated with existence checks
+- ✅ **Database user consistency** - Migrations, seeders, and application now all use same database user (hrm_app)
+  - **Changed:** `backend/config/config.json` → `backend/config/config.js` (commit 17c00a1)
+  - **Why:** Migrations now load DB credentials from `.env` via dotenv (same as application)
+  - **Impact:** No more config mismatches - DATABASE_URL not needed anymore
+  - **Verified:** `.sequelizerc` now points to `config.js` for Sequelize CLI
 
-**Action Required:** Pull commit `cb801fa` or later before deploying to production.
+**Action Required:** Pull commit `cb801fa` (migrations) and `17c00a1` (config fix) or later before deploying to production.
 
 ### Previous Updates (January 2025)
 
