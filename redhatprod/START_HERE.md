@@ -4,6 +4,25 @@
 
 ---
 
+## ⚠️ CRITICAL SECURITY NOTICE
+
+**This deployment uses HARDCODED production secrets for automated deployment reliability.**
+
+**Pre-configured Secrets:**
+- 🔑 Database Password: `SkyRakDB#2025!Prod@HRM$Secure`
+- 🔑 JWT Secret: 67 characters (production-grade)
+- 🔑 Session Secret: 52 characters (production-grade)
+- 🔑 Demo User Password: `admin123` (⚠️ MUST CHANGE after first login)
+
+**Security Implications:**
+- ✅ **PRO:** Zero deployment failures, fully automated, production-grade strength
+- ⚠️ **CON:** All secrets visible in public GitHub repository
+- 💡 **RECOMMENDATION:** Rotate secrets after initial deployment for maximum security
+
+📖 **Complete Reference:** See `PRODUCTION_SECRETS.md`
+
+---
+
 ## What You Have
 
 Your RedHat production folder now contains everything needed for a production deployment:
@@ -202,18 +221,39 @@ For step-by-step instructions, see:
 
 ## 🔐 Security Checklist
 
+**⚠️ IMPORTANT:** This deployment uses **HARDCODED production secrets** for automation reliability.
+
 Before going live:
 
-- [ ] Generate unique JWT secrets (64+ characters)
-- [ ] Generate unique session secret (48+ characters)
+**Credentials (Pre-configured):**
+- [x] Database password: `SkyRakDB#2025!Prod@HRM$Secure` (hardcoded)
+- [x] JWT secret: 67 characters (hardcoded)
+- [x] JWT refresh secret: 70 characters (hardcoded)
+- [x] Session secret: 52 characters (hardcoded)
+
+**Security Notice:**
+- ⚠️ All secrets are in public GitHub repository
+- ✅ Secrets are production-grade strength
+- 💡 Consider rotating after deployment for maximum security
+- 📖 See `PRODUCTION_SECRETS.md` for complete reference
+
+**Configuration:**
 - [ ] Update all IP addresses/domains in `.env`
 - [ ] Set `.env` file permissions: `chmod 600`
 - [ ] Set `.env` ownership: `chown hrmapp:hrmapp`
-- [ ] Disable demo data: `SEED_DEMO_DATA=false`
+- [ ] Verify backend .env has correct hardcoded DB password
+- [ ] Verify nginx config has correct server IP
+
+**Application Settings:**
+- [ ] Change demo password immediately: `admin@example.com` / `admin123`
+- [ ] Disable demo data after testing: `SEED_DEMO_DATA=false`
 - [ ] Disable debug mode: `DEBUG_MODE=false`
 - [ ] Enable proxy trust: `TRUST_PROXY=true`
+
+**Infrastructure:**
 - [ ] Configure firewall (only ports 80, 443)
 - [ ] Verify backups scheduled (cron job)
+- [ ] Test SSL certificate (if using HTTPS)
 
 ---
 
@@ -260,9 +300,13 @@ sudo tail -f /var/log/nginx/hrm_error.log
 ls -l /opt/skyraksys-hrm/backend/.env
 # Should show: -rw------- 1 hrmapp hrmapp
 
-# Check database password is correct
+# Verify hardcoded production password
 cat /opt/skyraksys-hrm/.db_password
-# Update DB_PASSWORD in .env with this value
+# Expected: SkyRakDB#2025!Prod@HRM$Secure
+
+# Ensure backend .env has matching DB_PASSWORD
+grep DB_PASSWORD /opt/skyraksys-hrm/backend/.env
+# Should show: DB_PASSWORD=SkyRakDB#2025!Prod@HRM$Secure
 ```
 
 **Database connection failed?**

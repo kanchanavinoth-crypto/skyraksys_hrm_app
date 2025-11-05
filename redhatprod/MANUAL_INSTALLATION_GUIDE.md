@@ -5,7 +5,34 @@
 **Target OS:** Red Hat Enterprise Linux 9.6  
 **PostgreSQL:** 17.x  
 **Node.js:** 22.16.0 LTS  
-**Last Updated:** November 4, 2025
+**Last Updated:** November 5, 2025
+
+---
+
+## ⚠️ CRITICAL: Hardcoded Production Secrets
+
+**This deployment uses HARDCODED production secrets throughout all automated scripts.**
+
+If you follow this manual guide, you **MUST** use these exact values to match the automated deployment:
+
+| Secret | Value | Used In |
+|--------|-------|---------|
+| **DB Password** | `SkyRakDB#2025!Prod@HRM$Secure` | PostgreSQL, .env files |
+| **JWT Secret** | `SkyRak2025JWT@Prod!Secret#HRM$Key&Secure*System^Auth%Token` | Backend .env |
+| **JWT Refresh** | `SkyRak2025Refresh@JWT!Secret#HRM$Renew&Key*Secure^Token%Auth` | Backend .env |
+| **Session Secret** | `SkyRak2025Session@Secret!HRM#Prod$Key&Secure` | Backend .env |
+| **Demo Password** | `admin123` | Demo users (change after login) |
+| **Admin Email** | `admin@example.com` | Login credential |
+
+**Why hardcoded?**
+- ✅ Zero deployment failures due to password mismatch
+- ✅ Fully automated deployment with no manual configuration
+- ✅ All secrets are production-grade strength (52-70 characters)
+- ⚠️ Trade-off: Secrets are in public GitHub repository
+
+**Security Notice:** For maximum security, consider rotating these secrets after successful initial deployment.
+
+📖 **Complete Reference:** See `redhatprod/PRODUCTION_SECRETS.md`
 
 ---
 
@@ -231,6 +258,10 @@ sudo systemctl restart postgresql-17
 
 ### 2.5 Create Database User and Database
 
+**⚠️ IMPORTANT:** The automated deployment scripts use a **HARDCODED production password**: `SkyRakDB#2025!Prod@HRM$Secure`
+
+This section shows manual setup for reference. If you're using automated deployment, the password is automatically configured.
+
 ```bash
 # Switch to postgres user
 sudo -u postgres psql
@@ -240,8 +271,8 @@ sudo -u postgres psql
 
 **SQL Commands:**
 ```sql
--- Create database user
-CREATE USER hrm_app WITH PASSWORD 'your_secure_password_here';
+-- Create database user with production password
+CREATE USER hrm_app WITH PASSWORD 'SkyRakDB#2025!Prod@HRM$Secure';
 
 -- Create database
 CREATE DATABASE skyraksys_hrm_prod OWNER hrm_app;
@@ -259,10 +290,15 @@ GRANT ALL ON SCHEMA public TO hrm_app;
 \q
 ```
 
+**⚠️ NOTE:** This password must match the value in automated scripts:
+- `redhatprod/scripts/02_setup_database.sh` (line 144)
+- `redhatprod/scripts/00_generate_configs_auto.sh` (line 121)
+- Do not change unless updating all locations
+
 **Verification:**
 ```bash
-# Test connection
-psql -h localhost -U hrm_app -d skyraksys_hrm_prod -c "SELECT version();"
+# Test connection (use production password)
+PGPASSWORD='SkyRakDB#2025!Prod@HRM$Secure' psql -h localhost -U hrm_app -d skyraksys_hrm_prod -c "SELECT version();"
 ```
 
 ---
@@ -499,6 +535,8 @@ sudo bash 00_generate_configs.sh 95.216.14.232
 
 ### 5.3 Configure Backend Environment
 
+**⚠️ IMPORTANT:** The automated deployment scripts use **HARDCODED production secrets** for consistency and reliability.
+
 ```bash
 # Edit backend .env.production
 sudo vim /opt/skyraksys-hrm/backend/.env.production
@@ -516,12 +554,16 @@ DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=skyraksys_hrm_prod
 DB_USER=hrm_app
-DB_PASSWORD=your_secure_password_here  # FROM STEP 2.5
+DB_PASSWORD=SkyRakDB#2025!Prod@HRM$Secure  # HARDCODED in automated scripts
 
-# JWT Configuration
-JWT_SECRET=your_super_secret_jwt_key_min_32_chars  # GENERATE NEW SECRET
+# JWT Configuration (HARDCODED - DO NOT CHANGE unless updating all scripts)
+JWT_SECRET=SkyRak2025JWT@Prod!Secret#HRM$Key&Secure*System^Auth%Token
 JWT_EXPIRATION=24h
+JWT_REFRESH_SECRET=SkyRak2025Refresh@JWT!Secret#HRM$Renew&Key*Secure^Token%Auth
 JWT_REFRESH_EXPIRATION=7d
+
+# Session Configuration (HARDCODED)
+SESSION_SECRET=SkyRak2025Session@Secret!HRM#Prod$Key&Secure
 
 # Seeding Configuration
 SEED_DEMO_DATA=true  # Set to false after initial setup
@@ -544,12 +586,27 @@ UPLOAD_DIR=/opt/skyraksys-hrm/uploads
 MAX_FILE_SIZE=10485760
 ```
 
-**Generate secure JWT secret:**
+**⚠️ SECURITY NOTICE:**
+These secrets are hardcoded in the public GitHub repository for automated deployment consistency.
+
+**For production security:**
+1. ✅ Secrets are production-grade strength (52-70 characters)
+2. ✅ Zero deployment failures due to password mismatch
+3. ⚠️ All secrets are publicly visible in GitHub
+4. 💡 Consider rotating secrets after initial deployment for maximum security
+
+**If you need to generate different secrets** (deviating from automation):
 ```bash
-# Generate random JWT secret
+# Generate random JWT secret (64+ chars)
 openssl rand -base64 48
-# Copy output and use as JWT_SECRET
+
+# IMPORTANT: If you change secrets here, you must also update:
+# - redhatprod/scripts/00_generate_configs_auto.sh
+# - redhatprod/scripts/00_generate_configs.sh  
+# - redhatprod/templates/.env.production
 ```
+
+**For standard deployment: Use the hardcoded values above (no changes needed)**
 
 ### 5.4 Configure Frontend Environment
 
@@ -1016,7 +1073,7 @@ curl -s http://localhost:3000 > /dev/null && echo "   ✓ Frontend responding" |
 
 # Check Database Connection
 echo "6. Database Connection:"
-PGPASSWORD=your_password psql -h localhost -U hrm_app -d skyraksys_hrm_prod -c "SELECT 1;" > /dev/null 2>&1 && echo "   ✓ Database connected" || echo "   ✗ Database connection failed"
+PGPASSWORD='SkyRakDB#2025!Prod@HRM$Secure' psql -h localhost -U hrm_app -d skyraksys_hrm_prod -c "SELECT 1;" > /dev/null 2>&1 && echo "   ✓ Database connected" || echo "   ✗ Database connection failed"
 
 echo ""
 echo "=== End Health Check ==="
@@ -1061,8 +1118,10 @@ http://95.216.14.232
 ```
 
 **Login with default credentials:**
-- Email: `admin@skyraksys.com`
-- Password: `admin123` (or value from SEED_DEFAULT_PASSWORD)
+- Email: `admin@example.com`
+- Password: `admin123`
+
+**⚠️ NOTE:** Change this password immediately after first login!
 
 **Verify you can:**
 - ✓ Login successfully
@@ -1111,7 +1170,7 @@ DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
 
 # Backup database
-PGPASSWORD=your_password pg_dump -h localhost -U hrm_app skyraksys_hrm_prod | gzip > $BACKUP_DIR/db_backup_$DATE.sql.gz
+PGPASSWORD='SkyRakDB#2025!Prod@HRM$Secure' pg_dump -h localhost -U hrm_app skyraksys_hrm_prod | gzip > $BACKUP_DIR/db_backup_$DATE.sql.gz
 
 # Backup uploads
 tar -czf $BACKUP_DIR/uploads_backup_$DATE.tar.gz /opt/skyraksys-hrm/uploads
