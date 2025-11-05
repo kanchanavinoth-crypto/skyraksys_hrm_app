@@ -1,6 +1,5 @@
 # RedHatProd Scripts - Code Review Report
 **Date:** November 5, 2025  
-**Reviewer:** GitHub Copilot  
 **Scope:** All automated deployment scripts in `redhatprod/scripts/`
 
 ---

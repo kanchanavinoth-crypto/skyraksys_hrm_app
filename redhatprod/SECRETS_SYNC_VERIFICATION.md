@@ -244,5 +244,4 @@ sudo bash deploy.sh 95.216.14.232
 ---
 
 **Verification Completed:** November 5, 2025  
-**Verified By:** GitHub Copilot  
 **Next Review:** After production deployment or secret rotation
