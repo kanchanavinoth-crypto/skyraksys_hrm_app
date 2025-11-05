@@ -17,7 +17,24 @@
 # 7. Creates database maintenance scripts
 # 8. Configures proper security settings
 #
-# UPDATED: January 2025
+# CONFIGURATION:
+# Database credentials are loaded with the following precedence:
+#   1. Environment variables (DB_NAME, DB_USER, DB_HOST, DB_PORT)
+#   2. Backend .env file (/opt/skyraksys-hrm/backend/.env)
+#   3. Hardcoded defaults (skyraksys_hrm_prod, hrm_app, localhost, 5432)
+#
+# Override examples:
+#   export DB_NAME="custom_db_name"
+#   export DB_USER="custom_user"
+#   sudo bash 02_setup_database.sh
+#
+# Or edit /opt/skyraksys-hrm/backend/.env before running this script.
+#
+# Password is always auto-generated and saved to /opt/skyraksys-hrm/.db_password
+#
+# UPDATED: November 5, 2025
+# - Added configuration precedence (ENV → .env → defaults)
+# - Fixed password exposure in command line (security fix)
 # - Replaced manual SQL files with Sequelize migration system
 # - Added Sequelize seeder support
 # - Improved error handling and idempotency
@@ -41,11 +58,36 @@ BACKUP_DIR="${APP_DIR}/backups"
 LOG_FILE="/var/log/skyraksys-hrm/database-setup.log"
 DB_PASSWORD_FILE="${APP_DIR}/.db_password"
 
-# Default database configuration (can be overridden by .env file)
-DB_NAME="skyraksys_hrm_prod"
-DB_USER="hrm_app"
-DB_HOST="localhost"
-DB_PORT="5432"
+# Database configuration with precedence:
+# 1. Environment variables (if set)
+# 2. Backend .env file (if exists)
+# 3. Hardcoded defaults
+DB_NAME="${DB_NAME:-skyraksys_hrm_prod}"
+DB_USER="${DB_USER:-hrm_app}"
+DB_HOST="${DB_HOST:-localhost}"
+DB_PORT="${DB_PORT:-5432}"
+
+# Try to load from backend .env file if it exists
+if [[ -f "${BACKEND_DIR}/.env" ]]; then
+    # Source only the DB_ variables from .env file
+    while IFS='=' read -r key value; do
+        # Skip comments and empty lines
+        [[ "$key" =~ ^#.*$ || -z "$key" ]] && continue
+        # Only load DB_ variables if not already set
+        if [[ "$key" =~ ^DB_(NAME|USER|HOST|PORT)$ ]]; then
+            # Remove quotes from value
+            value="${value%\"}"
+            value="${value#\"}"
+            # Only set if current value is still the default
+            case "$key" in
+                DB_NAME) [[ "$DB_NAME" == "skyraksys_hrm_prod" ]] && DB_NAME="$value" ;;
+                DB_USER) [[ "$DB_USER" == "hrm_app" ]] && DB_USER="$value" ;;
+                DB_HOST) [[ "$DB_HOST" == "localhost" ]] && DB_HOST="$value" ;;
+                DB_PORT) [[ "$DB_PORT" == "5432" ]] && DB_PORT="$value" ;;
+            esac
+        fi
+    done < "${BACKEND_DIR}/.env"
+fi
 
 ################################################################################
 # Utility Functions
