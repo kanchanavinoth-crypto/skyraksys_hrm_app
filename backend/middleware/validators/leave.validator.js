@@ -10,9 +10,12 @@ const Joi = require('joi');
  * Schema for creating a leave request
  */
 const createLeaveRequestSchema = Joi.object({
+  // employeeId is set server-side from the authenticated token (req.employeeId)
+  // Frontend should NOT send employeeId. Make this optional so validation
+  // accepts client requests that omit employeeId.
   employeeId: Joi.string()
     .uuid()
-    .required(),
+    .optional(),
 
   leaveTypeId: Joi.string()
     .uuid()
