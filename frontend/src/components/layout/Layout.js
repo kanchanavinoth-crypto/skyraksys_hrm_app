@@ -309,130 +309,95 @@ const Layout = () => {
     const menuStructure = getMenuStructure();
 
     const modernDrawerContent = (
-      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'transparent' }}>
-        {/* Header */}
-        <Paper 
-          elevation={0}
-          sx={{ 
-            p: 3, 
-            background: '#ffffff',
-            borderRadius: 0,
-            borderBottom: '1px solid #e2e8f0'
-          }}
-        >
-          <Stack direction="row" alignItems="center" spacing={2}>
-            <Avatar 
+      <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {/* Minimal Header */}
+        <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <BusinessIcon sx={{ color: 'primary.main', fontSize: 24 }} />
+            <Typography 
+              variant="subtitle1" 
               sx={{ 
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                width: 48, 
-                height: 48,
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
+                fontWeight: 500,
+                color: 'text.primary'
               }}
             >
-              <BusinessIcon sx={{ color: 'white', fontSize: 28 }} />
-            </Avatar>
-            <Box>
-              <Typography 
-                variant="h6" 
-                sx={{ 
-                  color: theme.palette.text.primary, 
-                  fontWeight: 'bold',
-                }}
-              >
-                SKYRAKSYS
-              </Typography>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  color: theme.palette.text.secondary,
-                  fontWeight: 'medium',
-                  fontSize: '0.75rem'
-                }}
-              >
-                Human Resource Management
-              </Typography>
-            </Box>
+              SKYRAKSYS HRM
+            </Typography>
           </Stack>
-        </Paper>
+        </Box>
 
-        {/* Navigation Items */}
-        <Box sx={{ flexGrow: 1, p: 2, bgcolor: 'transparent', overflow: 'auto' }}>
-          <List sx={{ pt: 0 }}>
+        {/* Minimal Navigation */}
+        <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+          <List sx={{ py: 1 }}>
             {menuStructure.map((group) => (
               <React.Fragment key={group.id}>
-                <ListItemButton 
-                  onClick={() => handleGroupClick(group.id)}
+                {/* Group Label */}
+                <Typography
+                  variant="caption"
                   sx={{
-                    py: 1.5,
                     px: 2,
-                    mb: 0.5,
-                    borderRadius: 2,
-                    color: theme.palette.text.primary,
-                    '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08)
-                    }
+                    py: 1,
+                    display: 'block',
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1
                   }}
                 >
-                  <ListItemIcon sx={{ color: theme.palette.primary.main, minWidth: 40 }}>
-                    {group.icon}
-                  </ListItemIcon>
-                  <ListItemText 
-                    primary={group.label}
-                    primaryTypographyProps={{
-                      fontWeight: 600,
-                      fontSize: '0.9rem'
-                    }}
-                  />
-                  {openGroups[group.id] ? <ExpandLess /> : <ExpandMore />}
-                </ListItemButton>
+                  {group.label}
+                </Typography>
                 
-                <Collapse in={openGroups[group.id]} timeout="auto" unmountOnExit>
-                  <List component="div" disablePadding>
-                    {group.items.map((item) => (
-                      <ListItemButton
-                        key={item.path}
-                        component={NavLink}
-                        to={item.path}
-                        sx={{
-                          pl: 4,
-                          py: 1,
-                          borderRadius: 2,
-                          ml: 1,
-                          mr: 1,
-                          color: theme.palette.text.secondary,
-                          '&.active': {
-                            backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                            borderLeft: `4px solid ${theme.palette.primary.main}`,
-                            color: theme.palette.primary.main,
-                            fontWeight: 600
-                          },
-                          '&:hover': {
-                            backgroundColor: alpha(theme.palette.primary.main, 0.06)
-                          }
-                        }}
-                      >
-                        <ListItemIcon sx={{ color: 'inherit', minWidth: 36 }}>
-                          {item.icon}
-                        </ListItemIcon>
-                        <ListItemText 
-                          primary={item.label}
-                          primaryTypographyProps={{
-                            fontSize: '0.875rem'
-                          }}
-                        />
-                      </ListItemButton>
-                    ))}
-                  </List>
-                </Collapse>
+                {/* Group Items */}
+                {group.items.map((item) => (
+                  <ListItemButton
+                    key={item.path}
+                    component={NavLink}
+                    to={item.path}
+                    sx={{
+                      py: 1,
+                      px: 2,
+                      mx: 1,
+                      mb: 0.5,
+                      borderRadius: 1,
+                      color: 'text.secondary',
+                      '&.active': {
+                        backgroundColor: 'action.selected',
+                        borderLeft: '3px solid',
+                        borderLeftColor: 'primary.main',
+                        color: 'primary.main',
+                        '& .MuiListItemIcon-root': {
+                          color: 'primary.main'
+                        }
+                      },
+                      '&:hover': {
+                        backgroundColor: 'action.hover'
+                      }
+                    }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={item.label}
+                      primaryTypographyProps={{
+                        fontSize: '0.875rem',
+                        fontWeight: 400
+                      }}
+                    />
+                  </ListItemButton>
+                ))}
+                
+                {/* Subtle divider between groups */}
+                <Box sx={{ height: 8 }} />
               </React.Fragment>
             ))}
           </List>
         </Box>
 
-        {/* Footer */}
-        <Box sx={{ p: 2, textAlign: 'center', borderTop: `1px solid ${theme.palette.divider}`, bgcolor: 'transparent' }}>
-          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 500 }}>
-            © 2025 SKYRAKSYS HRM v2.0
+        {/* Minimal Footer */}
+        <Box sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            v2.0
           </Typography>
         </Box>
       </Box>
@@ -568,10 +533,10 @@ const Layout = () => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              background: `linear-gradient(180deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.background.default, 0.95)} 100%)`,
-              color: theme.palette.text.primary,
-              borderRight: `1px solid ${theme.palette.divider}`,
-            },
+              backgroundColor: 'background.paper',
+              borderRight: '1px solid',
+              borderRightColor: 'divider'
+            }
           }}
         >
           {modernDrawerContent}
@@ -585,11 +550,10 @@ const Layout = () => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: drawerWidth,
-              background: `linear-gradient(180deg, ${theme.palette.background.default} 0%, ${alpha(theme.palette.background.default, 0.95)} 100%)`,
-              color: theme.palette.text.primary,
-              borderRight: `1px solid ${theme.palette.divider}`,
-              boxShadow: '2px 0 8px rgba(0,0,0,0.04)'
-            },
+              backgroundColor: 'background.paper',
+              borderRight: '1px solid',
+              borderRightColor: 'divider'
+            }
           }}
           open
         >

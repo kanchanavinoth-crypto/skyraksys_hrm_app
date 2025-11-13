@@ -160,6 +160,14 @@ function App() {
                         </SmartErrorBoundary>
                       } />
                       
+                      <Route path="performance" element={
+                        <SmartErrorBoundary level="page">
+                          <Suspense fallback={<EnhancedLoadingFallback text="Loading Performance Dashboard..." />}>
+                            <PerformanceDashboard />
+                          </Suspense>
+                        </SmartErrorBoundary>
+                      } />
+                      
                       {/* Employee Management Routes with Error Boundaries */}
                       <Route path="employees" element={
                         <SmartErrorBoundary level="page">

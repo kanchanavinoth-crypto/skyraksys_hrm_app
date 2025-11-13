@@ -196,7 +196,7 @@ const timesheetQuerySchema = Joi.object({
     .optional(),
 
   status: Joi.string()
-    .valid('Draft', 'Submitted', 'Approved', 'Rejected')
+    .valid('Draft', 'Submitted', 'Approved', 'Rejected', 'draft', 'submitted', 'approved', 'rejected')
     .optional(),
 
   weekStartDate: Joi.date()

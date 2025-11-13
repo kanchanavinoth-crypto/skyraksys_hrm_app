@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Container,
   Card,
   CardContent,
   Typography,
@@ -23,7 +24,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button
+  Button,
+  Tabs,
+  Tab,
+  Stack,
+  CircularProgress,
+  Divider
 } from '@mui/material';
 import {
   Speed as SpeedIcon,
@@ -34,73 +40,125 @@ import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
   Warning as WarningIcon,
-  CheckCircle as CheckIcon
+  CheckCircle as CheckIcon,
+  Computer as ServerIcon,
+  Devices as ClientIcon,
+  Api as ApiIcon,
+  Storage as StorageIcon
 } from '@mui/icons-material';
-import { 
-  usePerformanceMonitor, 
-  useAPIPerformanceMonitor, 
-  useMemoryMonitor 
-} from '../../../hooks/usePerformanceMonitor';
-import { getPerformanceMetrics } from '../../../services/optimizedAPI';
+import { useAuth } from '../../../contexts/AuthContext';
+import performanceService from '../../../services/performance.service';
 
 /**
  * Performance Dashboard Component
- * Real-time monitoring of application performance
+ * Real-time monitoring for both client and server performance
  */
 const PerformanceDashboard = () => {
-  const [apiMetrics, setApiMetrics] = useState(null);
-  const [isMonitoring, setIsMonitoring] = useState(true);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   
-  const { memoryInfo, getMemoryUsagePercent } = useMemoryMonitor();
-  const memoryUsagePercent = getMemoryUsagePercent();
+  // Server metrics (admin only)
+  const [serverMetrics, setServerMetrics] = useState(null);
+  const [apiMetrics, setApiMetrics] = useState(null);
+  
+  // Client metrics (all users)
+  const [clientMetrics, setClientMetrics] = useState(null);
+  const [healthMetrics, setHealthMetrics] = useState(null);
+  
+  const isAdmin = user?.role === 'admin';
 
-  // Fetch API performance metrics
-  useEffect(() => {
-    const fetchMetrics = () => {
-      if (isMonitoring) {
-        const metrics = getPerformanceMetrics();
-        setApiMetrics(metrics);
-      }
-    };
-
-    fetchMetrics();
+  // Fetch server metrics (admin only)
+  const fetchServerMetrics = async () => {
+    if (!isAdmin) return;
     
-    let interval;
-    if (autoRefresh) {
-      interval = setInterval(fetchMetrics, 2000); // Update every 2 seconds
+    try {
+      setLoading(true);
+      const [serverRes, apiRes] = await Promise.all([
+        performanceService.getServerMetrics(),
+        performanceService.getAPIMetrics()
+      ]);
+      
+      if (serverRes.success) setServerMetrics(serverRes.data);
+      if (apiRes.success) setApiMetrics(apiRes.data);
+    } catch (error) {
+      console.error('Failed to fetch server metrics:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isMonitoring, autoRefresh]);
+  // Fetch client metrics (all users)
+  const fetchClientMetrics = async () => {
+    try {
+      setLoading(true);
+      const [clientRes, healthRes] = await Promise.all([
+        Promise.resolve(performanceService.getClientMetrics()),
+        performanceService.getHealthMetrics()
+      ]);
+      
+      setClientMetrics(clientRes);
+      if (healthRes.success) setHealthMetrics(healthRes.data);
+    } catch (error) {
+      console.error('Failed to fetch client metrics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const getPerformanceScore = () => {
-    if (!apiMetrics) return 0;
+  // Initial data fetch
+  useEffect(() => {
+    if (activeTab === 0) {
+      fetchClientMetrics();
+    } else if (activeTab === 1 && isAdmin) {
+      fetchServerMetrics();
+    }
+  }, [activeTab, isAdmin]);
+
+  // Auto refresh
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      if (activeTab === 0) {
+        fetchClientMetrics();
+      } else if (activeTab === 1 && isAdmin) {
+        fetchServerMetrics();
+      }
+    }, 5000); // Refresh every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [activeTab, autoRefresh, isAdmin]);
+
+  const getServerPerformanceScore = () => {
+    if (!serverMetrics || !apiMetrics) return 0;
     
     let score = 100;
     
-    // Penalize high error rate
-    const errorRate = parseFloat(apiMetrics.errorRate);
+    // API error rate penalty
+    const errorRate = parseFloat(apiMetrics.requests.errorRate);
     if (errorRate > 5) score -= 20;
     if (errorRate > 10) score -= 30;
     
-    // Penalize slow average response time
-    if (apiMetrics.averageResponseTime > 500) score -= 15;
-    if (apiMetrics.averageResponseTime > 1000) score -= 25;
+    // Response time penalty
+    if (apiMetrics.responseTime.average > 500) score -= 15;
+    if (apiMetrics.responseTime.average > 1000) score -= 25;
     
-    // Penalize high memory usage
-    if (memoryUsagePercent > 70) score -= 10;
-    if (memoryUsagePercent > 85) score -= 20;
+    // Memory usage penalty
+    if (serverMetrics.memory.system.usagePercent > 80) score -= 20;
+    if (serverMetrics.memory.system.usagePercent > 90) score -= 30;
     
-    // Reward good cache hit rate
-    const cacheHitRate = parseFloat(apiMetrics.cacheHitRate);
-    if (cacheHitRate > 50) score += 5;
-    if (cacheHitRate > 70) score += 10;
+    // CPU load penalty
+    if (serverMetrics.cpu.loadAverage['1min'] > 2) score -= 15;
+    if (serverMetrics.cpu.loadAverage['1min'] > 4) score -= 25;
     
     return Math.max(0, Math.min(100, score));
+  };
+
+  const getClientPerformanceScore = () => {
+    if (!clientMetrics) return 0;
+    return performanceService.calculatePerformanceScore(clientMetrics);
   };
 
   const getScoreColor = (score) => {
@@ -110,22 +168,78 @@ const PerformanceDashboard = () => {
   };
 
   const formatBytes = (bytes) => {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    if (bytes === 0) return '0 Bytes';
-    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+    if (!bytes) return '0 B';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const performanceScore = getPerformanceScore();
+  const formatUptime = (seconds) => {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return `${days}d ${hours}h ${minutes}m`;
+  };
+
+  const MetricCard = ({ title, value, subtitle, color = 'primary', icon }) => (
+    <Card sx={{ height: '100%' }}>
+      <CardContent sx={{ p: 2 }}>
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+          {icon}
+          <Typography variant="subtitle2" color="text.secondary">
+            {title}
+          </Typography>
+        </Stack>
+        <Typography variant="h4" color={color} fontWeight="600">
+          {value}
+        </Typography>
+        {subtitle && (
+          <Typography variant="caption" color="text.secondary">
+            {subtitle}
+          </Typography>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const ProgressCard = ({ title, value, total, unit, icon, color = 'primary' }) => {
+    const percentage = total ? Math.round((value / total) * 100) : 0;
+    return (
+      <Card sx={{ height: '100%' }}>
+        <CardContent sx={{ p: 2 }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+            {icon}
+            <Typography variant="subtitle2" color="text.secondary">
+              {title}
+            </Typography>
+          </Stack>
+          <Box sx={{ mb: 1 }}>
+            <Typography variant="h6" color={color}>
+              {formatBytes(value)} / {formatBytes(total)}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {percentage}% used
+            </Typography>
+          </Box>
+          <LinearProgress 
+            variant="determinate" 
+            value={percentage} 
+            color={percentage > 80 ? 'error' : percentage > 60 ? 'warning' : 'success'}
+            sx={{ height: 6, borderRadius: 3 }}
+          />
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
       {/* Header */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold">
-          🚀 Performance Dashboard
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+        <Typography variant="h4" fontWeight="600">
+          ⚡ Performance Dashboard
         </Typography>
-        <Box display="flex" gap={1} alignItems="center">
+        <Stack direction="row" spacing={1} alignItems="center">
           <FormControlLabel
             control={
               <Switch
@@ -136,292 +250,329 @@ const PerformanceDashboard = () => {
             }
             label="Auto Refresh"
           />
-          <Tooltip title="Refresh Metrics">
-            <IconButton onClick={() => setApiMetrics(getPerformanceMetrics())}>
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="View Details">
-            <IconButton onClick={() => setDetailsOpen(true)}>
-              <SettingsIcon />
-            </IconButton>
-          </Tooltip>
+          <IconButton 
+            onClick={activeTab === 0 ? fetchClientMetrics : fetchServerMetrics}
+            disabled={loading}
+          >
+            <RefreshIcon />
+          </IconButton>
+        </Stack>
+      </Stack>
+
+      {/* Tab Navigation */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs 
+          value={activeTab} 
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          sx={{ px: 2 }}
+        >
+          <Tab 
+            icon={<ClientIcon />} 
+            label="Client Performance" 
+            iconPosition="start"
+          />
+          {isAdmin && (
+            <Tab 
+              icon={<ServerIcon />} 
+              label="Server Performance" 
+              iconPosition="start"
+            />
+          )}
+        </Tabs>
+      </Paper>
+
+      {/* Loading State */}
+      {loading && (
+        <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+          <CircularProgress />
         </Box>
-      </Box>
-
-      {/* Performance Alert */}
-      {performanceScore < 60 && (
-        <Alert 
-          severity="warning" 
-          sx={{ mb: 3 }}
-          icon={<WarningIcon />}
-        >
-          Performance issues detected. Check API response times and memory usage.
-        </Alert>
       )}
 
-      {performanceScore >= 80 && (
-        <Alert 
-          severity="success" 
-          sx={{ mb: 3 }}
-          icon={<CheckIcon />}
-        >
-          Application performance is excellent! All metrics within optimal range.
-        </Alert>
-      )}
-
-      {/* Key Metrics Overview */}
-      <Grid container spacing={3} mb={4}>
-        {/* Overall Performance Score */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <SpeedIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Performance Score</Typography>
-              </Box>
-              <Box textAlign="center">
-                <Typography 
-                  variant="h3" 
-                  color={getScoreColor(performanceScore)}
-                  fontWeight="bold"
-                >
-                  {performanceScore}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Out of 100
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={performanceScore}
-                  color={getScoreColor(performanceScore)}
-                  sx={{ mt: 1, height: 8, borderRadius: 4 }}
+      {/* Client Performance Tab */}
+      {activeTab === 0 && !loading && (
+        <Box>
+          <Typography variant="h5" fontWeight="600" sx={{ mb: 3 }}>
+            Client Performance Metrics
+          </Typography>
+          
+          {clientMetrics && (
+            <Grid container spacing={3}>
+              {/* Performance Score */}
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="Performance Score"
+                  value={`${getClientPerformanceScore()}/100`}
+                  color={getScoreColor(getClientPerformanceScore())}
+                  icon={<SpeedIcon color="primary" />}
+                  subtitle="Overall client performance"
                 />
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+              </Grid>
 
-        {/* API Performance */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <NetworkIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">API Performance</Typography>
-              </Box>
-              <Typography variant="h4" fontWeight="bold" mb={1}>
-                {apiMetrics ? `${Math.round(apiMetrics.averageResponseTime)}ms` : '---'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                Average Response Time
-              </Typography>
-              <Chip
-                label={`${apiMetrics?.requestsPerSecond || 0} req/s`}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            </CardContent>
-          </Card>
-        </Grid>
+              {/* Page Load Time */}
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="Page Load"
+                  value={clientMetrics.performance?.navigation?.pageLoad ? `${Math.round(clientMetrics.performance.navigation.pageLoad)}ms` : 'N/A'}
+                  color="info"
+                  icon={<TimelineIcon color="info" />}
+                  subtitle="Total page load time"
+                />
+              </Grid>
 
-        {/* Cache Performance */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <CacheIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Cache Performance</Typography>
-              </Box>
-              <Typography variant="h4" fontWeight="bold" mb={1}>
-                {apiMetrics?.cacheHitRate || '0%'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                Cache Hit Rate
-              </Typography>
-              <Chip
-                label={`${apiMetrics?.cacheSize || 0} cached`}
-                size="small"
-                color="success"
-                variant="outlined"
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Memory Usage */}
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Box display="flex" alignItems="center" mb={2}>
-                <MemoryIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="h6">Memory Usage</Typography>
-              </Box>
-              <Typography variant="h4" fontWeight="bold" mb={1}>
-                {memoryUsagePercent.toFixed(1)}%
-              </Typography>
-              <Typography variant="body2" color="text.secondary" mb={1}>
-                JS Heap Usage
-              </Typography>
-              <LinearProgress
-                variant="determinate"
-                value={memoryUsagePercent}
-                color={memoryUsagePercent > 80 ? 'error' : memoryUsagePercent > 60 ? 'warning' : 'success'}
-                sx={{ height: 6, borderRadius: 3 }}
-              />
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Detailed Metrics */}
-      <Grid container spacing={3}>
-        {/* API Metrics Table */}
-        <Grid item xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" mb={2} display="flex" alignItems="center">
-                <TimelineIcon sx={{ mr: 1 }} />
-                API Metrics Details
-              </Typography>
-              {apiMetrics && (
-                <TableContainer component={Paper} variant="outlined">
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell><strong>Metric</strong></TableCell>
-                        <TableCell align="right"><strong>Value</strong></TableCell>
-                        <TableCell align="right"><strong>Status</strong></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      <TableRow>
-                        <TableCell>Total Requests</TableCell>
-                        <TableCell align="right">{apiMetrics.totalRequests.toLocaleString()}</TableCell>
-                        <TableCell align="right">
-                          <Chip label="Active" size="small" color="info" />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Cache Hits</TableCell>
-                        <TableCell align="right">{apiMetrics.cacheHits.toLocaleString()}</TableCell>
-                        <TableCell align="right">
-                          <Chip 
-                            label={parseInt(apiMetrics.cacheHitRate) > 50 ? "Good" : "Low"} 
-                            size="small" 
-                            color={parseInt(apiMetrics.cacheHitRate) > 50 ? "success" : "warning"} 
-                          />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Slow Requests</TableCell>
-                        <TableCell align="right">{apiMetrics.slowRequests}</TableCell>
-                        <TableCell align="right">
-                          <Chip 
-                            label={apiMetrics.slowRequests < 5 ? "Good" : "High"} 
-                            size="small" 
-                            color={apiMetrics.slowRequests < 5 ? "success" : "error"} 
-                          />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Failed Requests</TableCell>
-                        <TableCell align="right">{apiMetrics.failedRequests}</TableCell>
-                        <TableCell align="right">
-                          <Chip 
-                            label={parseFloat(apiMetrics.errorRate) < 5 ? "Good" : "High"} 
-                            size="small" 
-                            color={parseFloat(apiMetrics.errorRate) < 5 ? "success" : "error"} 
-                          />
-                        </TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell>Error Rate</TableCell>
-                        <TableCell align="right">{apiMetrics.errorRate}</TableCell>
-                        <TableCell align="right">
-                          <Chip 
-                            label={parseFloat(apiMetrics.errorRate) < 5 ? "Excellent" : "Needs Attention"} 
-                            size="small" 
-                            color={parseFloat(apiMetrics.errorRate) < 5 ? "success" : "error"} 
-                          />
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+              {/* Memory Usage */}
+              {clientMetrics.performance?.memory && (
+                <Grid item xs={12} md={3}>
+                  <ProgressCard
+                    title="JS Memory"
+                    value={clientMetrics.performance.memory.used * 1024 * 1024}
+                    total={clientMetrics.performance.memory.limit * 1024 * 1024}
+                    icon={<MemoryIcon color="primary" />}
+                    color="primary"
+                  />
+                </Grid>
               )}
-            </CardContent>
-          </Card>
-        </Grid>
 
-        {/* Memory Details */}
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" mb={2}>
-                Memory Details
-              </Typography>
-              <Box mb={2}>
-                <Typography variant="body2" color="text.secondary">
-                  Used JS Heap Size
-                </Typography>
-                <Typography variant="h6">
-                  {formatBytes(memoryInfo.usedJSHeapSize)}
-                </Typography>
-              </Box>
-              <Box mb={2}>
-                <Typography variant="body2" color="text.secondary">
-                  Total JS Heap Size
-                </Typography>
-                <Typography variant="h6">
-                  {formatBytes(memoryInfo.totalJSHeapSize)}
-                </Typography>
-              </Box>
-              <Box mb={2}>
-                <Typography variant="body2" color="text.secondary">
-                  JS Heap Size Limit
-                </Typography>
-                <Typography variant="h6">
-                  {formatBytes(memoryInfo.jsHeapSizeLimit)}
-                </Typography>
-              </Box>
-              <LinearProgress
-                variant="determinate"
-                value={memoryUsagePercent}
-                color={memoryUsagePercent > 80 ? 'error' : memoryUsagePercent > 60 ? 'warning' : 'success'}
-                sx={{ height: 8, borderRadius: 4 }}
-              />
-              <Typography variant="caption" color="text.secondary" mt={1} display="block">
-                Memory usage: {memoryUsagePercent.toFixed(1)}%
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+              {/* Connection Info */}
+              {clientMetrics.performance?.connection && (
+                <Grid item xs={12} md={3}>
+                  <MetricCard
+                    title="Connection"
+                    value={clientMetrics.performance.connection.effectiveType || 'Unknown'}
+                    color="success"
+                    icon={<NetworkIcon color="success" />}
+                    subtitle={`${clientMetrics.performance.connection.downlink || 0} Mbps`}
+                  />
+                </Grid>
+              )}
 
-      {/* Performance Details Dialog */}
-      <Dialog open={detailsOpen} onClose={() => setDetailsOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Performance Configuration</DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" paragraph>
-            This dashboard monitors real-time application performance including:
+              {/* Performance Details */}
+              <Grid item xs={12} md={8}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                      Performance Breakdown
+                    </Typography>
+                    {clientMetrics.performance?.navigation && (
+                      <Table size="small">
+                        <TableBody>
+                          <TableRow>
+                            <TableCell>DNS Lookup</TableCell>
+                            <TableCell align="right">{clientMetrics.performance.navigation.dnsLookup}ms</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>TCP Connection</TableCell>
+                            <TableCell align="right">{clientMetrics.performance.navigation.tcpConnection}ms</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>Server Response</TableCell>
+                            <TableCell align="right">{clientMetrics.performance.navigation.serverResponse}ms</TableCell>
+                          </TableRow>
+                          <TableRow>
+                            <TableCell>DOM Ready</TableCell>
+                            <TableCell align="right">{clientMetrics.performance.navigation.domReady}ms</TableCell>
+                          </TableRow>
+                          {clientMetrics.performance.navigation.firstPaint && (
+                            <TableRow>
+                              <TableCell>First Contentful Paint</TableCell>
+                              <TableCell align="right">{clientMetrics.performance.navigation.firstPaint.firstContentfulPaint}ms</TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* System Info */}
+              <Grid item xs={12} md={4}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                      System Information
+                    </Typography>
+                    <Stack spacing={1}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Platform</Typography>
+                        <Typography variant="body2">{clientMetrics.client.platform}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Language</Typography>
+                        <Typography variant="body2">{clientMetrics.client.language}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Screen Resolution</Typography>
+                        <Typography variant="body2">
+                          {clientMetrics.performance?.screen?.width}x{clientMetrics.performance?.screen?.height}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Viewport</Typography>
+                        <Typography variant="body2">
+                          {clientMetrics.performance?.screen?.viewport?.width}x{clientMetrics.performance?.screen?.viewport?.height}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Connection Status</Typography>
+                        <Chip 
+                          label={clientMetrics.client.onLine ? "Online" : "Offline"} 
+                          color={clientMetrics.client.onLine ? "success" : "error"} 
+                          size="small" 
+                        />
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+        </Box>
+      )}
+
+      {/* Server Performance Tab (Admin Only) */}
+      {activeTab === 1 && isAdmin && !loading && (
+        <Box>
+          <Typography variant="h5" fontWeight="600" sx={{ mb: 3 }}>
+            Server Performance Metrics
           </Typography>
-          <ul>
-            <li>API response times and request patterns</li>
-            <li>Memory usage and garbage collection</li>
-            <li>Cache hit rates and effectiveness</li>
-            <li>Component render performance</li>
-          </ul>
-          <Typography variant="body2" color="text.secondary" mt={2}>
-            Performance data is collected automatically and updated every 2 seconds when auto-refresh is enabled.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailsOpen(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
+          
+          {serverMetrics && apiMetrics && (
+            <Grid container spacing={3}>
+              {/* Server Performance Score */}
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="Server Score"
+                  value={`${getServerPerformanceScore()}/100`}
+                  color={getScoreColor(getServerPerformanceScore())}
+                  icon={<ServerIcon color="primary" />}
+                  subtitle="Overall server health"
+                />
+              </Grid>
+
+              {/* CPU Load */}
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="CPU Load (1m)"
+                  value={serverMetrics.cpu.loadAverage['1min'].toFixed(2)}
+                  color={serverMetrics.cpu.loadAverage['1min'] > 2 ? 'error' : 'success'}
+                  icon={<SpeedIcon color="primary" />}
+                  subtitle={`${serverMetrics.cpu.count} cores`}
+                />
+              </Grid>
+
+              {/* Memory Usage */}
+              <Grid item xs={12} md={3}>
+                <ProgressCard
+                  title="System Memory"
+                  value={serverMetrics.memory.system.used * 1024 * 1024}
+                  total={serverMetrics.memory.system.total * 1024 * 1024}
+                  icon={<MemoryIcon color="primary" />}
+                />
+              </Grid>
+
+              {/* API Response Time */}
+              <Grid item xs={12} md={3}>
+                <MetricCard
+                  title="API Response"
+                  value={`${apiMetrics.responseTime.average}ms`}
+                  color={apiMetrics.responseTime.average > 500 ? 'error' : 'success'}
+                  icon={<ApiIcon color="primary" />}
+                  subtitle={`P95: ${apiMetrics.responseTime.p95}ms`}
+                />
+              </Grid>
+
+              {/* Server Details */}
+              <Grid item xs={12} md={8}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                      Server Information
+                    </Typography>
+                    <Table size="small">
+                      <TableBody>
+                        <TableRow>
+                          <TableCell>Hostname</TableCell>
+                          <TableCell align="right">{serverMetrics.server.hostname}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Platform</TableCell>
+                          <TableCell align="right">{serverMetrics.server.platform} ({serverMetrics.server.arch})</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Node.js Version</TableCell>
+                          <TableCell align="right">{serverMetrics.server.nodeVersion}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Uptime</TableCell>
+                          <TableCell align="right">{formatUptime(serverMetrics.server.uptime)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell>Environment</TableCell>
+                          <TableCell align="right">
+                            <Chip 
+                              label={serverMetrics.server.environment} 
+                              color={serverMetrics.server.environment === 'production' ? 'success' : 'warning'}
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              {/* API Performance */}
+              <Grid item xs={12} md={4}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" sx={{ mb: 2 }}>
+                      API Performance
+                    </Typography>
+                    <Stack spacing={2}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Total Requests</Typography>
+                        <Typography variant="h6">{apiMetrics.requests.total.toLocaleString()}</Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Success Rate</Typography>
+                        <Typography variant="h6" color="success.main">
+                          {((apiMetrics.requests.successful / apiMetrics.requests.total) * 100).toFixed(1)}%
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">Cache Hit Rate</Typography>
+                        <Typography variant="h6" color="info.main">{apiMetrics.cache.hitRate}</Typography>
+                      </Box>
+                      <Divider />
+                      <Typography variant="subtitle2" color="text.secondary">Top Endpoints</Typography>
+                      {apiMetrics.endpoints.slice(0, 3).map((endpoint, index) => (
+                        <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <Typography variant="caption">{endpoint.path}</Typography>
+                          <Typography variant="caption">{endpoint.avgTime}ms</Typography>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          )}
+        </Box>
+      )}
+
+      {/* Health Status for All Users */}
+      {healthMetrics && (
+        <Alert 
+          severity={healthMetrics.server.status === 'healthy' ? 'success' : 'warning'} 
+          sx={{ mb: 3 }}
+        >
+          Server Status: {healthMetrics.server.status.toUpperCase()} | 
+          Database: {healthMetrics.database.status} | 
+          Uptime: {formatUptime(healthMetrics.server.uptime)}
+        </Alert>
+      )}
+    </Container>
   );
 };
 

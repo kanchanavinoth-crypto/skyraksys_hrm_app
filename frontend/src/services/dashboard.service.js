@@ -12,15 +12,7 @@ class DashboardService {
       console.error('Dashboard stats error:', error);
       return {
         success: false,
-        error: error.message,
-        data: {
-          stats: {
-            employees: { total: 0, active: 0, onLeave: 0, newHires: 0 },
-            leaves: { pending: 0, approved: 0, rejected: 0 },
-            timesheets: { pending: 0, submitted: 0, approved: 0 },
-            payroll: { processed: 0, pending: 0, total: 0 }
-          }
-        }
+        error: error.message
       };
     }
   }

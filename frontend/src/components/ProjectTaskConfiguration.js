@@ -133,11 +133,18 @@ const ProjectTaskConfiguration = () => {
   const handleProjectSave = async () => {
     try {
       setLoading(true);
+      
+      // Clean the managerId field before sending
+      const payload = {
+        ...projectForm,
+        managerId: projectForm.managerId && projectForm.managerId.trim() ? projectForm.managerId : null
+      };
+      
       if (selectedProject) {
-        await ProjectService.update(selectedProject.id, projectForm);
+        await ProjectService.update(selectedProject.id, payload);
         setSuccess('Project updated successfully');
       } else {
-        await ProjectService.create(projectForm);
+        await ProjectService.create(payload);
         setSuccess('Project created successfully');
       }
       setProjectDialogOpen(false);
@@ -644,6 +651,24 @@ const ProjectTaskConfiguration = () => {
                 value={projectForm.endDate}
                 onChange={(e) => setProjectForm({ ...projectForm, endDate: e.target.value })}
               />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                select
+                label="Project Manager (Optional)"
+                value={projectForm.managerId}
+                onChange={(e) => setProjectForm({ ...projectForm, managerId: e.target.value })}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {employees.map(emp => (
+                  <MenuItem key={emp.id} value={emp.id}>
+                    {emp.firstName} {emp.lastName} ({emp.employeeId})
+                  </MenuItem>
+                ))}
+              </TextField>
             </Grid>
           </Grid>
         </DialogContent>

@@ -55,6 +55,7 @@ import {
 } from '@mui/icons-material';
 import ProjectService from '../../../services/ProjectService';
 import TaskService from '../../../services/TaskService';
+import EmployeeService from '../../../services/EmployeeService';
 
 const ProjectTaskConfiguration = () => {
   const theme = useTheme();
@@ -66,6 +67,7 @@ const ProjectTaskConfiguration = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -107,6 +109,7 @@ const ProjectTaskConfiguration = () => {
   useEffect(() => {
     loadProjects();
     loadTasks();
+    loadEmployees();
   }, []);
 
   const loadProjects = async () => {
@@ -153,14 +156,43 @@ const ProjectTaskConfiguration = () => {
     }
   };
 
+  const loadEmployees = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await EmployeeService.getAll();
+      console.log('👥 Employees loaded:', response.data);
+      
+      if (response.data && response.data.success) {
+        setEmployees(response.data.data || []);
+      } else {
+        setEmployees([]);
+        setError('Invalid response format from server');
+      }
+    } catch (error) {
+      console.error('❌ Error loading employees:', error);
+      setError(error.response?.data?.message || 'Failed to load employees');
+      setEmployees([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProjectSave = async () => {
     try {
       setLoading(true);
+      
+      // Clean the managerId field before sending
+      const payload = {
+        ...projectForm,
+        managerId: projectForm.managerId && projectForm.managerId.trim() ? projectForm.managerId : null
+      };
+      
       if (selectedProject) {
-        await ProjectService.update(selectedProject.id, projectForm);
+        await ProjectService.update(selectedProject.id, payload);
         setSuccess('Project updated successfully');
       } else {
-        await ProjectService.create(projectForm);
+        await ProjectService.create(payload);
         setSuccess('Project created successfully');
       }
       setProjectDialogOpen(false);
@@ -1167,6 +1199,35 @@ const ProjectTaskConfiguration = () => {
                 }}
               />
             </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                select
+                label="Project Manager (Optional)"
+                value={projectForm.managerId}
+                onChange={(e) => setProjectForm({ ...projectForm, managerId: e.target.value })}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon color="action" />
+                    </InputAdornment>
+                  )
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': { borderRadius: 2 }
+                }}
+              >
+                <MenuItem value="">
+                  <em>None</em>
+                </MenuItem>
+                {employees.map(emp => (
+                  <MenuItem key={emp.id} value={emp.id}>
+                    {emp.firstName} {emp.lastName} ({emp.employeeId})
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
           </Grid>
         </DialogContent>
         
@@ -1289,6 +1350,59 @@ const ProjectTaskConfiguration = () => {
                 <MenuItem value="Critical">Critical</MenuItem>
               </TextField>
             </Grid>
+            
+            <Grid item xs={12}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Task Assignment:
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12}>
+              <Box sx={{ mb: 2 }}>
+                <Button
+                  variant={taskForm.availableToAll ? "contained" : "outlined"}
+                  onClick={() => setTaskForm({ 
+                    ...taskForm, 
+                    availableToAll: true, 
+                    assignedTo: '' 
+                  })}
+                  sx={{ mr: 2, mb: 1 }}
+                >
+                  Available to All
+                </Button>
+                <Button
+                  variant={!taskForm.availableToAll ? "contained" : "outlined"}
+                  onClick={() => setTaskForm({ 
+                    ...taskForm, 
+                    availableToAll: false 
+                  })}
+                  sx={{ mb: 1 }}
+                >
+                  Assign to Specific Employee
+                </Button>
+              </Box>
+            </Grid>
+            
+            {!taskForm.availableToAll && (
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Assign To"
+                  value={taskForm.assignedTo}
+                  onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
+                >
+                  <MenuItem value="">None</MenuItem>
+                  {employees.map((employee) => (
+                    <MenuItem key={employee.id} value={employee.id}>
+                      {employee.firstName} {employee.lastName} ({employee.employeeId})
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            )}
           </Grid>
         </DialogContent>
         <DialogActions>

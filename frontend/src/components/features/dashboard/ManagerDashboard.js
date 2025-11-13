@@ -7,39 +7,20 @@ import {
   Box,
   Grid,
   Card,
-  CardContent,
   Avatar,
   Chip,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  Tabs,
-  Tab,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
-  Divider,
   Alert,
   Stack,
   Badge,
   useTheme,
-  alpha,
-  CircularProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails
+  CircularProgress
 } from '@mui/material';
 import {
   Group as TeamIcon,
@@ -47,14 +28,9 @@ import {
   Schedule as TimesheetIcon,
   CheckCircle as ApproveIcon,
   Cancel as RejectIcon,
-  Pending as PendingIcon,
   Person as PersonIcon,
-  Email as EmailIcon,
-  Phone as PhoneIcon,
-  Business as BusinessIcon,
   CalendarToday as CalendarIcon,
   AccessTime as TimeIcon,
-  ExpandMore as ExpandMoreIcon,
   Visibility as ViewIcon,
   Assignment as AssignmentIcon,
   TrendingUp as TrendingUpIcon
@@ -170,205 +146,41 @@ const ManagerDashboard = () => {
     <Card 
       sx={{ 
         height: '100%',
-        background: `linear-gradient(135deg, ${alpha(color, 0.1)} 0%, ${alpha(color, 0.05)} 100%)`,
-        border: `1px solid ${alpha(color, 0.2)}`,
-        transition: 'all 0.3s ease-in-out',
+        boxShadow: 1,
+        border: `1px solid ${alpha(color, 0.1)}`,
+        transition: 'all 0.15s ease',
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: theme.shadows[4]
         }
       }}
     >
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <Avatar sx={{ bgcolor: color, mr: 2, width: 48, height: 48 }}>
-            {icon}
-          </Avatar>
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+        <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Box>
-            <Typography variant="h4" component="div" fontWeight="bold" color={color}>
-              {value}
-            </Typography>
-            <Typography variant="h6" color="text.secondary">
+            <Typography color="text.secondary" variant="caption" gutterBottom>
               {title}
             </Typography>
-          </Box>
-        </Box>
-        {subtitle && (
-          <Typography variant="body2" color="text.secondary">
-            {subtitle}
-          </Typography>
-        )}
-      </CardContent>
-    </Card>
-  );
-
-  const TeamMemberCard = ({ member }) => (
-    <Card sx={{ mb: 2, '&:hover': { boxShadow: theme.shadows[4] } }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
-              {member.firstName?.charAt(0)}{member.lastName?.charAt(0)}
-            </Avatar>
-            <Box>
-              <Typography variant="h6">
-                {member.firstName} {member.lastName}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {member.position} • {member.department}
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                {member.isOnLeave && (
-                  <Chip 
-                    label="On Leave" 
-                    color="warning" 
-                    size="small"
-                    icon={<LeaveIcon />}
-                  />
-                )}
-                <Chip 
-                  label={member.employmentType} 
-                  variant="outlined" 
-                  size="small"
-                />
-              </Stack>
-            </Box>
-          </Box>
-          <Stack direction="row" spacing={1}>
-            <IconButton 
-              onClick={() => navigate(`/employees/${member.id}`)}
-              color="primary"
-            >
-              <ViewIcon />
-            </IconButton>
-          </Stack>
-        </Box>
-      </CardContent>
-    </Card>
-  );
-
-  const LeaveRequestItem = ({ request }) => (
-    <Accordion>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', pr: 2 }}>
-          <Avatar sx={{ mr: 2, bgcolor: 'orange' }}>
-            <LeaveIcon />
-          </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="subtitle1" fontWeight="medium">
-              {request.Employee?.firstName} {request.Employee?.lastName}
+            <Typography variant="h6" fontWeight="600" sx={{ color, mb: 0.5 }}>
+              {value}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {request.leaveType} • {request.startDate} to {request.endDate}
-            </Typography>
-          </Box>
-          <Chip 
-            label={`${request.totalDays} days`} 
-            color="info" 
-            size="small"
-          />
-        </Box>
-      </AccordionSummary>
-      <AccordionDetails>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={8}>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              <strong>Reason:</strong> {request.reason}
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              <strong>Applied on:</strong> {new Date(request.createdAt).toLocaleDateString()}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button
-                variant="contained"
-                color="success"
-                size="small"
-                startIcon={<ApproveIcon />}
-                onClick={() => openApprovalDialog(request, 'approved')}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<RejectIcon />}
-                onClick={() => openApprovalDialog(request, 'rejected')}
-              >
-                Reject
-              </Button>
-            </Stack>
-          </Grid>
-        </Grid>
-      </AccordionDetails>
-    </Accordion>
-  );
-
-  const TimesheetItem = ({ timesheet }) => (
-    <Accordion>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', pr: 2 }}>
-          <Avatar sx={{ mr: 2, bgcolor: 'blue' }}>
-            <TimesheetIcon />
-          </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="subtitle1" fontWeight="medium">
-              {timesheet.Employee?.firstName} {timesheet.Employee?.lastName}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Week of {timesheet.weekStart} • {timesheet.totalHours} hours
-            </Typography>
-          </Box>
-          <Chip 
-            label={timesheet.status} 
-            color={timesheet.status?.toLowerCase() === 'submitted' ? 'warning' : 'default'} 
-            size="small"
-          />
-        </Box>
-      </AccordionSummary>
-      <AccordionDetails>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={8}>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              <strong>Total Hours:</strong> {timesheet.totalHours}
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              <strong>Submitted on:</strong> {new Date(timesheet.submittedAt).toLocaleDateString()}
-            </Typography>
-            {timesheet.description && (
-              <Typography variant="body2" sx={{ mb: 2 }}>
-                <strong>Description:</strong> {timesheet.description}
+            {subtitle && (
+              <Typography variant="caption" color="text.secondary">
+                {subtitle}
               </Typography>
             )}
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Stack direction="row" spacing={1} justifyContent="flex-end">
-              <Button
-                variant="contained"
-                color="success"
-                size="small"
-                startIcon={<ApproveIcon />}
-                onClick={() => openApprovalDialog(timesheet, 'approved')}
-              >
-                Approve
-              </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<RejectIcon />}
-                onClick={() => openApprovalDialog(timesheet, 'rejected')}
-              >
-                Reject
-              </Button>
-            </Stack>
-          </Grid>
-        </Grid>
-      </AccordionDetails>
-    </Accordion>
+          </Box>
+          <Box sx={{ color, opacity: 0.6 }}>
+            {React.cloneElement(icon, { sx: { fontSize: 24 } })}
+          </Box>
+        </Stack>
+      </CardContent>
+    </Card>
   );
+
+
+
+
 
   if (isLoading) {
     return (
@@ -381,156 +193,322 @@ const ManagerDashboard = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
+    <Container maxWidth="md" sx={{ py: 2 }}>
+      {/* Minimalistic Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight="600" gutterBottom>
           Manager Dashboard
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          Welcome back, {user?.firstName}! Manage your team and approvals here.
+        <Typography variant="body2" color="text.secondary">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
         </Typography>
       </Box>
 
-      {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      {/* Compact Statistics Cards */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Team Members"
+            title="Team"
             value={stats.totalTeamMembers}
             icon={<TeamIcon />}
             color={theme.palette.primary.main}
-            subtitle="Total team size"
+            subtitle="members"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Leave Approvals"
+            title="Leave Requests"
             value={stats.pendingLeaveApprovals}
             icon={<LeaveIcon />}
             color={theme.palette.warning.main}
-            subtitle="Pending your approval"
+            subtitle="pending"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Timesheet Approvals"
+            title="Timesheets"
             value={stats.pendingTimesheetApprovals}
             icon={<TimesheetIcon />}
             color={theme.palette.info.main}
-            subtitle="Pending your approval"
+            subtitle="pending"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Team On Leave"
+            title="On Leave"
             value={stats.teamOnLeave}
             icon={<CalendarIcon />}
             color={theme.palette.error.main}
-            subtitle="Currently on leave"
+            subtitle="today"
           />
         </Grid>
       </Grid>
 
-      {/* Main Content Tabs */}
-      <Paper sx={{ width: '100%' }}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(e, newValue) => setActiveTab(newValue)}
-            aria-label="manager dashboard tabs"
+      {/* ⚡ Quick Actions */}
+      <Typography variant="subtitle1" fontWeight="600" sx={{ mb: 2 }}>
+        ⚡ Quick Actions
+      </Typography>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={4}>
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<TeamIcon />}
+            onClick={() => setActiveTab(0)}
+            size="small"
+            sx={{ py: 1.5 }}
           >
-            <Tab 
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TeamIcon sx={{ mr: 1 }} />
-                  Team Members ({stats.totalTeamMembers})
-                </Box>
-              } 
-            />
-            <Tab 
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <LeaveIcon sx={{ mr: 1 }} />
-                  Leave Approvals
-                  {stats.pendingLeaveApprovals > 0 && (
-                    <Badge 
-                      badgeContent={stats.pendingLeaveApprovals} 
-                      color="error" 
-                      sx={{ ml: 1 }}
-                    />
-                  )}
-                </Box>
-              } 
-            />
-            <Tab 
-              label={
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <TimesheetIcon sx={{ mr: 1 }} />
-                  Timesheet Approvals
-                  {stats.pendingTimesheetApprovals > 0 && (
-                    <Badge 
-                      badgeContent={stats.pendingTimesheetApprovals} 
-                      color="error" 
-                      sx={{ ml: 1 }}
-                    />
-                  )}
-                </Box>
-              } 
-            />
-          </Tabs>
-        </Box>
+            View Team
+          </Button>
+        </Grid>
+        <Grid item xs={6} sm={4}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<LeaveIcon />}
+            onClick={() => setActiveTab(1)}
+            size="small"
+            sx={{ py: 1.5 }}
+            color="warning"
+          >
+            Leave Approvals
+            {stats.pendingLeaveApprovals > 0 && (
+              <Badge 
+                badgeContent={stats.pendingLeaveApprovals} 
+                color="error" 
+                sx={{ ml: 1 }}
+              />
+            )}
+          </Button>
+        </Grid>
+        <Grid item xs={6} sm={4}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<TimesheetIcon />}
+            onClick={() => setActiveTab(2)}
+            size="small"
+            sx={{ py: 1.5 }}
+            color="info"
+          >
+            Timesheet Approvals
+            {stats.pendingTimesheetApprovals > 0 && (
+              <Badge 
+                badgeContent={stats.pendingTimesheetApprovals} 
+                color="error" 
+                sx={{ ml: 1 }}
+              />
+            )}
+          </Button>
+        </Grid>
+        <Grid item xs={6} sm={4}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<AssignmentIcon />}
+            onClick={() => navigate('/reports')}
+            size="small"
+            sx={{ py: 1.5 }}
+          >
+            Reports
+          </Button>
+        </Grid>
+        <Grid item xs={6} sm={4}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<TrendingUpIcon />}
+            onClick={() => navigate('/performance')}
+            size="small"
+            sx={{ py: 1.5 }}
+          >
+            Performance
+          </Button>
+        </Grid>
+        <Grid item xs={6} sm={4}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<PersonIcon />}
+            onClick={() => navigate('/employee-profile')}
+            size="small"
+            sx={{ py: 1.5 }}
+          >
+            My Profile
+          </Button>
+        </Grid>
+      </Grid>
 
-        {/* Tab Content */}
-        <Box sx={{ p: 3 }}>
-          {/* Team Members Tab */}
+      {/* Simplified Content Area */}
+      <Paper sx={{ boxShadow: 1 }}>
+        <Box sx={{ p: 2 }}>
+          {/* Team Members */}
           {activeTab === 0 && (
             <Box>
+              <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 2 }}>
+                Team Members ({stats.totalTeamMembers})
+              </Typography>
               {teamMembers.length === 0 ? (
-                <Alert severity="info">
-                  No team members found. Contact HR to assign team members to your management.
+                <Alert severity="info" sx={{ py: 1 }}>
+                  No team members found.
                 </Alert>
               ) : (
-                <Grid container spacing={2}>
-                  {teamMembers.map((member) => (
-                    <Grid item xs={12} md={6} key={member.id}>
-                      <TeamMemberCard member={member} />
-                    </Grid>
+                <Stack spacing={1}>
+                  {teamMembers.slice(0, 5).map((member) => (
+                    <Card key={member.id} sx={{ p: 1 }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Avatar sx={{ width: 28, height: 28, bgcolor: 'primary.main' }}>
+                            {member.firstName?.charAt(0)}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {member.firstName} {member.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {member.position}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          {member.isOnLeave && (
+                            <Chip label="On Leave" color="warning" size="small" />
+                          )}
+                          <IconButton 
+                            size="small"
+                            onClick={() => navigate(`/employees/${member.id}`)}
+                          >
+                            <ViewIcon fontSize="small" />
+                          </IconButton>
+                        </Stack>
+                      </Stack>
+                    </Card>
                   ))}
-                </Grid>
-              )}
-            </Box>
-          )}
-
-          {/* Leave Approvals Tab */}
-          {activeTab === 1 && (
-            <Box>
-              {pendingLeaves.length === 0 ? (
-                <Alert severity="success">
-                  No pending leave approvals. Great job staying on top of things!
-                </Alert>
-              ) : (
-                <Stack spacing={2}>
-                  {pendingLeaves.map((request) => (
-                    <LeaveRequestItem key={request.id} request={request} />
-                  ))}
+                  {teamMembers.length > 5 && (
+                    <Typography variant="caption" color="text.secondary" align="center">
+                      +{teamMembers.length - 5} more team members
+                    </Typography>
+                  )}
                 </Stack>
               )}
             </Box>
           )}
 
-          {/* Timesheet Approvals Tab */}
-          {activeTab === 2 && (
+          {/* Leave Approvals */}
+          {activeTab === 1 && (
             <Box>
-              {pendingTimesheets.length === 0 ? (
-                <Alert severity="success">
-                  No pending timesheet approvals. All timesheets are up to date!
+              <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 2 }}>
+                Pending Leave Requests ({stats.pendingLeaveApprovals})
+              </Typography>
+              {pendingLeaves.length === 0 ? (
+                <Alert severity="success" sx={{ py: 1 }}>
+                  No pending leave approvals!
                 </Alert>
               ) : (
-                <Stack spacing={2}>
-                  {pendingTimesheets.map((timesheet) => (
-                    <TimesheetItem key={timesheet.id} timesheet={timesheet} />
+                <Stack spacing={1}>
+                  {pendingLeaves.slice(0, 3).map((request) => (
+                    <Card key={request.id} sx={{ p: 2 }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {request.Employee?.firstName} {request.Employee?.lastName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {request.leaveType} • {request.startDate} to {request.endDate}
+                          </Typography>
+                          <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                            {request.reason}
+                          </Typography>
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            size="small"
+                            color="success"
+                            variant="contained"
+                            onClick={() => openApprovalDialog(request, 'approved')}
+                            startIcon={<ApproveIcon />}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                            onClick={() => openApprovalDialog(request, 'rejected')}
+                            startIcon={<RejectIcon />}
+                          >
+                            Reject
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    </Card>
                   ))}
+                  {pendingLeaves.length > 3 && (
+                    <Typography variant="caption" color="text.secondary" align="center">
+                      +{pendingLeaves.length - 3} more pending requests
+                    </Typography>
+                  )}
+                </Stack>
+              )}
+            </Box>
+          )}
+
+          {/* Timesheet Approvals */}
+          {activeTab === 2 && (
+            <Box>
+              <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 2 }}>
+                Pending Timesheets ({stats.pendingTimesheetApprovals})
+              </Typography>
+              {pendingTimesheets.length === 0 ? (
+                <Alert severity="success" sx={{ py: 1 }}>
+                  No pending timesheet approvals!
+                </Alert>
+              ) : (
+                <Stack spacing={1}>
+                  {pendingTimesheets.slice(0, 3).map((timesheet) => (
+                    <Card key={timesheet.id} sx={{ p: 2 }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between">
+                        <Box sx={{ flex: 1 }}>
+                          <Typography variant="body2" fontWeight={600}>
+                            {timesheet.Employee?.firstName} {timesheet.Employee?.lastName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Week of {timesheet.weekStart} • {timesheet.totalHours}h
+                          </Typography>
+                          {timesheet.description && (
+                            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                              {timesheet.description}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            size="small"
+                            color="success"
+                            variant="contained"
+                            onClick={() => openApprovalDialog(timesheet, 'approved')}
+                            startIcon={<ApproveIcon />}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            variant="outlined"
+                            onClick={() => openApprovalDialog(timesheet, 'rejected')}
+                            startIcon={<RejectIcon />}
+                          >
+                            Reject
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    </Card>
+                  ))}
+                  {pendingTimesheets.length > 3 && (
+                    <Typography variant="caption" color="text.secondary" align="center">
+                      +{pendingTimesheets.length - 3} more pending timesheets
+                    </Typography>
+                  )}
                 </Stack>
               )}
             </Box>

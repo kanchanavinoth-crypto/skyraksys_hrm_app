@@ -403,12 +403,16 @@ const projectSchema = {
   
   update: Joi.object({
     name: Joi.string().min(2).max(200).optional(),
-    description: Joi.string().max(1000).optional(),
-    startDate: Joi.date().iso().optional(),
-    endDate: Joi.date().iso().optional(),
+    description: Joi.string().max(1000).optional().allow('', null),
+    startDate: Joi.date().iso().optional().allow(null, ''),
+    endDate: Joi.date().iso().optional().allow(null, ''),
     status: Joi.string().valid('Planning', 'Active', 'On Hold', 'Completed', 'Cancelled').optional(),
-    clientName: Joi.string().max(100).optional(),
-    managerId: Joi.string().uuid().optional(),
+    clientName: Joi.string().max(100).optional().allow('', null),
+    managerId: Joi.alternatives().try(
+      Joi.string().uuid(),
+      Joi.string().allow(''),
+      Joi.allow(null)
+    ).optional(),
     isActive: Joi.boolean().optional()
   })
 };

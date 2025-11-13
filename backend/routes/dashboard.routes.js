@@ -50,13 +50,13 @@ router.get('/employee-stats', authenticateToken, async (req, res) => {
         const currentMonthTimesheets = await db.Timesheet.findAll({
             where: {
                 employeeId,
-                workDate: {
+                weekStartDate: {
                     [Op.gte]: currentMonthStart,
                     [Op.lt]: dayjs().endOf('month').toDate()
                 }
             },
             attributes: [
-                [db.sequelize.fn('SUM', db.sequelize.col('hoursWorked')), 'totalHours'],
+                [db.sequelize.fn('SUM', db.sequelize.col('totalHoursWorked')), 'totalHours'],
                 [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'totalDays']
             ],
             raw: true

@@ -329,8 +329,8 @@ router.post('/', authenticateToken, async (req, res) => {
       });
     }
 
-    // Validate manager if provided
-    if (value.managerId) {
+    // Validate manager if provided (skip empty strings and null values)
+    if (value.managerId && value.managerId !== null && value.managerId.trim() !== '') {
       const manager = await db.Employee.findByPk(value.managerId);
       if (!manager) {
         return res.status(400).json({
@@ -414,8 +414,8 @@ router.put('/:id', authenticateToken, async (req, res) => {
       });
     }
 
-    // Validate manager if provided
-    if (value.managerId) {
+    // Validate manager if provided (skip empty strings and null values)
+    if (value.managerId && value.managerId !== null && value.managerId.trim() !== '') {
       const manager = await db.Employee.findByPk(value.managerId);
       if (!manager) {
         return res.status(400).json({

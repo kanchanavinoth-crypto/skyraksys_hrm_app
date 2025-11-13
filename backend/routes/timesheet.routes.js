@@ -306,12 +306,17 @@ function getWeekNumber(date) {
 }
 
 // Enhanced task availability validation with proper type safety
-function validateTaskAccess(task, employeeId, context = 'operation') {
+function validateTaskAccess(task, employeeId, context = 'operation', userRole = null) {
   if (!task) {
     return { 
       allowed: false, 
       message: 'Task not found or invalid.' 
     };
+  }
+
+  // Admin and HR users can work on any task
+  if (userRole === 'admin' || userRole === 'hr') {
+    return { allowed: true };
   }
 
   // If task is available to all employees, allow access
@@ -453,8 +458,12 @@ router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res,
         // Admin/HR can see all timesheets by default, or filter by specific employee
         // No default filtering for admin/hr roles
 
-        // Additional filters
-        if (status) where.status = status;
+        // Additional filters  
+        if (status) {
+            // Normalize status case for database query
+            const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+            where.status = normalizedStatus;
+        }
         if (projectId) where.projectId = projectId;
         if (year) where.year = parseInt(year);
         if (weekNumber) where.weekNumber = parseInt(weekNumber);
@@ -462,7 +471,9 @@ router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res,
         // Handle startDate parameter for weekly filtering
         if (startDate) {
             logger.debug('Filtering timesheets by startDate', { startDate, employeeId: req.employeeId });
-            where.weekStartDate = startDate;
+            // Ensure exact match for week start date
+            where.weekStartDate = { [Op.eq]: startDate };
+            logger.debug('WHERE condition for timesheet query:', where);
         }
         
         // Admin/HR can filter by specific employee
@@ -483,13 +494,42 @@ router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res,
             offset,
         });
 
+        // Defensive filtering: Ensure returned timesheets match the requested week
+        if (startDate) {
+            const originalCount = timesheets.length;
+            const filteredTimesheets = timesheets.filter(ts => ts.weekStartDate === startDate);
+            if (filteredTimesheets.length !== originalCount) {
+                logger.warn('Week mismatch detected in query results', {
+                    requestedWeek: startDate,
+                    originalCount,
+                    filteredCount: filteredTimesheets.length,
+                    mismatchedTimesheets: timesheets.filter(ts => ts.weekStartDate !== startDate).map(ts => ({
+                        id: ts.id,
+                        actualWeek: ts.weekStartDate
+                    }))
+                });
+            }
+            timesheets = filteredTimesheets;
+        }
+
+        logger.debug('Timesheet query results:', {
+            requestedStartDate: startDate,
+            count: timesheets.length,
+            timesheets: timesheets.map(ts => ({
+                id: ts.id,
+                weekStartDate: ts.weekStartDate,
+                status: ts.status,
+                employeeId: ts.employeeId
+            }))
+        });
+
         res.json({
             success: true,
             data: timesheets,
             pagination: {
                 currentPage: parseInt(page),
-                totalPages: Math.ceil(count / limit),
-                totalItems: count,
+                totalPages: Math.ceil(timesheets.length / limit),
+                totalItems: timesheets.length,
                 itemsPerPage: parseInt(limit)
             }
         });
@@ -667,7 +707,7 @@ router.post('/bulk-approve', authorize(['manager', 'admin', 'hr']), async (req, 
                 }
 
                 // Check approval permissions - employee data already loaded
-                if (!timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, timesheet.employee.managerId)) {
+                if (!timesheet.canBeApprovedBy(req.userRole, req.employeeId, timesheet.employee.managerId)) {
                     errors.push({
                         timesheetId,
                         error: 'You do not have permission to approve this timesheet'
@@ -834,7 +874,7 @@ router.post('/bulk-reject', bulkOperationLimiter, authorize(['manager', 'admin',
                 }
 
                 // Check approval permissions - employee data already loaded
-                if (!timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, timesheet.employee.managerId)) {
+                if (!timesheet.canBeApprovedBy(req.userRole, req.employeeId, timesheet.employee.managerId)) {
                     errors.push({
                         timesheetId,
                         error: 'You do not have permission to reject this timesheet'
@@ -1432,7 +1472,7 @@ router.put('/:id', validateParams(validators.uuidParamSchema), validate(validato
             }
 
             // Validate task access using enhanced validation helper
-            const taskAccess = validateTaskAccess(task, req.employeeId, 'timesheet update');
+            const taskAccess = validateTaskAccess(task, req.employeeId, 'timesheet update', req.userRole);
             if (!taskAccess.allowed) {
                 return res.status(403).json({ 
                     success: false, 
@@ -1637,11 +1677,12 @@ router.put('/:id/submit', async (req, res) => {
         }
 
         // Validate task access using enhanced validation helper
-        const taskAccess = validateTaskAccess(task, req.employeeId, 'timesheet submission');
+        const taskAccess = validateTaskAccess(task, req.employeeId, 'timesheet submission', req.userRole);
         if (!taskAccess.allowed) {
             logger.warn('Task access denied for timesheet submission', { 
                 taskId: timesheet.taskId, 
                 employeeId: req.employeeId,
+                userRole: req.userRole,
                 reason: taskAccess.message 
             });
             return res.status(403).json({ 
@@ -1798,7 +1839,7 @@ router.put('/:id/approve', authorize(['manager', 'admin', 'hr']), async (req, re
             timesheetStatus: timesheet.status
         });
         
-        const canApprove = timesheet.canBeApprovedBy(req.userRole, req.userId, req.employeeId, timesheet.employee.managerId);
+        const canApprove = timesheet.canBeApprovedBy(req.userRole, req.employeeId, timesheet.employee.managerId);
         
         if (!canApprove) {
             logger.warn('Permission denied for timesheet approval', { 
@@ -2084,6 +2125,12 @@ async function handleBulkSave(req, res, isUpdate = false) {
                 if (isUpdate && timesheetData.id) {
                     // Update existing timesheet
                     console.log(`📝 Updating existing timesheet: ${timesheetData.id}`);
+                    
+                    // Validate UUID format
+                    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                    if (!uuidRegex.test(timesheetData.id)) {
+                        throw new Error(`Invalid timesheet ID format. Expected UUID, got: ${timesheetData.id}`);
+                    }
                     
                     timesheet = await Timesheet.findOne({
                         where: { 

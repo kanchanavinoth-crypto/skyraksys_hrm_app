@@ -47,7 +47,8 @@ import {
   History as HistoryIcon,
   Visibility as ViewIcon,
   Download as DownloadIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Edit as EditIcon
 } from '@mui/icons-material';
 import dayjs from 'dayjs';
 import weekday from 'dayjs/plugin/weekday';
@@ -84,6 +85,20 @@ const ModernWeeklyTimesheet = () => {
   const { user, isAdmin, isHR, isManager } = useAuth();
   const { showSuccess, showError, showWarning, showInfo } = useNotification();
   const navigate = useNavigate();
+
+  // Helper function to safely calculate total hours from timesheet object
+  const calculateTimesheetTotal = (timesheet) => {
+    if (!timesheet) return 0;
+    return (
+      Number(timesheet.mondayHours || 0) +
+      Number(timesheet.tuesdayHours || 0) +
+      Number(timesheet.wednesdayHours || 0) +
+      Number(timesheet.thursdayHours || 0) +
+      Number(timesheet.fridayHours || 0) +
+      Number(timesheet.saturdayHours || 0) +
+      Number(timesheet.sundayHours || 0)
+    );
+  };
   
   // Tab management (Employee vs Manager/Admin view)
   const [activeTab, setActiveTab] = useState(0); // 0: My Timesheet, 1: Pending Approvals, 2: History
@@ -91,10 +106,13 @@ const ModernWeeklyTimesheet = () => {
   // Week navigation
   const [currentWeek, setCurrentWeek] = useState(dayjs().startOf('isoWeek'));
   
+  // Generate temporary UUID-like ID for frontend state
+  const generateTempId = () => `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   // Timesheet entries
   const [tasks, setTasks] = useState([
     {
-      id: Date.now(),
+      id: generateTempId(),
       projectId: '',
       taskId: '',
       hours: { monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
@@ -248,6 +266,9 @@ const ModernWeeklyTimesheet = () => {
         });
         
         if (weekTimesheets.length > 0) {
+          // Debug: Log timesheet IDs from backend
+          console.log('🔍 Timesheet IDs from backend:', weekTimesheets.map(ts => ({ id: ts.id, type: typeof ts.id })));
+          
           // Transform backend data to UI format
           const transformedTasks = weekTimesheets.map(ts => ({
             id: ts.id,
@@ -343,7 +364,7 @@ const ModernWeeklyTimesheet = () => {
   const resetTimesheet = () => {
     setTasks([
       {
-        id: Date.now(),
+        id: generateTempId(),
         projectId: '',
         taskId: '',
         hours: { monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
@@ -360,7 +381,7 @@ const ModernWeeklyTimesheet = () => {
     setTasks([
       ...tasks,
       {
-        id: Date.now(),
+        id: generateTempId(),
         projectId: '',
         taskId: '',
         hours: { monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
@@ -407,10 +428,17 @@ const ModernWeeklyTimesheet = () => {
       }
       
       // Transform to backend format
-      const timesheetData = tasks.map(task => ({
-        projectId: task.projectId,
-        taskId: task.taskId,
-        weekStartDate: currentWeek.format('YYYY-MM-DD'),
+      const timesheetData = tasks.map(task => {
+        // Validate ID format - only accept proper UUIDs, not temporary or numeric IDs
+        const isValidUUID = task.id && typeof task.id === 'string' && 
+                          !task.id.startsWith('temp_') && 
+                          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(task.id);
+        
+        return {
+          id: isValidUUID ? task.id : undefined, // Include only valid UUID timesheet IDs
+          projectId: task.projectId,
+          taskId: task.taskId,
+          weekStartDate: currentWeek.format('YYYY-MM-DD'),
         mondayHours: parseFloat(task.hours.monday) || 0,
         tuesdayHours: parseFloat(task.hours.tuesday) || 0,
         wednesdayHours: parseFloat(task.hours.wednesday) || 0,
@@ -420,16 +448,39 @@ const ModernWeeklyTimesheet = () => {
         sundayHours: parseFloat(task.hours.sunday) || 0,
         description: task.notes || '',
         status: 'draft'
-      }));
+        };
+      });
       
-      await timesheetService.createBatch(timesheetData);
+      // Check if any timesheets have existing IDs (updates) vs new ones (creates)
+      const existingTimesheets = timesheetData.filter(t => t.id);
+      const newTimesheets = timesheetData.filter(t => !t.id);
+      
+      // Handle updates and creates separately to avoid conflicts
+      if (existingTimesheets.length > 0) {
+        await timesheetService.bulkUpdate(existingTimesheets);
+      }
+      
+      if (newTimesheets.length > 0) {
+        try {
+          await timesheetService.createBatch(newTimesheets);
+        } catch (createError) {
+          // If creation fails due to existing records, show helpful message
+          if (createError.response?.status === 400 && createError.response?.data?.message?.includes('already exists')) {
+            showWarning('Some timesheets already exist for this week. Please refresh and try again.');
+            // Reload timesheets to get current state
+            fetchTimesheet();
+            return;
+          }
+          throw createError;
+        }
+      }
       
       setHasUnsavedChanges(false);
       setLastSaveTime(new Date());
       showSuccess('Timesheet saved as draft');
     } catch (error) {
       console.error('Error saving timesheet:', error);
-      showError('Failed to save timesheet');
+      showError('Failed to save timesheet. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -441,81 +492,68 @@ const ModernWeeklyTimesheet = () => {
       
       // Validate
       if (!validateTimesheet()) {
-        showError('Please fix validation errors before submitting');
+        showError('Please complete all required fields: select project and task, and enter hours for at least one day');
+        return;
+      }
+      
+      // Check if there are any tasks to submit
+      if (tasks.length === 0 || tasks.every(task => !task.projectId || !task.taskId)) {
+        showError('Please add at least one task with project and task selection before submitting');
         return;
       }
       
       const weekStart = currentWeek.format('YYYY-MM-DD');
-      const weekNumber = currentWeek.isoWeek();
-      const year = currentWeek.year();
       
-      console.log('Submitting timesheet for week:', { 
-        weekStart, 
-        weekNumber, 
-        year,
-        currentWeek: currentWeek.format('YYYY-MM-DD')
-      });
+      console.log('Submitting timesheet for week:', weekStart);
+      console.log('Current user:', user);
       
-      // Transform to backend format
-      const timesheetData = tasks.map(task => {
-        const data = {
-          projectId: task.projectId,
-          taskId: task.taskId,
-          weekStartDate: weekStart,
-          mondayHours: parseFloat(task.hours.monday) || 0,
-          tuesdayHours: parseFloat(task.hours.tuesday) || 0,
-          wednesdayHours: parseFloat(task.hours.wednesday) || 0,
-          thursdayHours: parseFloat(task.hours.thursday) || 0,
-          fridayHours: parseFloat(task.hours.friday) || 0,
-          saturdayHours: parseFloat(task.hours.saturday) || 0,
-          sundayHours: parseFloat(task.hours.sunday) || 0,
-          description: task.notes || '',
-          status: 'Submitted'  // Backend expects capitalized status
-        };
-        
-        // If task has an ID, it's an update
-        if (task.id) {
-          data.id = task.id;
-        }
-        
-        return data;
-      });
+      // First, save all timesheets as drafts if they don't exist
+      await saveDraft();
       
-      console.log('Submitting timesheet data:', timesheetData);
+      // Small delay to ensure save completes
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Helper function to check if ID is a valid UUID (from backend) vs temporary numeric ID (from frontend)
-      const isValidUUID = (id) => {
-        if (!id) return false;
-        // UUIDs are strings with format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        return typeof id === 'string' && uuidRegex.test(id);
-      };
+      // Get the current week's timesheets to submit
+      const response = await timesheetService.getByWeek(weekStart);
+      const weekTimesheets = response.data?.data || [];
       
-      // Separate new timesheets from existing ones based on UUID validity
-      const existingTimesheets = timesheetData.filter(t => isValidUUID(t.id));
-      const newTimesheets = timesheetData.filter(t => !isValidUUID(t.id)).map(t => {
-        const { id, ...rest } = t; // Remove temporary numeric ID
-        return rest;
-      });
+      console.log('Week timesheets found:', weekTimesheets);
       
-      console.log('Existing timesheets to update:', existingTimesheets.length);
-      console.log('New timesheets to create:', newTimesheets.length);
-      
-      // Process updates and creates
-      if (existingTimesheets.length > 0) {
-        console.log('Updating existing timesheets:', existingTimesheets);
-        await timesheetService.bulkUpdate(existingTimesheets);
+      if (weekTimesheets.length === 0) {
+        showError('No timesheets found to submit. Please ensure your timesheet is saved first.');
+        return;
       }
       
-      if (newTimesheets.length > 0) {
-        console.log('Creating new timesheets:', newTimesheets);
-        await timesheetService.createBatch(newTimesheets);
+      // Filter only draft timesheets that belong to the current user
+      // Handle case-insensitive status and flexible employee ID matching
+      const currentUserId = user?.employee?.id || user?.id;
+      const draftTimesheets = weekTimesheets.filter(ts => {
+        const isDraft = ts.status?.toLowerCase() === 'draft';
+        const isCurrentUser = ts.employeeId === currentUserId || ts.userId === currentUserId;
+        console.log(`Timesheet ${ts.id}: status=${ts.status}, isDraft=${isDraft}, employeeId=${ts.employeeId}, userId=${ts.userId}, currentUserId=${currentUserId}, isCurrentUser=${isCurrentUser}`);
+        return isDraft && isCurrentUser;
+      });
+      
+      console.log('Draft timesheets for current user:', draftTimesheets);
+      
+      if (draftTimesheets.length === 0) {
+        showError('No draft timesheets found to submit. All timesheets may already be submitted.');
+        return;
       }
+      
+      console.log('Submitting draft timesheets:', draftTimesheets);
+      
+      // Use proper submission workflow - submit each draft timesheet
+      const submissionPromises = draftTimesheets.map(timesheet => 
+        timesheetService.submit(timesheet.id)
+      );
+      
+      await Promise.all(submissionPromises);
       
       setTimesheetStatus('submitted');
       setIsReadOnly(true);
       setHasUnsavedChanges(false);
-      showSuccess('Timesheet submitted successfully for approval');
+      showSuccess(`${draftTimesheets.length} timesheet(s) submitted successfully for approval`);
       
       // Reload to get updated data
       loadWeekTimesheet();
@@ -688,21 +726,21 @@ const ModernWeeklyTimesheet = () => {
   const renderTimesheetEntry = () => (
     <Box>
       {/* Week Navigation */}
-      <Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ mb: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton onClick={goToPreviousWeek} disabled={loading}>
+            <IconButton size="small" onClick={goToPreviousWeek} disabled={loading}>
               <PrevIcon />
             </IconButton>
             <Box sx={{ minWidth: 200, textAlign: 'center' }}>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography variant="h5" fontWeight={500}>
                 Week {currentWeek.isoWeek()}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {currentWeek.format('MMM DD')} - {currentWeek.endOf('isoWeek').format('MMM DD, YYYY')}
               </Typography>
             </Box>
-            <IconButton onClick={goToNextWeek} disabled={loading}>
+            <IconButton size="small" onClick={goToNextWeek} disabled={loading}>
               <NextIcon />
             </IconButton>
             <Button
@@ -710,13 +748,21 @@ const ModernWeeklyTimesheet = () => {
               startIcon={<TodayIcon />}
               onClick={goToCurrentWeek}
               disabled={loading}
+              variant="text"
+              sx={{ ml: 2 }}
             >
               Today
             </Button>
           </Stack>
           
-          <Stack direction="row" spacing={1} alignItems="center">
-            {renderStatusChip(timesheetStatus)}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Chip
+              label={getStatusConfig(timesheetStatus).label}
+              color={getStatusConfig(timesheetStatus).color}
+              size="small"
+              variant="outlined"
+              sx={{ fontWeight: 500 }}
+            />
             {lastSaveTime && (
               <Typography variant="caption" color="text.secondary">
                 Last saved: {dayjs(lastSaveTime).format('HH:mm')}
@@ -724,7 +770,7 @@ const ModernWeeklyTimesheet = () => {
             )}
           </Stack>
         </Stack>
-      </Paper>
+      </Box>
 
       {/* Status Alert */}
       {isReadOnly && (
@@ -738,24 +784,19 @@ const ModernWeeklyTimesheet = () => {
       ) : (
         <>
           {/* Timesheet Table */}
-          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-            <Table size="small">
+          <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 1, border: '1px solid', borderColor: 'divider', overflowX: 'auto' }}>
+            <Table size="medium" sx={{ minWidth: 1000 }}>
               <TableHead>
-                <TableRow sx={{ bgcolor: 'grey.50' }}>
-                  <TableCell width="200px" sx={{ fontWeight: 600 }}>Project</TableCell>
-                  <TableCell width="200px" sx={{ fontWeight: 600 }}>Task</TableCell>
-                  {getWeekDates().map(({ day, shortLabel, date }) => (
-                    <TableCell key={day} align="center" width="80px" sx={{ fontWeight: 600 }}>
-                      <Box>
-                        <div>{shortLabel}</div>
-                        <Typography variant="caption" color="text.secondary">
-                          {date.format('DD')}
-                        </Typography>
-                      </Box>
+                <TableRow sx={{ bgcolor: 'grey.25' }}>
+                  <TableCell width="200px" sx={{ fontWeight: 500, color: 'text.secondary' }}>Project</TableCell>
+                  <TableCell width="200px" sx={{ fontWeight: 500, color: 'text.secondary' }}>Task</TableCell>
+                  {getWeekDates().map(({ day, shortLabel }) => (
+                    <TableCell key={day} align="center" width="100px" sx={{ fontWeight: 500, color: 'text.secondary' }}>
+                      {shortLabel}
                     </TableCell>
                   ))}
-                  <TableCell align="center" width="80px" sx={{ fontWeight: 600 }}>Total</TableCell>
-                  <TableCell width="200px" sx={{ fontWeight: 600 }}>Notes</TableCell>
+                  <TableCell align="center" width="100px" sx={{ fontWeight: 500, color: 'text.secondary' }}>Total</TableCell>
+                  <TableCell width="200px" sx={{ fontWeight: 500, color: 'text.secondary' }}>Notes</TableCell>
                   <TableCell width="50px"></TableCell>
                 </TableRow>
               </TableHead>
@@ -806,25 +847,45 @@ const ModernWeeklyTimesheet = () => {
                     
                     {/* Hours for each day */}
                     {getWeekDates().map(({ day }) => (
-                      <TableCell key={day} padding="none">
+                      <TableCell key={day} align="center" sx={{ px: 1 }}>
                         <TextField
-                          fullWidth
                           size="small"
                           type="number"
                           value={task.hours[day]}
                           onChange={(e) => updateTask(task.id, `hours.${day}`, e.target.value)}
                           disabled={isReadOnly}
                           error={!!fieldErrors[`${task.id}_${day}`]}
+                          placeholder="0"
                           inputProps={{ 
                             min: 0, 
                             max: 24, 
                             step: 0.25,
-                            style: { textAlign: 'center', padding: '8px' }
+                            style: { 
+                              textAlign: 'center', 
+                              padding: '10px 8px',
+                              fontSize: '14px',
+                              width: '60px'
+                            }
                           }}
                           sx={{ 
+                            width: '80px',
                             '& .MuiOutlinedInput-root': { 
-                              borderRadius: 0,
-                              '& fieldset': { border: 'none' }
+                              borderRadius: 1,
+                              backgroundColor: isReadOnly ? 'grey.50' : 'white',
+                              '& fieldset': { 
+                                borderColor: 'grey.300',
+                                borderWidth: '1px'
+                              },
+                              '&:hover fieldset': {
+                                borderColor: 'primary.main'
+                              },
+                              '&.Mui-focused fieldset': {
+                                borderColor: 'primary.main',
+                                borderWidth: '2px'
+                              }
+                            },
+                            '& .MuiOutlinedInput-input': {
+                              padding: '10px 8px'
                             }
                           }}
                         />
@@ -891,8 +952,8 @@ const ModernWeeklyTimesheet = () => {
             <Button
               startIcon={<AddIcon />}
               onClick={addTask}
-              sx={{ mt: 2 }}
-              variant="outlined"
+              sx={{ mt: 2, color: 'primary.main' }}
+              variant="text"
             >
               Add Task
             </Button>
@@ -902,10 +963,11 @@ const ModernWeeklyTimesheet = () => {
           {!isReadOnly && (
             <Stack direction="row" spacing={2} justifyContent="flex-end" sx={{ mt: 3 }}>
               <Button
-                variant="outlined"
+                variant="text"
                 startIcon={<SaveIcon />}
                 onClick={saveDraft}
                 disabled={saving || submitting || !hasUnsavedChanges}
+                sx={{ color: 'text.secondary' }}
               >
                 {saving ? 'Saving...' : 'Save Draft'}
               </Button>
@@ -914,6 +976,12 @@ const ModernWeeklyTimesheet = () => {
                 startIcon={<SendIcon />}
                 onClick={submitTimesheet}
                 disabled={saving || submitting}
+                sx={{ 
+                  bgcolor: 'primary.main',
+                  '&:hover': { bgcolor: 'primary.dark' },
+                  boxShadow: 'none',
+                  '&:hover': { boxShadow: 1 }
+                }}
               >
                 {submitting ? 'Submitting...' : 'Submit for Approval'}
               </Button>
@@ -925,133 +993,280 @@ const ModernWeeklyTimesheet = () => {
   );
 
   // Pending Approvals Tab (Manager/Admin)
-  const renderPendingApprovals = () => (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Pending Timesheets
-      </Typography>
+  const renderPendingApprovals = () => {
+    // Group timesheets by employee and week for minimalistic display
+    const groupedPendingTimesheets = pendingTimesheets.reduce((groups, timesheet) => {
+      const employeeKey = `${timesheet.employeeId}-${timesheet.weekStartDate}`;
+      if (!groups[employeeKey]) {
+        groups[employeeKey] = {
+          employeeId: timesheet.employeeId,
+          employee: timesheet.employee,
+          weekStartDate: timesheet.weekStartDate,
+          weekEndDate: timesheet.weekEndDate,
+          timesheets: [],
+          totalWeekHours: 0,
+          latestSubmitted: timesheet.submittedAt || timesheet.createdAt
+        };
+      }
+      groups[employeeKey].timesheets.push(timesheet);
+      groups[employeeKey].totalWeekHours += Number(timesheet.totalHoursWorked || 0);
       
-      {loading ? (
-        <LinearProgress />
-      ) : pendingTimesheets.length === 0 ? (
-        <Alert severity="info">No pending timesheets for approval</Alert>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Employee</TableCell>
-                <TableCell>Week</TableCell>
-                <TableCell align="right">Total Hours</TableCell>
-                <TableCell>Submitted</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {pendingTimesheets.map((timesheet) => (
-                <TableRow key={timesheet.id} hover>
-                  <TableCell>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {timesheet.employee?.firstName?.[0]}
-                      </Avatar>
-                      <Box>
+      // Get latest submitted date
+      const submissionDate = timesheet.submittedAt || timesheet.createdAt;
+      if (submissionDate && (!groups[employeeKey].latestSubmitted || 
+          new Date(submissionDate) > new Date(groups[employeeKey].latestSubmitted))) {
+        groups[employeeKey].latestSubmitted = submissionDate;
+      }
+      
+      return groups;
+    }, {});
+
+    const sortedWeeks = Object.values(groupedPendingTimesheets)
+      .sort((a, b) => new Date(b.latestSubmitted) - new Date(a.latestSubmitted));
+
+    // Check if current user can approve timesheets
+    const canApprove = isAdmin || isHR || isManager;
+
+    return (
+      <Box>
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          Pending Approvals
+        </Typography>
+        
+        {loading ? (
+          <LinearProgress />
+        ) : pendingTimesheets.length === 0 ? (
+          <Alert severity="info" sx={{ py: 2 }}>No pending timesheets for approval</Alert>
+        ) : (
+          <TableContainer component={Paper} sx={{ boxShadow: 0 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ py: 0.5 }}>Employee</TableCell>
+                  <TableCell sx={{ py: 0.5 }}>Week</TableCell>
+                  <TableCell sx={{ py: 0.5 }}>Tasks</TableCell>
+                  <TableCell align="center" sx={{ py: 0.5, width: 110 }}>Hours</TableCell>
+                  <TableCell sx={{ py: 0.5 }}>Submitted</TableCell>
+                  <TableCell align="center" sx={{ py: 0.5, width: 120 }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sortedWeeks.map((weekData) => {
+                  // Check if this is the current user's own timesheet (managers can't approve their own)
+                  const isOwnTimesheet = weekData.employeeId === user?.employee?.id;
+                  const showApprovalActions = canApprove && !isOwnTimesheet;
+                  
+                  return (
+                    <TableRow key={`${weekData.employeeId}-${weekData.weekStartDate}`} hover>
+                      <TableCell sx={{ py: 0.5 }}>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Avatar sx={{ width: 28, height: 28 }}>
+                            {weekData.employee?.firstName?.[0]}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {weekData.employee?.firstName} {weekData.employee?.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {weekData.employee?.employeeId}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell sx={{ py: 0.5 }}>
                         <Typography variant="body2" fontWeight={600}>
-                          {timesheet.employee?.firstName} {timesheet.employee?.lastName}
+                          {dayjs(weekData.weekStartDate).format('MMM DD')} - {dayjs(weekData.weekEndDate).format('MMM DD')}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {timesheet.employee?.employeeId}
+                          W{dayjs(weekData.weekStartDate).isoWeek()}
                         </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 0.5 }}>
+                        <Box sx={{ minWidth: 200 }}>
+                          {weekData.timesheets.map((timesheet, index) => (
+                            <Box key={timesheet.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: index < weekData.timesheets.length - 1 ? 0.5 : 0 }}>
+                              <Typography variant="caption" sx={{ flex: 1 }}>
+                                {timesheet.project?.name || 'N/A'} — {timesheet.task?.name || 'N/A'}
+                              </Typography>
+                              <Chip label={`${timesheet.totalHoursWorked || 0}h`} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            </Box>
+                          ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center" sx={{ py: 0.5 }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {weekData.totalWeekHours.toFixed(1)}h
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ py: 0.5 }}>
+                        <Typography variant="caption">
+                          {dayjs(weekData.latestSubmitted).format('MMM DD')}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="center" sx={{ py: 0.5 }}>
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          <Tooltip title="View Details">
+                            <IconButton size="small" onClick={() => handleViewTimesheet(weekData.timesheets[0])}>
+                              <ViewIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {showApprovalActions && (
+                            <>
+                              <Tooltip title="Approve Week">
+                                <IconButton 
+                                  size="small" 
+                                  color="success"
+                                  onClick={() => handleApprovalClick(weekData.timesheets[0], 'approve')}
+                                >
+                                  <ApproveIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Reject Week">
+                                <IconButton 
+                                  size="small" 
+                                  color="error"
+                                  onClick={() => handleApprovalClick(weekData.timesheets[0], 'reject')}
+                                >
+                                  <RejectIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                          )}
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
+    );
+  };
+
+  // History Tab - Show timesheet history grouped by week
+  const renderHistory = () => {
+    // Group timesheets by week for minimalistic display
+    const groupedTimesheets = historyTimesheets.reduce((groups, timesheet) => {
+      const weekKey = timesheet.weekStartDate;
+      if (!groups[weekKey]) {
+        groups[weekKey] = {
+          weekStartDate: timesheet.weekStartDate,
+          weekEndDate: timesheet.weekEndDate,
+          timesheets: [],
+          totalWeekHours: 0,
+          overallStatus: timesheet.status,
+          latestSubmitted: timesheet.submittedAt
+        };
+      }
+      groups[weekKey].timesheets.push(timesheet);
+      groups[weekKey].totalWeekHours += Number(timesheet.totalHoursWorked || 0);
+      
+      // Determine overall status (prioritize: Rejected > Submitted > Approved > Draft)
+      const statusPriority = { 'Rejected': 4, 'Submitted': 3, 'Approved': 2, 'Draft': 1 };
+      if (statusPriority[timesheet.status] > statusPriority[groups[weekKey].overallStatus]) {
+        groups[weekKey].overallStatus = timesheet.status;
+      }
+      
+      // Get latest submitted date
+      if (timesheet.submittedAt && (!groups[weekKey].latestSubmitted || 
+          new Date(timesheet.submittedAt) > new Date(groups[weekKey].latestSubmitted))) {
+        groups[weekKey].latestSubmitted = timesheet.submittedAt;
+      }
+      
+      return groups;
+    }, {});
+
+    const sortedWeeks = Object.values(groupedTimesheets)
+      .sort((a, b) => new Date(b.weekStartDate) - new Date(a.weekStartDate))
+      .slice(0, 20); // Show last 20 weeks
+
+    return (
+      <Box>
+        <Typography variant="subtitle1" sx={{ mb: 1 }}>
+          Timesheet History
+        </Typography>
+
+        {loading ? (
+          <LinearProgress />
+        ) : historyTimesheets.length === 0 ? (
+          <Alert severity="info" sx={{ py: 2 }}>No timesheet history found</Alert>
+        ) : (
+          <TableContainer component={Paper} sx={{ boxShadow: 0 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ py: 0.5 }}>Week</TableCell>
+                  <TableCell sx={{ py: 0.5 }}>Tasks</TableCell>
+                  <TableCell align="center" sx={{ py: 0.5, width: 110 }}>Hours</TableCell>
+                  <TableCell align="center" sx={{ py: 0.5, width: 120 }}>Status</TableCell>
+                  <TableCell sx={{ py: 0.5 }}>Submitted</TableCell>
+                  <TableCell align="center" sx={{ py: 0.5, width: 90 }}>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sortedWeeks.map((weekData) => (
+                  <TableRow key={weekData.weekStartDate} hover>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Typography variant="body2" fontWeight={600}>
+                        {dayjs(weekData.weekStartDate).format('MMM DD')} - {dayjs(weekData.weekEndDate).format('MMM DD')}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        W{dayjs(weekData.weekStartDate).isoWeek()}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Box sx={{ minWidth: 260 }}>
+                        {weekData.timesheets.map((timesheet, index) => (
+                          <Box key={timesheet.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: index < weekData.timesheets.length - 1 ? 0.5 : 0 }}>
+                            <Typography variant="caption" sx={{ flex: 1 }}>
+                              {timesheet.project?.name || 'N/A'} — {timesheet.task?.name || 'N/A'}
+                            </Typography>
+                            <Chip label={`${timesheet.totalHoursWorked || 0}h`} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                          </Box>
+                        ))}
                       </Box>
-                    </Stack>
-                  </TableCell>
-                  <TableCell>
-                    {dayjs(timesheet.weekStartDate).format('MMM DD')} - 
-                    {dayjs(timesheet.weekStartDate).endOf('isoWeek').format('MMM DD, YYYY')}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography fontWeight={600}>
-                      {((timesheet.mondayHours || 0) + (timesheet.tuesdayHours || 0) + (timesheet.wednesdayHours || 0) + 
-                        (timesheet.thursdayHours || 0) + (timesheet.fridayHours || 0) + (timesheet.saturdayHours || 0) + 
-                        (timesheet.sundayHours || 0)).toFixed(2)}h
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {dayjs(timesheet.createdAt).format('MMM DD, YYYY')}
-                  </TableCell>
-                  <TableCell>
-                    {renderStatusChip(timesheet.status)}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Tooltip title="View Details">
-                        <IconButton size="small" onClick={() => handleViewTimesheet(timesheet)}>
+                    </TableCell>
+                    <TableCell align="center" sx={{ py: 0.5 }}>
+                      <Typography variant="body2" fontWeight={600}>
+                        {weekData.totalWeekHours.toFixed(1)}h
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center" sx={{ py: 0.5 }}>
+                      {renderStatusChip(weekData.overallStatus)}
+                    </TableCell>
+                    <TableCell sx={{ py: 0.5 }}>
+                      <Typography variant="caption">
+                        {weekData.latestSubmitted ? dayjs(weekData.latestSubmitted).format('MMM DD') : '—'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center" sx={{ py: 0.5 }}>
+                      <Tooltip title="View Week">
+                        <IconButton size="small" onClick={() => { setCurrentWeek(dayjs(weekData.weekStartDate).startOf('isoWeek')); setActiveTab(0); }}>
                           <ViewIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Approve">
-                        <IconButton 
-                          size="small" 
-                          color="success"
-                          onClick={() => handleApprovalClick(timesheet, 'approve')}
-                        >
-                          <ApproveIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Reject">
-                        <IconButton 
-                          size="small" 
-                          color="error"
-                          onClick={() => handleApprovalClick(timesheet, 'reject')}
-                        >
-                          <RejectIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-    </Box>
-  );
-
-  // History Tab - Redirect to dedicated History page
-  const renderHistory = () => (
-    <Box sx={{ textAlign: 'center', py: 8 }}>
-      <HistoryIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-      <Typography variant="h5" gutterBottom>
-        View Timesheet History
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Click below to view your complete timesheet history with advanced filters and export options
-      </Typography>
-      <Button 
-        variant="contained" 
-        size="large"
-        startIcon={<HistoryIcon />}
-        onClick={() => navigate('/timesheets/history')}
-      >
-        Go to History
-      </Button>
-    </Box>
-  );
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+      </Box>
+    );
+  };
 
   // ========== MAIN RENDER ==========
   
   return (
     <Box sx={{ p: 3, maxWidth: 1600, mx: 'auto' }}>
       {/* Header */}
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 4 }}>
         <Box>
-          <Typography variant="h4" fontWeight={700} gutterBottom>
-            Weekly Timesheet
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Track your work hours and submit for approval
+          <Typography variant="h4" fontWeight={400} gutterBottom>
+            Timesheet
           </Typography>
         </Box>
         <Button
@@ -1061,39 +1276,49 @@ const ModernWeeklyTimesheet = () => {
             else if (activeTab === 1) loadPendingApprovals();
             else loadHistory();
           }}
-          variant="outlined"
+          variant="text"
+          size="small"
+          sx={{ color: 'text.secondary' }}
         >
           Refresh
         </Button>
       </Stack>
 
       {/* Tabs */}
-      <Paper elevation={0} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', mb: 3 }}>
+      <Box sx={{ mb: 3 }}>
         <Tabs 
           value={activeTab} 
           onChange={(e, newValue) => {
-            // If History tab is clicked, redirect to history page
-            if (newValue === 2) {
-              navigate('/timesheets/history');
-              return;
-            }
             setActiveTab(newValue);
+            // Load data for the selected tab
+            if (newValue === 0) loadWeekTimesheet();
+            else if (newValue === 1) loadPendingApprovals();
+            else if (newValue === 2) loadHistory();
           }}
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
+          sx={{ 
+            borderBottom: 1, 
+            borderColor: 'divider',
+            mb: 3,
+            '& .MuiTab-root': {
+              minHeight: 48,
+              textTransform: 'none',
+              fontWeight: 500
+            }
+          }}
         >
-          <Tab label="My Timesheet" icon={<SaveIcon />} iconPosition="start" />
+          <Tab label="My Timesheet" />
           {(isManager || isAdmin || isHR) && (
-            <Tab label="Pending Approvals" icon={<ApproveIcon />} iconPosition="start" />
+            <Tab label="Pending Approvals" />
           )}
-          <Tab label="History" icon={<HistoryIcon />} iconPosition="start" />
+          <Tab label="History" />
         </Tabs>
         
-        <Box sx={{ p: 3 }}>
+        <Box>
           {activeTab === 0 && renderTimesheetEntry()}
           {activeTab === 1 && (isManager || isAdmin || isHR) && renderPendingApprovals()}
           {activeTab === 2 && renderHistory()}
         </Box>
-      </Paper>
+      </Box>
 
       {/* Approval Dialog */}
       <Dialog open={approvalDialog} onClose={() => setApprovalDialog(false)} maxWidth="sm" fullWidth>
@@ -1153,9 +1378,7 @@ const ModernWeeklyTimesheet = () => {
                 <Grid item xs={6}>
                   <Typography variant="body2" color="text.secondary">Total Hours</Typography>
                   <Typography variant="body1" fontWeight={600}>
-                    {((selectedTimesheet.mondayHours || 0) + (selectedTimesheet.tuesdayHours || 0) + (selectedTimesheet.wednesdayHours || 0) + 
-                      (selectedTimesheet.thursdayHours || 0) + (selectedTimesheet.fridayHours || 0) + (selectedTimesheet.saturdayHours || 0) + 
-                      (selectedTimesheet.sundayHours || 0)).toFixed(2)}h
+                    {calculateTimesheetTotal(selectedTimesheet).toFixed(2)}h
                   </Typography>
                 </Grid>
               </Grid>

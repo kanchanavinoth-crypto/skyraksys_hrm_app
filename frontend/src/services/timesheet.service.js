@@ -33,7 +33,7 @@ class TimesheetService {
     
     const response = await http.put(`/timesheets/${id}/approve`, {
       action,
-      approverComments: comments
+      comments
     });
     return response.data.data;
   }

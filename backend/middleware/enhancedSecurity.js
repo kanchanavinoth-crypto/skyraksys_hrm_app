@@ -62,43 +62,55 @@ function enhancedSessionTracking() {
         const sessionId = req.sessionID || crypto.randomBytes(32).toString('hex');
         const deviceFingerprint = generateDeviceFingerprint(req);
         
-        // Find or create security session
-        let securitySession = await SecuritySession.findOne({
-          where: { sessionId, isActive: true }
-        });
-        
-        if (!securitySession) {
-          // Create new security session
-          securitySession = await SecuritySession.create({
-            sessionId,
-            userId: req.userId,
-            ipAddress: req.ip,
-            userAgent: req.get('User-Agent') || '',
-            deviceFingerprint,
-            loginAt: new Date(),
-            lastActivityAt: new Date(),
-            riskScore: calculateRiskScore(req, null)
+        try {
+          // Find or create security session
+          let securitySession = await SecuritySession.findOne({
+            where: { sessionId, isActive: true }
           });
-        } else {
-          // Update existing session
-          const riskScore = calculateRiskScore(req, securitySession);
-          await securitySession.update({
-            lastActivityAt: new Date(),
-            riskScore,
-            warningCount: riskScore > 50 ? securitySession.warningCount + 1 : securitySession.warningCount
-          });
+          
+          if (!securitySession) {
+            // Create new security session
+            securitySession = await SecuritySession.create({
+              sessionId,
+              userId: req.userId,
+              ipAddress: req.ip,
+              userAgent: req.get('User-Agent') || '',
+              deviceFingerprint,
+              loginAt: new Date(),
+              lastActivityAt: new Date(),
+              riskScore: calculateRiskScore(req, null)
+            });
+          } else {
+            // Update existing session
+            const riskScore = calculateRiskScore(req, securitySession);
+            await securitySession.update({
+              lastActivityAt: new Date(),
+              riskScore,
+              warningCount: riskScore > 50 ? securitySession.warningCount + 1 : securitySession.warningCount
+            });
+          }
+          
+          // Add session info to request
+          req.securitySession = securitySession;
+        } catch (sessionError) {
+          // If SecuritySession operations fail (e.g., table doesn't exist), continue without session tracking
+          console.error('Enhanced session tracking error:', sessionError.name);
+          req.securitySession = null;
         }
         
-        // Add session info to request
-        req.securitySession = securitySession;
-        
-        // Add session termination function
+        // Add session termination function (handle null securitySession)
         req.terminateSession = async (reason = 'USER_LOGOUT') => {
-          await securitySession.update({
-            isActive: false,
-            logoutAt: new Date(),
-            logoutReason: reason
-          });
+          if (req.securitySession) {
+            try {
+              await req.securitySession.update({
+                isActive: false,
+                logoutAt: new Date(),
+                logoutReason: reason
+              });
+            } catch (error) {
+              console.error('Error terminating security session:', error.name);
+            }
+          }
         };
       }
       

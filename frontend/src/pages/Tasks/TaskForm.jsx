@@ -191,48 +191,61 @@ const TaskForm = ({ task, projectId, onSave, onCancel }) => {
               >
                 <MenuItem value="">None</MenuItem>
                 {employees.map(employee => (
-                  <MenuItem key={employee.id
+                  <MenuItem key={employee.id} value={employee.id}>
+                    {employee.firstName} {employee.lastName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+        )}
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Status</InputLabel>
-        <Select
-          name="status"
-          value={formData.status}
-          onChange={handleChange}
-          label="Status"
-        >
-          <MenuItem value="Not Started">Not Started</MenuItem>
-          <MenuItem value="In Progress">In Progress</MenuItem>
-          <MenuItem value="Completed">Completed</MenuItem>
-          <MenuItem value="On Hold">On Hold</MenuItem>
-        </Select>
-      </FormControl>
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Status</InputLabel>
+            <Select
+              name="status"
+              value={formData.status}
+              onChange={handleChange}
+              label="Status"
+            >
+              <MenuItem value="Not Started">Not Started</MenuItem>
+              <MenuItem value="In Progress">In Progress</MenuItem>
+              <MenuItem value="Completed">Completed</MenuItem>
+              <MenuItem value="On Hold">On Hold</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel>Priority</InputLabel>
-        <Select
-          name="priority"
-          value={formData.priority}
-          onChange={handleChange}
-          label="Priority"
-        >
-          <MenuItem value="Low">Low</MenuItem>
-          <MenuItem value="Medium">Medium</MenuItem>
-          <MenuItem value="High">High</MenuItem>
-          <MenuItem value="Critical">Critical</MenuItem>
-        </Select>
-      </FormControl>
+        <Grid item xs={12} sm={6}>
+          <FormControl fullWidth>
+            <InputLabel>Priority</InputLabel>
+            <Select
+              name="priority"
+              value={formData.priority}
+              onChange={handleChange}
+              label="Priority"
+            >
+              <MenuItem value="Low">Low</MenuItem>
+              <MenuItem value="Medium">Medium</MenuItem>
+              <MenuItem value="High">High</MenuItem>
+              <MenuItem value="Critical">Critical</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
 
-      <TextField
-        fullWidth
-        label="Estimated Hours"
-        name="estimatedHours"
-        type="number"
-        value={formData.estimatedHours}
-        onChange={handleChange}
-        margin="normal"
-        inputProps={{ min: 0, step: 0.5 }}
-      />
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Estimated Hours"
+            name="estimatedHours"
+            type="number"
+            value={formData.estimatedHours}
+            onChange={handleChange}
+            inputProps={{ min: 0, step: 0.5 }}
+          />
+        </Grid>
+      </Grid>
 
       <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
         <Button

@@ -74,7 +74,7 @@ const ProjectForm = ({ project, onSave, onCancel }) => {
 
       const payload = {
         ...formData,
-        managerId: formData.managerId || null
+        managerId: formData.managerId && formData.managerId.trim() ? formData.managerId : null
       };
 
       if (project?.id) {

@@ -58,19 +58,27 @@ const EmployeeDashboard = () => {
       setLoading(true);
       const response = await dashboardService.getEmployeeStats();
       
-      if (response.success) {
-        setEmployeeStats(response.data);
+      if (response.success && response.data) {
+        // Merge with default structure to ensure all properties exist
+        setEmployeeStats(prevStats => ({
+          leaveBalance: response.data.leaveBalance || {},
+          pendingRequests: {
+            leaves: response.data.pendingRequests?.leaves || 0,
+            timesheets: response.data.pendingRequests?.timesheets || 0
+          },
+          recentActivity: response.data.recentActivity || [],
+          upcomingLeaves: response.data.upcomingLeaves || [],
+          currentMonth: {
+            hoursWorked: response.data.currentMonth?.hoursWorked || 0,
+            expectedHours: response.data.currentMonth?.expectedHours || 0,
+            daysWorked: response.data.currentMonth?.daysWorked || 0,
+            efficiency: response.data.currentMonth?.efficiency || 0
+          }
+        }));
       }
     } catch (error) {
       console.error('Error loading employee data:', error);
-      // Set fallback empty data on error
-      setEmployeeStats({
-        leaveBalance: {},
-        pendingRequests: { leaves: 0, timesheets: 0 },
-        recentActivity: [],
-        upcomingLeaves: [],
-        currentMonth: { hoursWorked: 0, expectedHours: 0, daysWorked: 0, efficiency: 0 }
-      });
+      // Keep default structure on error - don't overwrite
     } finally {
       setLoading(false);
     }
@@ -80,24 +88,25 @@ const EmployeeDashboard = () => {
     <Card 
       sx={{ 
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.15s ease',
         '&:hover': { 
-          transform: 'translateY(-4px)',
-          boxShadow: theme.shadows[8]
+          transform: 'translateY(-2px)',
+          boxShadow: theme.shadows[4]
         },
         height: '100%',
-        border: `1px solid ${alpha(theme.palette[color].main, 0.2)}`
+        boxShadow: 1,
+        border: `1px solid ${alpha(theme.palette[color].main, 0.1)}`
       }}
       onClick={onClick}
     >
-      <CardContent sx={{ textAlign: 'center', p: 3 }}>
-        <Box sx={{ mb: 2 }}>
+      <CardContent sx={{ textAlign: 'center', p: 2, '&:last-child': { pb: 2 } }}>
+        <Box sx={{ mb: 1 }}>
           {icon}
         </Box>
-        <Typography variant="h6" fontWeight="600" gutterBottom>
+        <Typography variant="subtitle2" fontWeight="600" gutterBottom>
           {title}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="caption" color="text.secondary">
           {description}
         </Typography>
       </CardContent>
@@ -105,23 +114,27 @@ const EmployeeDashboard = () => {
   );
 
   const StatCard = ({ title, value, subtitle, icon, color = 'primary' }) => (
-    <Card sx={{ height: '100%', border: `1px solid ${alpha(theme.palette[color].main, 0.2)}` }}>
-      <CardContent>
+    <Card sx={{ 
+      height: '100%', 
+      boxShadow: 1,
+      border: `1px solid ${alpha(theme.palette[color].main, 0.1)}` 
+    }}>
+      <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Box>
-            <Typography color="text.secondary" variant="body2" gutterBottom>
+            <Typography color="text.secondary" variant="caption" gutterBottom>
               {title}
             </Typography>
-            <Typography variant="h4" fontWeight="700" color={`${color}.main`}>
+            <Typography variant="h6" fontWeight="600" color={`${color}.main`} sx={{ mb: 0.5 }}>
               {value}
             </Typography>
             {subtitle && (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="caption" color="text.secondary">
                 {subtitle}
               </Typography>
             )}
           </Box>
-          <Box sx={{ color: `${color}.main`, opacity: 0.7 }}>
+          <Box sx={{ color: `${color}.main`, opacity: 0.6 }}>
             {icon}
           </Box>
         </Stack>
@@ -140,165 +153,135 @@ const EmployeeDashboard = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="700" gutterBottom>
+    <Container maxWidth="md" sx={{ py: 2 }}>
+      {/* Minimalistic Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight="600" gutterBottom>
           Welcome, {user?.firstName}
         </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        <Typography variant="body2" color="text.secondary">
+          {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
         </Typography>
       </Box>
 
-      {/* Quick Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      {/* Essential Stats Only */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Pending Requests"
-            value={employeeStats.pendingRequests.leaves + employeeStats.pendingRequests.timesheets}
-            subtitle={`${employeeStats.pendingRequests.leaves} leaves • ${employeeStats.pendingRequests.timesheets} timesheets`}
-            icon={<PendingIcon sx={{ fontSize: 32 }} />}
+            title="Pending"
+            value={(employeeStats.pendingRequests?.leaves || 0) + (employeeStats.pendingRequests?.timesheets || 0)}
+            subtitle={`${employeeStats.pendingRequests?.leaves || 0}L • ${employeeStats.pendingRequests?.timesheets || 0}T`}
+            icon={<PendingIcon sx={{ fontSize: 24 }} />}
             color="warning"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Hours This Month"
-            value={employeeStats.currentMonth.hoursWorked || 0}
-            subtitle={`${employeeStats.currentMonth.efficiency || 0}% efficiency`}
-            icon={<ClockIcon sx={{ fontSize: 32 }} />}
+            title="This Month"
+            value={`${employeeStats.currentMonth?.hoursWorked || 0}h`}
+            subtitle={`${employeeStats.currentMonth?.daysWorked || 0} days`}
+            icon={<ClockIcon sx={{ fontSize: 24 }} />}
             color="primary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Annual Leave"
-            value={employeeStats.leaveBalance.annual?.remaining || 0}
-            subtitle={`of ${employeeStats.leaveBalance.annual?.total || 0} days`}
-            icon={<CalendarIcon sx={{ fontSize: 32 }} />}
+            title="Leave Balance"
+            value={employeeStats.leaveBalance?.annual?.remaining || 0}
+            subtitle={`of ${employeeStats.leaveBalance?.annual?.total || 0}`}
+            icon={<CalendarIcon sx={{ fontSize: 24 }} />}
             color="success"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <StatCard
-            title="Upcoming Leaves"
-            value={employeeStats.upcomingLeaves.length}
-            subtitle="approved requests"
-            icon={<LeaveIcon sx={{ fontSize: 32 }} />}
+            title="Upcoming"
+            value={employeeStats.upcomingLeaves?.length || 0}
+            subtitle="leaves"
+            icon={<LeaveIcon sx={{ fontSize: 24 }} />}
             color="info"
           />
         </Grid>
       </Grid>
 
-      {/* Quick Actions */}
-      <Typography variant="h5" fontWeight="600" sx={{ mb: 3 }}>
-        Quick Actions
-      </Typography>
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+      {/* Essential Quick Actions Only */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={3}>
           <QuickActionCard
-            icon={<TimesheetIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
-            title="Submit Timesheet"
-            description="Log your daily hours"
-            onClick={() => navigate('/add-timesheet')}
+            icon={<TimesheetIcon sx={{ fontSize: 28, color: 'primary.main' }} />}
+            title="Timesheet"
+            description="Log hours"
+            onClick={() => navigate('/timesheets')}
             color="primary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <QuickActionCard
-            icon={<LeaveIcon sx={{ fontSize: 32, color: 'warning.main' }} />}
-            title="Request Leave"
-            description="Apply for time off"
-            onClick={() => navigate('/add-leave-request')}
+            icon={<LeaveIcon sx={{ fontSize: 28, color: 'warning.main' }} />}
+            title="Leave Request"
+            description="Time off"
+            onClick={() => navigate('/leave-requests')}
             color="warning"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <QuickActionCard
-            icon={<PersonIcon sx={{ fontSize: 32, color: 'info.main' }} />}
-            title="My Records"
-            description="View your history"
-            onClick={() => navigate('/employee-records')}
-            color="info"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <QuickActionCard
-            icon={<StatsIcon sx={{ fontSize: 32, color: 'success.main' }} />}
-            title="My Profile"
-            description="Personal details"
-            onClick={() => navigate('/employee-profile')}
-            color="success"
-          />
-        </Grid>
-      </Grid>
-
-      {/* Additional Quick Actions Row */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <QuickActionCard
-            icon={<StatsIcon sx={{ fontSize: 32, color: 'secondary.main' }} />}
+            icon={<StatsIcon sx={{ fontSize: 28, color: 'secondary.main' }} />}
             title="Payslips"
             description="View & download"
             onClick={() => navigate('/employee-payslips')}
             color="secondary"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={6} sm={3}>
           <QuickActionCard
-            icon={<LeaveIcon sx={{ fontSize: 32, color: 'primary.main' }} />}
-            title="Leave Balance"
-            description="Check availability"
-            onClick={() => navigate('/leave-requests')}
-            color="primary"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <QuickActionCard
-            icon={<TimesheetIcon sx={{ fontSize: 32, color: 'warning.main' }} />}
-            title="Timesheet History"
-            description="Past submissions"
-            onClick={() => navigate('/employee-records')}
-            color="warning"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <QuickActionCard
-            icon={<PersonIcon sx={{ fontSize: 32, color: 'info.main' }} />}
-            title="Help & Support"
-            description="Get assistance"
-            onClick={() => navigate('/help')}
+            icon={<PersonIcon sx={{ fontSize: 28, color: 'info.main' }} />}
+            title="Profile"
+            description="My details"
+            onClick={() => navigate('/employee-profile')}
             color="info"
           />
         </Grid>
       </Grid>
 
-      {/* Recent Activity */}
-      {employeeStats.recentActivity.length > 0 && (
+      {/* Recent Activity - Compact */}
+      {employeeStats.recentActivity?.length > 0 && (
         <>
-          <Typography variant="h5" fontWeight="600" sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" fontWeight="600" sx={{ mb: 2 }}>
             Recent Activity
           </Typography>
-          <Card>
-            <List>
-              {employeeStats.recentActivity.slice(0, 5).map((activity, index) => (
+          <Card sx={{ boxShadow: 1 }}>
+            <List dense>
+              {employeeStats.recentActivity.slice(0, 3).map((activity, index) => (
                 <React.Fragment key={index}>
-                  <ListItem>
-                    <ListItemIcon>
-                      {activity.type === 'leave' ? <LeaveIcon /> : <TimesheetIcon />}
+                  <ListItem sx={{ py: 1 }}>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      {activity.type === 'leave' ? 
+                        <LeaveIcon sx={{ fontSize: 20 }} /> : 
+                        <TimesheetIcon sx={{ fontSize: 20 }} />
+                      }
                     </ListItemIcon>
                     <ListItemText
-                      primary={activity.action}
-                      secondary={new Date(activity.date).toLocaleDateString()}
+                      primary={
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {activity.action}
+                        </Typography>
+                      }
+                      secondary={
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(activity.date).toLocaleDateString()}
+                        </Typography>
+                      }
                     />
                     <Chip 
                       label={activity.status} 
                       size="small" 
+                      variant="outlined"
                       color={activity.status === 'approved' ? 'success' : 'default'}
+                      sx={{ fontSize: '0.7rem' }}
                     />
                   </ListItem>
-                  {index < employeeStats.recentActivity.length - 1 && <Divider />}
+                  {index < Math.min(employeeStats.recentActivity.length, 3) - 1 && <Divider />}
                 </React.Fragment>
               ))}
             </List>

@@ -130,10 +130,52 @@ const TimesheetHistory = () => {
       );
     }
 
-    // Sort by week start date (most recent first)
-    filtered.sort((a, b) => new Date(b.weekStartDate).getTime() - new Date(a.weekStartDate).getTime());
+    // Group timesheets by week for minimalistic display
+    const groupedByWeek = filtered.reduce((groups, timesheet) => {
+      const weekKey = timesheet.weekStartDate;
+      if (!groups[weekKey]) {
+        groups[weekKey] = {
+          weekStartDate: timesheet.weekStartDate,
+          weekEndDate: timesheet.weekEndDate,
+          weekNumber: timesheet.weekNumber,
+          year: timesheet.year,
+          timesheets: [],
+          totalWeekHours: 0,
+          overallStatus: timesheet.status,
+          latestSubmitted: timesheet.submittedAt,
+          latestResponse: timesheet.approvedAt || timesheet.rejectedAt
+        };
+      }
+      groups[weekKey].timesheets.push(timesheet);
+      groups[weekKey].totalWeekHours += Number(timesheet.totalHoursWorked || 0);
+      
+      // Determine overall status (prioritize: Rejected > Submitted > Approved > Draft)
+      const statusPriority = { 'Rejected': 4, 'Submitted': 3, 'Approved': 2, 'Draft': 1 };
+      if (statusPriority[timesheet.status] > statusPriority[groups[weekKey].overallStatus]) {
+        groups[weekKey].overallStatus = timesheet.status;
+      }
+      
+      // Get latest submitted date
+      if (timesheet.submittedAt && (!groups[weekKey].latestSubmitted || 
+          new Date(timesheet.submittedAt) > new Date(groups[weekKey].latestSubmitted))) {
+        groups[weekKey].latestSubmitted = timesheet.submittedAt;
+      }
 
-    setFilteredTimesheets(filtered);
+      // Get latest response date
+      const responseDate = timesheet.approvedAt || timesheet.rejectedAt;
+      if (responseDate && (!groups[weekKey].latestResponse || 
+          new Date(responseDate) > new Date(groups[weekKey].latestResponse))) {
+        groups[weekKey].latestResponse = responseDate;
+      }
+      
+      return groups;
+    }, {});
+
+    // Convert to array and sort by week start date (most recent first)
+    const weeklyTimesheets = Object.values(groupedByWeek)
+      .sort((a, b) => new Date(b.weekStartDate).getTime() - new Date(a.weekStartDate).getTime());
+
+    setFilteredTimesheets(weeklyTimesheets);
     setPage(0);
   };
 
@@ -208,20 +250,27 @@ const TimesheetHistory = () => {
   };
 
   const exportToCSV = () => {
-    const csvContent = [
-      ['Week Start', 'Week End', 'Project', 'Task', 'Hours', 'Status', 'Submitted Date', 'Approved/Rejected Date'],
-      ...filteredTimesheets.map(ts => [
-        formatDate(ts.weekStartDate),
-        formatDate(ts.weekEndDate),
-        ts.project?.name || 'N/A',
-        ts.task?.name || 'N/A',
-        getTotalHours(ts),
-        ts.status,
-        ts.submittedAt ? formatDate(ts.submittedAt) : '-',
-        ts.approvedAt ? formatDate(ts.approvedAt) : (ts.rejectedAt ? formatDate(ts.rejectedAt) : '-')
-      ])
-    ].map(row => row.join(',')).join('\n');
+    // Flatten grouped data for CSV export
+    const csvRows = [];
+    csvRows.push(['Week Start', 'Week End', 'Projects/Tasks', 'Total Hours', 'Status', 'Submitted Date', 'Response Date']);
+    
+    filteredTimesheets.forEach(weekData => {
+      const tasksList = weekData.timesheets.map(ts => 
+        `${ts.project?.name || 'N/A'} - ${ts.task?.name || 'N/A'} (${ts.totalHoursWorked || 0}h)`
+      ).join('; ');
+      
+      csvRows.push([
+        formatDate(weekData.weekStartDate),
+        formatDate(weekData.weekEndDate),
+        tasksList,
+        weekData.totalWeekHours.toFixed(1),
+        weekData.overallStatus,
+        weekData.latestSubmitted ? formatDate(weekData.latestSubmitted) : '-',
+        weekData.latestResponse ? formatDate(weekData.latestResponse) : '-'
+      ]);
+    });
 
+    const csvContent = csvRows.map(row => row.join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -235,11 +284,11 @@ const TimesheetHistory = () => {
   const getSummaryStats = () => {
     return {
       total: filteredTimesheets.length,
-      draft: filteredTimesheets.filter(ts => ts.status === 'Draft').length,
-      submitted: filteredTimesheets.filter(ts => ts.status === 'Submitted').length,
-      approved: filteredTimesheets.filter(ts => ts.status === 'Approved').length,
-      rejected: filteredTimesheets.filter(ts => ts.status === 'Rejected').length,
-      totalHours: filteredTimesheets.reduce((sum, ts) => sum + getTotalHours(ts), 0)
+      draft: filteredTimesheets.filter(week => week.overallStatus === 'Draft').length,
+      submitted: filteredTimesheets.filter(week => week.overallStatus === 'Submitted').length,
+      approved: filteredTimesheets.filter(week => week.overallStatus === 'Approved').length,
+      rejected: filteredTimesheets.filter(week => week.overallStatus === 'Rejected').length,
+      totalHours: filteredTimesheets.reduce((sum, week) => sum + week.totalWeekHours, 0)
     };
   };
 
@@ -251,216 +300,110 @@ const TimesheetHistory = () => {
   const stats = getSummaryStats();
 
   return (
-    <Box sx={{ p: 3, bgcolor: theme.palette.background.default, minHeight: '100vh' }}>
-      {/* Header */}
-      <Paper 
-        elevation={0}
-        sx={{ 
-          p: 3, 
-          mb: 3,
-          bgcolor: 'white',
-          borderRadius: 3,
-          border: `1px solid ${theme.palette.divider}`
-        }}
-      >
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Box>
-            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom color="text.primary">
-              My Timesheet History
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              View and track your submitted timesheets
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              onClick={exportToCSV}
-              disabled={filteredTimesheets.length === 0}
-            >
-              Export
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={filterOpen ? <FilterIcon /> : <FilterIcon />}
-              onClick={() => setFilterOpen(!filterOpen)}
-            >
-              {filterOpen ? 'Hide' : 'Show'} Filters
-            </Button>
-          </Stack>
+    <Box sx={{ p: 2, maxWidth: 1400, mx: 'auto', minHeight: '100vh' }}>
+      {/* Minimal Header */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box>
+          <Typography variant="h5" fontWeight={600} color="text.primary">
+            Timesheet History
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {filteredTimesheets.length} weeks • {stats.totalHours.toFixed(0)}h total
+          </Typography>
         </Box>
-      </Paper>
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant={filterOpen ? 'contained' : 'outlined'}
+            startIcon={<FilterIcon />}
+            onClick={() => setFilterOpen(!filterOpen)}
+            size="small"
+            sx={{ minWidth: 80 }}
+          >
+            Filter
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={exportToCSV}
+            size="small"
+            disabled={filteredTimesheets.length === 0}
+            sx={{ minWidth: 80 }}
+          >
+            Export
+          </Button>
+        </Stack>
+      </Box>
 
       {/* Alert */}
       <Collapse in={alert.show}>
         <Alert 
           severity={alert.type} 
-          sx={{ mb: 2, borderRadius: 2 }} 
+          sx={{ mb: 2 }} 
           onClose={() => setAlert({ ...alert, show: false })}
         >
           {alert.message}
         </Alert>
       </Collapse>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ 
-            bgcolor: 'white', 
-            borderRadius: 3,
-            border: `1px solid ${theme.palette.divider}`,
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            '&:hover': { 
-              transform: 'translateY(-4px)',
-              boxShadow: theme.shadows[4]
-            }
-          }}>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Total Timesheets</Typography>
-              <Typography variant="h4" fontWeight="bold" color="primary.main">{stats.total}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ 
-            bgcolor: alpha(theme.palette.text.secondary, 0.05), 
-            borderRadius: 3,
-            border: `1px solid ${alpha(theme.palette.text.secondary, 0.2)}`,
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            '&:hover': { 
-              transform: 'translateY(-4px)',
-              boxShadow: theme.shadows[4]
-            }
-          }}>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Draft</Typography>
-              <Typography variant="h4" fontWeight="bold" color="text.secondary">{stats.draft}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ 
-            bgcolor: alpha(theme.palette.warning.main, 0.1), 
-            borderRadius: 3,
-            border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            '&:hover': { 
-              transform: 'translateY(-4px)',
-              boxShadow: theme.shadows[4]
-            }
-          }}>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Submitted</Typography>
-              <Typography variant="h4" fontWeight="bold" color="warning.main">{stats.submitted}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ 
-            bgcolor: alpha(theme.palette.success.main, 0.1), 
-            borderRadius: 3,
-            border: `1px solid ${alpha(theme.palette.success.main, 0.3)}`,
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            '&:hover': { 
-              transform: 'translateY(-4px)',
-              boxShadow: theme.shadows[4]
-            }
-          }}>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Approved</Typography>
-              <Typography variant="h4" fontWeight="bold" color="success.main">{stats.approved}</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={2.4}>
-          <Card sx={{ 
-            bgcolor: alpha(theme.palette.primary.main, 0.1), 
-            borderRadius: 3,
-            border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            '&:hover': { 
-              transform: 'translateY(-4px)',
-              boxShadow: theme.shadows[4]
-            }
-          }}>
-            <CardContent>
-              <Typography variant="body2" color="text.secondary" gutterBottom>Total Hours</Typography>
-              <Typography variant="h4" fontWeight="bold" color="primary.main">{stats.totalHours.toFixed(1)}h</Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Filters */}
+      {/* Compact Filters */}
       <Collapse in={filterOpen}>
-        <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="">All Statuses</MenuItem>
-                  <MenuItem value="Draft">Draft</MenuItem>
-                  <MenuItem value="Submitted">Submitted</MenuItem>
-                  <MenuItem value="Approved">Approved</MenuItem>
-                  <MenuItem value="Rejected">Rejected</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                size="small"
-                type="date"
-                label="Start Date"
-                value={dateRange.start}
-                onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <TextField
-                fullWidth
-                size="small"
-                type="date"
-                label="End Date"
-                value={dateRange.end}
-                onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <Button 
-                fullWidth
-                variant="outlined" 
-                onClick={clearFilters}
-                disabled={!statusFilter && !dateRange.start && !dateRange.end}
-                sx={{ height: '40px' }}
+        <Box sx={{ mb: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
               >
-                Clear Filters
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="Draft">Draft</MenuItem>
+                <MenuItem value="Submitted">Submitted</MenuItem>
+                <MenuItem value="Approved">Approved</MenuItem>
+                <MenuItem value="Rejected">Rejected</MenuItem>
+              </Select>
+            </FormControl>
+            <TextField
+              size="small"
+              type="date"
+              label="From"
+              value={dateRange.start}
+              onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 140 }}
+            />
+            <TextField
+              size="small"
+              type="date"
+              label="To"
+              value={dateRange.end}
+              onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+              InputLabelProps={{ shrink: true }}
+              sx={{ width: 140 }}
+            />
+            <Button 
+              variant="text" 
+              onClick={clearFilters}
+              disabled={!statusFilter && !dateRange.start && !dateRange.end}
+              size="small"
+            >
+              Clear
+            </Button>
+          </Stack>
+        </Box>
       </Collapse>
 
-      {/* Timesheets Table */}
-      <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 2 }}>
-        <Table>
-          <TableHead sx={{ bgcolor: alpha(theme.palette.background.default, 0.6) }}>
-            <TableRow>
-              <TableCell><strong>Week Period</strong></TableCell>
-              <TableCell><strong>Project / Task</strong></TableCell>
-              <TableCell align="center"><strong>Hours</strong></TableCell>
-              <TableCell align="center"><strong>Status</strong></TableCell>
-              <TableCell><strong>Submitted</strong></TableCell>
-              <TableCell><strong>Response</strong></TableCell>
-              <TableCell align="center"><strong>Actions</strong></TableCell>
+      {/* Minimalistic Table */}
+      <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 1 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: 'grey.50' }}>
+              <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Week</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Tasks</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Hours</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: '0.875rem' }}>Date</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 600, fontSize: '0.875rem', width: 60 }}></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -487,9 +430,9 @@ const TimesheetHistory = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedTimesheets.map((timesheet, index) => (
+              paginatedTimesheets.map((weekData, index) => (
                 <TableRow 
-                  key={timesheet.id} 
+                  key={weekData.weekStartDate} 
                   hover
                   sx={{ 
                     bgcolor: index % 2 === 0 ? 'white' : alpha(theme.palette.background.default, 0.3),
@@ -498,42 +441,67 @@ const TimesheetHistory = () => {
                 >
                   <TableCell>
                     <Typography variant="body2" fontWeight={500}>
-                      {formatDate(timesheet.weekStartDate)}
+                      {formatDate(weekData.weekStartDate)} - {formatDate(weekData.weekEndDate)}
                     </Typography>
                     <Typography variant="caption" color="textSecondary">
-                      Week {timesheet.weekNumber}, {timesheet.year}
+                      Week {weekData.weekNumber}, {weekData.year}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" fontWeight={500}>
-                      {timesheet.project?.name || 'N/A'}
-                    </Typography>
-                    <Typography variant="caption" color="textSecondary">
-                      {timesheet.task?.name || 'N/A'}
-                    </Typography>
+                    <Box sx={{ minWidth: 350 }}>
+                      {weekData.timesheets.map((timesheet, taskIndex) => (
+                        <Box 
+                          key={timesheet.id} 
+                          sx={{ 
+                            mb: taskIndex < weekData.timesheets.length - 1 ? 1 : 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}
+                        >
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" fontWeight={500}>
+                              {timesheet.project?.name || 'N/A'} 
+                            </Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {timesheet.task?.name || 'N/A'}
+                            </Typography>
+                          </Box>
+                          <Chip 
+                            label={`${timesheet.totalHoursWorked || 0}h`}
+                            size="small" 
+                            variant="outlined" 
+                            sx={{ ml: 1, fontSize: '0.75rem', minWidth: 45 }}
+                          />
+                        </Box>
+                      ))}
+                    </Box>
                   </TableCell>
                   <TableCell align="center">
                     <Typography variant="h6" color="primary" fontWeight="bold">
-                      {getTotalHours(timesheet).toFixed(1)}h
+                      {weekData.totalWeekHours.toFixed(1)}h
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {weekData.timesheets.length} task{weekData.timesheets.length !== 1 ? 's' : ''}
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
                     <Chip 
-                      icon={getStatusIcon(timesheet.status)}
-                      label={timesheet.status} 
-                      color={getStatusColor(timesheet.status)} 
+                      icon={getStatusIcon(weekData.overallStatus)}
+                      label={weekData.overallStatus} 
+                      color={getStatusColor(weekData.overallStatus)} 
                       size="small"
                       sx={{ fontWeight: 500, minWidth: 100 }}
                     />
                   </TableCell>
                   <TableCell>
-                    {timesheet.submittedAt ? (
+                    {weekData.latestSubmitted ? (
                       <>
                         <Typography variant="body2">
-                          {formatDate(timesheet.submittedAt)}
+                          {formatDate(weekData.latestSubmitted)}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
-                          {dayjs(timesheet.submittedAt).fromNow()}
+                          {dayjs(weekData.latestSubmitted).fromNow()}
                         </Typography>
                       </>
                     ) : (
@@ -541,35 +509,35 @@ const TimesheetHistory = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    {timesheet.status === 'Approved' && timesheet.approvedAt && (
+                    {weekData.overallStatus === 'Approved' && weekData.latestResponse && (
                       <>
                         <Typography variant="body2" color="success.main">
                           Approved
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
-                          {dayjs(timesheet.approvedAt).fromNow()}
+                          {dayjs(weekData.latestResponse).fromNow()}
                         </Typography>
                       </>
                     )}
-                    {timesheet.status === 'Rejected' && timesheet.rejectedAt && (
+                    {weekData.overallStatus === 'Rejected' && weekData.latestResponse && (
                       <>
                         <Typography variant="body2" color="error.main">
                           Rejected
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
-                          {dayjs(timesheet.rejectedAt).fromNow()}
+                          {dayjs(weekData.latestResponse).fromNow()}
                         </Typography>
                       </>
                     )}
-                    {(timesheet.status === 'Draft' || timesheet.status === 'Submitted') && (
+                    {(weekData.overallStatus === 'Draft' || weekData.overallStatus === 'Submitted') && (
                       <Typography variant="body2" color="textSecondary">-</Typography>
                     )}
                   </TableCell>
                   <TableCell align="center">
-                    <Tooltip title="View Details">
+                    <Tooltip title="View Week Details">
                       <IconButton 
                         size="small" 
-                        onClick={() => handleViewDetails(timesheet)}
+                        onClick={() => handleViewDetails(weekData.timesheets[0])} // Pass first timesheet for backward compatibility
                         sx={{ 
                           bgcolor: 'action.hover',
                           '&:hover': { bgcolor: 'info.light', color: 'info.main' }

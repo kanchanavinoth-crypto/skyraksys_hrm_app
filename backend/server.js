@@ -6,42 +6,114 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const responseTime = require('response-time');
-const statusMonitor = require('express-status-monitor');
 const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const { logger, accessLogStream } = require('./config/logger');
 
 const app = express();
 
-// Performance monitoring dashboard - must be before other middleware
-app.use(statusMonitor({
-  title: 'SkyrakSys HRM - Server Status',
-  path: '/status',
-  spans: [{
-    interval: 1,      // Every second
-    retention: 60     // Keep 60 datapoints (1 minute)
-  }, {
-    interval: 5,      // Every 5 seconds
-    retention: 60     // Keep 60 datapoints (5 minutes)
-  }, {
-    interval: 15,     // Every 15 seconds
-    retention: 60     // Keep 60 datapoints (15 minutes)
-  }],
-  chartVisibility: {
-    cpu: true,
-    mem: true,
-    load: true,
-    responseTime: true,
-    rps: true,
-    statusCodes: true
-  },
-  healthChecks: [{
-    protocol: 'http',
-    host: 'localhost',
-    path: '/api/health',
-    port: process.env.PORT || 5000
-  }]
-}));
+// Production-safe performance monitoring
+// Enhanced error handling to prevent production crashes
+const initializeStatusMonitoring = () => {
+  const isWindows = process.platform === 'win32';
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const enableStatusMonitor = process.env.ENABLE_STATUS_MONITOR !== 'false';
+  
+  // Only enable advanced monitoring in non-Windows environments or when explicitly enabled
+  if (!isWindows && enableStatusMonitor) {
+    try {
+      const statusMonitor = require('express-status-monitor');
+      app.use(statusMonitor({
+        title: 'SkyrakSys HRM - Server Status',
+        path: '/status',
+        spans: [{
+          interval: 1,      // Every second
+          retention: 60     // Keep 60 datapoints (1 minute)
+        }, {
+          interval: 5,      // Every 5 seconds
+          retention: 60     // Keep 60 datapoints (5 minutes)
+        }, {
+          interval: 15,     // Every 15 seconds
+          retention: 60     // Keep 60 datapoints (15 minutes)
+        }],
+        chartVisibility: {
+          cpu: true,
+          mem: true,
+          load: true,
+          responseTime: true,
+          rps: true,
+          statusCodes: true
+        },
+        healthChecks: [{
+          protocol: 'http',
+          host: 'localhost',
+          path: '/api/health',
+          port: process.env.PORT || 5000
+        }],
+        // Production safety: ignore errors from pidusage
+        ignoreStartsWith: '/favicon',
+        iframe: true
+      }));
+      logger.info('📊 Advanced status monitor enabled at /status');
+      return true;
+    } catch (error) {
+      logger.warn(`⚠️ Advanced status monitor failed to initialize: ${error.message}`);
+      logger.warn('   Falling back to basic status monitoring...');
+    }
+  }
+  
+  // Fallback: Basic status endpoint (Windows-compatible, production-safe)
+  app.get('/status', (req, res) => {
+    try {
+      const uptime = process.uptime();
+      const memory = process.memoryUsage();
+      
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        platform: process.platform,
+        nodeVersion: process.version,
+        uptime: {
+          seconds: Math.floor(uptime),
+          human: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`
+        },
+        memory: {
+          used: `${Math.round(memory.heapUsed / 1024 / 1024)}MB`,
+          total: `${Math.round(memory.heapTotal / 1024 / 1024)}MB`,
+          rss: `${Math.round(memory.rss / 1024 / 1024)}MB`
+        },
+        pid: process.pid,
+        monitoring: isWindows ? 'basic (Windows compatibility)' : 'basic (fallback)'
+      });
+    } catch (error) {
+      logger.error('Status endpoint error:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Status check failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+  
+  if (isWindows) {
+    logger.info('⚠️ Status monitor: Windows compatibility mode (basic monitoring)');
+  } else if (!enableStatusMonitor) {
+    logger.info('⚠️ Status monitor: Disabled via environment variable');
+  } else {
+    logger.info('⚠️ Status monitor: Basic mode (advanced monitoring failed)');
+  }
+  
+  return false;
+};
+
+// Initialize monitoring with error handling
+try {
+  initializeStatusMonitoring();
+} catch (error) {
+  logger.error('Critical error initializing status monitoring:', error);
+  logger.info('Server will continue without status monitoring...');
+}
 
 // Response time tracking
 app.use(responseTime((req, res, time) => {
@@ -216,8 +288,9 @@ const { seedAllDemoData } = require('./utils/demoSeed');
 // Initialize database with demo data (gated)
 async function initializeDatabase() {
   try {
-    await db.sequelize.sync({ alter: false });
-    console.log('✅ Database synchronized successfully (without alter sync)');
+    // Skip sync in production since we use migrations
+    // await db.sequelize.sync({ alter: false });
+    console.log('✅ Database connection verified (sync skipped - using migrations)');
 
     if (process.env.SEED_DEMO_DATA === 'true') {
       console.log('🌱 SEED_DEMO_DATA=true -> seeding demo users, projects, and tasks');
@@ -274,6 +347,7 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const settingsRoutes = require('./routes/settings.routes');
 const debugRoutes = require('./routes/debug.routes');
 const emailRoutes = require('./routes/email.routes');
+const performanceRoutes = require('./routes/performance.routes');
 
 // Swagger configuration
 const { specs, swaggerOptions } = require('./config/swagger');
@@ -302,6 +376,7 @@ app.use('/api/payroll-data', payrollDataRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/performance', performanceRoutes);
 
 // Debug Routes (conditionally enabled for development only)
 if (process.env.NODE_ENV !== 'production') {
@@ -452,7 +527,7 @@ if (require.main === module) {
       ? (process.env.API_BASE_URL || `https://${process.env.DOMAIN || 'localhost'}`)
       : `http://localhost:${PORT}`;
     
-    app.listen(PORT, HOST, () => {
+    const server = app.listen(PORT, HOST, () => {
       const logMessage = `🚀 HRM System server running on ${HOST}:${PORT}`;
       logger.info(logMessage);
       logger.info(`🌐 API Base URL: ${baseUrl}/api`);
@@ -479,7 +554,57 @@ if (require.main === module) {
         console.log(`   - Current base URL: ${baseUrl}`);
       }
     });
+    
+    server.on('error', (error) => {
+      logger.error('Failed to start server:', error);
+      process.exit(1);
+    });
+  }).catch(error => {
+    logger.error('Failed to initialize database:', error);
+    process.exit(1);
   });
 }
+
+// Production-safe error handling
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  console.error('Uncaught Exception:', error);
+  
+  // Graceful shutdown in production
+  if (process.env.NODE_ENV === 'production') {
+    setTimeout(() => {
+      process.exit(1);
+    }, 1000);
+  } else {
+    process.exit(1);
+  }
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  
+  // Don't crash in production for unhandled promises
+  if (process.env.NODE_ENV === 'production') {
+    logger.warn('Continuing execution in production mode...');
+  } else {
+    process.exit(1);
+  }
+});
+
+// Graceful shutdown handling
+const gracefulShutdown = (signal) => {
+  logger.info(`Received ${signal}. Shutting down gracefully...`);
+  console.log(`Received ${signal}. Shutting down gracefully...`);
+  
+  // Close server and database connections
+  setTimeout(() => {
+    logger.info('Process terminated');
+    process.exit(0);
+  }, 5000); // Give 5 seconds for cleanup
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 module.exports = app;
