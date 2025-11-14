@@ -468,7 +468,7 @@ const ModernWeeklyTimesheet = () => {
           if (createError.response?.status === 400 && createError.response?.data?.message?.includes('already exists')) {
             showWarning('Some timesheets already exist for this week. Please refresh and try again.');
             // Reload timesheets to get current state
-            fetchTimesheet();
+            loadWeekTimesheet();
             return;
           }
           throw createError;

@@ -7,6 +7,7 @@ import {
   Box,
   Grid,
   Card,
+  CardContent,
   Avatar,
   Chip,
   Button,
@@ -20,6 +21,7 @@ import {
   Stack,
   Badge,
   useTheme,
+  alpha,
   CircularProgress
 } from '@mui/material';
 import {
