@@ -112,13 +112,18 @@ main() {
         echo "• ✅ Deploy complete application"
         echo "• ✅ Verify deployment success"
         echo ""
+        echo "🚀 GitHub Integration Available!"
+        echo "For future deployments, you can run directly from GitHub:"
+        echo "curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/deploy-from-github.sh | bash"
+        echo ""
         echo "Choose deployment method:"
         echo "1) AUTO - Run master-deploy.sh (Recommended)"
         echo "2) ADVANCED - Run ultimate-deploy.sh"
         echo "3) GUIDED - Run deploy-production.sh"
         echo "4) MANUAL - Run individual steps"
+        echo "5) UPDATE FROM GITHUB - Pull latest and deploy"
         echo ""
-        read -p "Enter choice (1-4): " choice
+        read -p "Enter choice (1-5): " choice
         
         case $choice in
             1)
@@ -139,6 +144,20 @@ main() {
                 echo "1. ./audit-production-configs.sh"
                 echo "2. ./validate-production-configs.sh"
                 echo "3. ./master-deploy.sh"
+                ;;
+            5)
+                print_header "EXECUTING: GitHub Update & Deploy"
+                if [ -d ".git" ]; then
+                    print_info "Updating from GitHub..."
+                    git stash push -m "Auto-stash before update $(date)" 2>/dev/null
+                    git pull origin master
+                    chmod +x *.sh redhatprod/scripts/*.sh 2>/dev/null
+                    print_success "Updated from GitHub - running deployment"
+                    ./master-deploy.sh
+                else
+                    print_warning "Not a git repository - running local deployment"
+                    ./master-deploy.sh
+                fi
                 ;;
             *)
                 print_info "Running default: master-deploy.sh"
