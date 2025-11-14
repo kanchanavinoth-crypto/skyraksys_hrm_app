@@ -51,19 +51,27 @@ fi
 
 # Check PostgreSQL service
 print_info "Checking PostgreSQL service..."
-POSTGRES_SERVICES=("postgresql" "postgresql-13" "postgresql-14" "postgresql-15" "postgresql-16")
+POSTGRES_SERVICES=("postgresql-17" "postgresql-16" "postgresql-15" "postgresql-14" "postgresql-13" "postgresql")
 POSTGRES_RUNNING=false
+ACTIVE_POSTGRES_SERVICE=""
 
 for pg_service in "${POSTGRES_SERVICES[@]}"; do
     if systemctl is-active --quiet "$pg_service" 2>/dev/null; then
         print_status 0 "PostgreSQL service ($pg_service) is running"
         POSTGRES_RUNNING=true
+        ACTIVE_POSTGRES_SERVICE="$pg_service"
         break
     fi
 done
 
 if [ "$POSTGRES_RUNNING" = false ]; then
-    print_warning "PostgreSQL service not detected via systemd"
+    # Check for manual PostgreSQL process
+    if pgrep -f "postgres" > /dev/null; then
+        print_status 0 "PostgreSQL process detected (manual installation)"
+        POSTGRES_RUNNING=true
+    else
+        print_warning "PostgreSQL service not detected via systemd or manual process"
+    fi
 fi
 
 echo ""
