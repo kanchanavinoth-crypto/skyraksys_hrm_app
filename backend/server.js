@@ -348,6 +348,7 @@ const settingsRoutes = require('./routes/settings.routes');
 const debugRoutes = require('./routes/debug.routes');
 const emailRoutes = require('./routes/email.routes');
 const performanceRoutes = require('./routes/performance.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 // Swagger configuration
 const { specs, swaggerOptions } = require('./config/swagger');
@@ -377,6 +378,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/performance', performanceRoutes);
+app.use('/api/admin', adminRoutes); // Admin configuration routes
 
 // Debug Routes (conditionally enabled for development only)
 if (process.env.NODE_ENV !== 'production') {

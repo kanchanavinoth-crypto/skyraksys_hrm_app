@@ -57,6 +57,7 @@ import {
   Notifications,
   Help,
   Logout as LogoutIcon,
+  Email as EmailIcon,
   Assessment // ✅ ADD THIS LINE - Import Assessment separately for Performance icons
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
@@ -185,6 +186,7 @@ const Layout = () => {
           icon: <AdminIcon />,
           items: [
             { label: 'User Management', path: '/user-management', icon: <ManagerIcon /> },
+            { label: 'Email Configuration', path: '/email-configuration', icon: <EmailIcon /> },
             { label: 'System Settings', path: '/settings', icon: <SettingsIcon /> },
             { label: 'My Profile', path: '/my-profile', icon: <PersonIcon /> }
           ]

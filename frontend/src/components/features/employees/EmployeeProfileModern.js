@@ -18,8 +18,11 @@ import {
   CircularProgress,
   Alert,
   Stack,
-  Paper,
-  Fade
+  Fade,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -60,6 +63,9 @@ const EmployeeProfileModern = () => {
   const [showSensitive, setShowSensitive] = useState(false);
   const [showStatutory, setShowStatutory] = useState(false);
   const [showPayslipViewer, setShowPayslipViewer] = useState(false);
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+  const [managers, setManagers] = useState([]);
 
   // Permission checks
   const isAdmin = user?.role === 'admin';
@@ -72,17 +78,49 @@ const EmployeeProfileModern = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch employee details
-        const empData = await employeeService.getById(id);
+        // Fetch employee details and dropdown data in parallel
+        const [empData, deptResponse, posResponse, mgrResponse] = await Promise.all([
+          employeeService.getById(id),
+          employeeService.getDepartments().catch(err => {
+            console.error('Error loading departments:', err);
+            return { data: { data: [] } };
+          }),
+          employeeService.getPositions().catch(err => {
+            console.error('Error loading positions:', err);
+            return { data: { data: [] } };
+          }),
+          employeeService.getManagers().catch(err => {
+            console.error('Error loading managers:', err);
+            return { data: { data: [] } };
+          })
+        ]);
+        
         console.log('===== EMPLOYEE DATA DEBUG =====');
         console.log('Full employee data:', empData);
-        console.log('Date of Birth:', empData.dateOfBirth);
-        console.log('ESI Number:', empData.esiNumber);
+        console.log('Full employee data JSON:', JSON.stringify(empData, null, 2));
+        console.log('Emergency Contact Name:', empData.emergencyContactName);
+        console.log('Emergency Contact Phone:', empData.emergencyContactPhone);
+        console.log('Emergency Contact Relation:', empData.emergencyContactRelation);
+        console.log('Bank Account Number:', empData.bankAccountNumber);
+        console.log('Bank Name:', empData.bankName);
+        console.log('Bank Branch:', empData.bankBranch);
+        console.log('IFSC Code:', empData.ifscCode);
+        console.log('Account Holder Name:', empData.accountHolderName);
+        console.log('Joining Date:', empData.joiningDate);
+        console.log('Department:', empData.department);
+        console.log('DepartmentId:', empData.departmentId);
+        console.log('Position:', empData.position);
+        console.log('PositionId:', empData.positionId);
+        console.log('Manager:', empData.manager);
+        console.log('ManagerId:', empData.managerId);
         console.log('Salary data:', empData.salary);
-        console.log('Salary structure:', empData.salaryStructure);
         console.log('===============================');
+        
         setEmployee(empData);
         setOriginalEmployee({ ...empData });
+        setDepartments(deptResponse.data?.data || []);
+        setPositions(posResponse.data?.data || []);
+        setManagers(mgrResponse.data?.data || []);
       } catch (error) {
         console.error('Error fetching employee:', error);
         showNotification('Failed to load employee data', 'error');
@@ -122,10 +160,28 @@ const EmployeeProfileModern = () => {
     setEmployee(prev => ({ ...prev, [field]: value }));
   };
 
-  // Format currency
-  const formatCurrency = (amount, currency = 'INR') => {
-    if (!amount) return '-';
-    return `${currency} ${Number(amount).toLocaleString()}`;
+  // Handle nested salary field changes
+  const handleSalaryChange = (field, value) => {
+    setEmployee(prev => {
+      const salary = { ...(prev.salary || {}) };
+      
+      // Handle nested fields like 'allowances.hra', 'deductions.pf', etc.
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        salary[parent] = {
+          ...(salary[parent] || {}),
+          [child]: value === '' ? 0 : (parseFloat(value) || 0)
+        };
+      } else {
+        // Handle top-level salary fields
+        salary[field] = value === '' ? null : (parseFloat(value) || value);
+      }
+      
+      return {
+        ...prev,
+        salary
+      };
+    });
   };
 
   // Format date
@@ -156,7 +212,7 @@ const EmployeeProfileModern = () => {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', py: 4 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', py: 4, pb: editing ? 12 : 4 }}>
       <Box sx={{ maxWidth: 1400, mx: 'auto', px: 3 }}>
         {/* Header */}
         <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -266,7 +322,7 @@ const EmployeeProfileModern = () => {
                 {/* Avatar */}
                 <Grid item xs={12} sm="auto">
                   <Avatar
-                    src={employee.photoUrl}
+                    src={employee.photoUrl ? `http://localhost:5000${employee.photoUrl}` : undefined}
                     sx={{
                       width: 120,
                       height: 120,
@@ -344,12 +400,15 @@ const EmployeeProfileModern = () => {
             {/* Personal Information */}
             <Card sx={{ mb: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
-                  <PersonIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#1976d2' }} />
-                  Personal Information
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                  <Typography variant="h6" fontWeight={600}>
+                    <PersonIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#1976d2' }} />
+                    Personal Information
+                  </Typography>
+                  {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                </Box>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={6} md={6}>
                     <InfoField
                       label="First Name"
                       value={employee.firstName}
@@ -358,7 +417,7 @@ const EmployeeProfileModern = () => {
                       required
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12} sm={6} md={6}>
                     <InfoField
                       label="Last Name"
                       value={employee.lastName}
@@ -377,12 +436,30 @@ const EmployeeProfileModern = () => {
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <InfoField
-                      label="Gender"
-                      value={employee.gender}
-                      editing={editing}
-                      onChange={(val) => handleChange('gender', val)}
-                    />
+                    {editing ? (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Gender</InputLabel>
+                        <Select
+                          value={employee.gender || ''}
+                          label="Gender"
+                          onChange={(e) => handleChange('gender', e.target.value)}
+                          sx={{ bgcolor: 'white', borderRadius: 2 }}
+                        >
+                          <MenuItem value="Male">Male</MenuItem>
+                          <MenuItem value="Female">Female</MenuItem>
+                          <MenuItem value="Other">Other</MenuItem>
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                          Gender
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {employee.gender || '-'}
+                        </Typography>
+                      </Box>
+                    )}
                   </Grid>
                   <Grid item xs={12}>
                     <InfoField
@@ -403,11 +480,38 @@ const EmployeeProfileModern = () => {
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
+                    {editing ? (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Marital Status</InputLabel>
+                        <Select
+                          value={employee.maritalStatus || ''}
+                          label="Marital Status"
+                          onChange={(e) => handleChange('maritalStatus', e.target.value)}
+                          sx={{ bgcolor: 'white', borderRadius: 2 }}
+                        >
+                          <MenuItem value="Single">Single</MenuItem>
+                          <MenuItem value="Married">Married</MenuItem>
+                          <MenuItem value="Divorced">Divorced</MenuItem>
+                          <MenuItem value="Widowed">Widowed</MenuItem>
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                          Marital Status
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {employee.maritalStatus || '-'}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
                     <InfoField
-                      label="Marital Status"
-                      value={employee.maritalStatus}
+                      label="Nationality"
+                      value={employee.nationality}
                       editing={editing}
-                      onChange={(val) => handleChange('maritalStatus', val)}
+                      onChange={(val) => handleChange('nationality', val)}
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -419,6 +523,30 @@ const EmployeeProfileModern = () => {
                       multiline
                     />
                   </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <InfoField
+                      label="City"
+                      value={employee.city}
+                      editing={editing}
+                      onChange={(val) => handleChange('city', val)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <InfoField
+                      label="State"
+                      value={employee.state}
+                      editing={editing}
+                      onChange={(val) => handleChange('state', val)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6} md={4}>
+                    <InfoField
+                      label="Pin Code"
+                      value={employee.pinCode}
+                      editing={editing}
+                      onChange={(val) => handleChange('pinCode', val)}
+                    />
+                  </Grid>
                 </Grid>
               </CardContent>
             </Card>
@@ -426,10 +554,13 @@ const EmployeeProfileModern = () => {
             {/* Emergency Contact */}
             <Card sx={{ mb: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
-                  <PhoneIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#ef4444' }} />
-                  Emergency Contact
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                  <Typography variant="h6" fontWeight={600}>
+                    <PhoneIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#ef4444' }} />
+                    Emergency Contact
+                  </Typography>
+                  {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                </Box>
                 <Grid container spacing={2}>
                   <Grid item xs={12}>
                     <InfoField
@@ -465,10 +596,13 @@ const EmployeeProfileModern = () => {
             {/* Employment Information */}
             <Card sx={{ mb: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" fontWeight={600} gutterBottom sx={{ mb: 3 }}>
-                  <BusinessIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#8b5cf6' }} />
-                  Employment Details
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                  <Typography variant="h6" fontWeight={600}>
+                    <BusinessIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#8b5cf6' }} />
+                    Employment Details
+                  </Typography>
+                  {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                </Box>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
                     <InfoField
@@ -489,28 +623,93 @@ const EmployeeProfileModern = () => {
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <InfoField
-                      label="Department"
-                      value={employee.department?.name || employee.departmentId || '-'}
-                      editing={editing}
-                      onChange={(val) => handleChange('departmentId', val)}
-                    />
+                    {editing ? (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Department</InputLabel>
+                        <Select
+                          value={employee.departmentId || ''}
+                          label="Department"
+                          onChange={(e) => handleChange('departmentId', e.target.value)}
+                          sx={{ bgcolor: 'white', borderRadius: 2 }}
+                        >
+                          <MenuItem value="">
+                            <em>None</em>
+                          </MenuItem>
+                          {departments.map((dept) => (
+                            <MenuItem key={dept.id} value={dept.id}>
+                              {dept.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                          Department
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {employee.department?.name || '-'}
+                        </Typography>
+                      </Box>
+                    )}
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <InfoField
-                      label="Position"
-                      value={employee.position?.title || employee.positionId || '-'}
-                      editing={editing}
-                      onChange={(val) => handleChange('positionId', val)}
-                    />
+                    {editing ? (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Position</InputLabel>
+                        <Select
+                          value={employee.positionId || ''}
+                          label="Position"
+                          onChange={(e) => handleChange('positionId', e.target.value)}
+                          sx={{ bgcolor: 'white', borderRadius: 2 }}
+                        >
+                          <MenuItem value="">
+                            <em>None</em>
+                          </MenuItem>
+                          {positions.map((pos) => (
+                            <MenuItem key={pos.id} value={pos.id}>
+                              {pos.title}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                          Position
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {employee.position?.title || '-'}
+                        </Typography>
+                      </Box>
+                    )}
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <InfoField
-                      label="Employment Type"
-                      value={employee.employmentType || '-'}
-                      editing={editing}
-                      onChange={(val) => handleChange('employmentType', val)}
-                    />
+                    {editing ? (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Employment Type</InputLabel>
+                        <Select
+                          value={employee.employmentType || ''}
+                          label="Employment Type"
+                          onChange={(e) => handleChange('employmentType', e.target.value)}
+                          sx={{ bgcolor: 'white', borderRadius: 2 }}
+                        >
+                          <MenuItem value="Full-time">Full-time</MenuItem>
+                          <MenuItem value="Part-time">Part-time</MenuItem>
+                          <MenuItem value="Contract">Contract</MenuItem>
+                          <MenuItem value="Intern">Intern</MenuItem>
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                          Employment Type
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {employee.employmentType || '-'}
+                        </Typography>
+                      </Box>
+                    )}
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <InfoField
@@ -520,13 +719,117 @@ const EmployeeProfileModern = () => {
                       onChange={(val) => handleChange('workLocation', val)}
                     />
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid item xs={12} sm={6}>
+                    {editing ? (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Status</InputLabel>
+                        <Select
+                          value={employee.status || 'Active'}
+                          label="Status"
+                          onChange={(e) => handleChange('status', e.target.value)}
+                          sx={{ bgcolor: 'white', borderRadius: 2 }}
+                        >
+                          <MenuItem value="Active">Active</MenuItem>
+                          <MenuItem value="Inactive">Inactive</MenuItem>
+                          <MenuItem value="On Leave">On Leave</MenuItem>
+                          <MenuItem value="Terminated">Terminated</MenuItem>
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                          Status
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {employee.status || 'Active'}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
                     <InfoField
-                      label="Manager"
-                      value={employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : employee.managerId || '-'}
+                      label="Joining Date"
+                      value={editing ? employee.joiningDate : formatDate(employee.joiningDate)}
                       editing={editing}
-                      onChange={(val) => handleChange('managerId', val)}
+                      type="date"
+                      onChange={(val) => handleChange('joiningDate', val)}
                     />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <InfoField
+                      label="Confirmation Date"
+                      value={editing ? employee.confirmationDate : formatDate(employee.confirmationDate)}
+                      editing={editing}
+                      type="date"
+                      onChange={(val) => handleChange('confirmationDate', val)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <InfoField
+                      label="Probation Period (months)"
+                      value={employee.probationPeriod}
+                      editing={editing}
+                      type="number"
+                      onChange={(val) => handleChange('probationPeriod', val)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <InfoField
+                      label="Notice Period (days)"
+                      value={employee.noticePeriod}
+                      editing={editing}
+                      type="number"
+                      onChange={(val) => handleChange('noticePeriod', val)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <InfoField
+                      label="Resignation Date"
+                      value={editing ? employee.resignationDate : formatDate(employee.resignationDate)}
+                      editing={editing}
+                      type="date"
+                      onChange={(val) => handleChange('resignationDate', val)}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <InfoField
+                      label="Last Working Date"
+                      value={editing ? employee.lastWorkingDate : formatDate(employee.lastWorkingDate)}
+                      editing={editing}
+                      type="date"
+                      onChange={(val) => handleChange('lastWorkingDate', val)}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    {editing ? (
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Manager</InputLabel>
+                        <Select
+                          value={employee.managerId || ''}
+                          label="Manager"
+                          onChange={(e) => handleChange('managerId', e.target.value)}
+                          sx={{ bgcolor: 'white', borderRadius: 2 }}
+                        >
+                          <MenuItem value="">
+                            <em>None</em>
+                          </MenuItem>
+                          {managers.map((mgr) => (
+                            <MenuItem key={mgr.id} value={mgr.id}>
+                              {mgr.firstName} {mgr.lastName} ({mgr.employeeId})
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                          Manager
+                        </Typography>
+                        <Typography variant="body1" fontWeight={500}>
+                          {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : '-'}
+                        </Typography>
+                      </Box>
+                    )}
                   </Grid>
                 </Grid>
               </CardContent>
@@ -537,10 +840,13 @@ const EmployeeProfileModern = () => {
               <Card sx={{ mb: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)', border: '2px solid #fbbf24' }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" fontWeight={600}>
-                      <MoneyIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#f59e0b' }} />
-                      Compensation
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="h6" fontWeight={600}>
+                        <MoneyIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#f59e0b' }} />
+                        Compensation
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Stack direction="row" spacing={1}>
                       <Chip label="Confidential" size="small" color="error" />
                       <IconButton size="small" onClick={() => setShowSensitive(!showSensitive)}>
@@ -549,134 +855,266 @@ const EmployeeProfileModern = () => {
                     </Stack>
                   </Box>
 
-                  {showSensitive && employee.salary && (
+                  {showSensitive && (
                     <Grid container spacing={2}>
-                      {/* Basic Salary */}
-                      <Grid item xs={12}>
-                        <Paper sx={{ p: 2, bgcolor: '#ecfdf5', borderRadius: 2 }}>
-                          <Typography variant="body2" color="text.secondary" gutterBottom>
-                            Basic Salary
-                          </Typography>
-                          <Typography variant="h5" fontWeight={700} color="#059669">
-                            {formatCurrency(employee.salary.basicSalary, employee.salary.currency)}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {employee.salary.payFrequency || 'Monthly'}
-                          </Typography>
-                        </Paper>
+                      {/* Basic Salary Fields */}
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InfoField
+                          label="Basic Salary"
+                          value={employee.salary?.basicSalary || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('basicSalary', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        {editing ? (
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Currency</InputLabel>
+                            <Select
+                              value={employee.salary?.currency || 'INR'}
+                              label="Currency"
+                              onChange={(e) => handleSalaryChange('currency', e.target.value)}
+                              sx={{ bgcolor: 'white', borderRadius: 2 }}
+                            >
+                              <MenuItem value="INR">INR - Indian Rupee</MenuItem>
+                              <MenuItem value="USD">USD - US Dollar</MenuItem>
+                              <MenuItem value="EUR">EUR - Euro</MenuItem>
+                              <MenuItem value="GBP">GBP - British Pound</MenuItem>
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                              Currency
+                            </Typography>
+                            <Typography variant="body1" fontWeight={500}>
+                              {employee.salary?.currency || 'INR'}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        {editing ? (
+                          <FormControl fullWidth size="small">
+                            <InputLabel>Pay Frequency</InputLabel>
+                            <Select
+                              value={employee.salary?.payFrequency || 'monthly'}
+                              label="Pay Frequency"
+                              onChange={(e) => handleSalaryChange('payFrequency', e.target.value)}
+                              sx={{ bgcolor: 'white', borderRadius: 2 }}
+                            >
+                              <MenuItem value="weekly">Weekly</MenuItem>
+                              <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                              <MenuItem value="monthly">Monthly</MenuItem>
+                              <MenuItem value="annually">Annually</MenuItem>
+                            </Select>
+                          </FormControl>
+                        ) : (
+                          <Box>
+                            <Typography variant="caption" color="text.secondary" fontWeight={500} display="block" gutterBottom>
+                              Pay Frequency
+                            </Typography>
+                            <Typography variant="body1" fontWeight={500} sx={{ textTransform: 'capitalize' }}>
+                              {employee.salary?.payFrequency || 'monthly'}
+                            </Typography>
+                          </Box>
+                        )}
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={3}>
+                        <InfoField
+                          label="Effective From"
+                          value={editing ? (employee.salary?.effectiveFrom || '') : formatDate(employee.salary?.effectiveFrom)}
+                          editing={editing}
+                          type="date"
+                          onChange={(val) => handleSalaryChange('effectiveFrom', val)}
+                        />
                       </Grid>
 
-                      {/* Allowances */}
-                      {(employee.salary.houseRentAllowance || employee.salary.transportAllowance || employee.salary.medicalAllowance) && (
-                        <>
-                          <Grid item xs={12}>
-                            <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mt: 1 }}>
-                              Allowances
-                            </Typography>
-                          </Grid>
-                          {employee.salary.houseRentAllowance > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <SalaryItem
-                                label="HRA"
-                                amount={employee.salary.houseRentAllowance}
-                                currency={employee.salary.currency}
-                              />
-                            </Grid>
-                          )}
-                          {employee.salary.transportAllowance > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <SalaryItem
-                                label="Transport"
-                                amount={employee.salary.transportAllowance}
-                                currency={employee.salary.currency}
-                              />
-                            </Grid>
-                          )}
-                          {employee.salary.medicalAllowance > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <SalaryItem
-                                label="Medical"
-                                amount={employee.salary.medicalAllowance}
-                                currency={employee.salary.currency}
-                              />
-                            </Grid>
-                          )}
-                        </>
-                      )}
+                      {/* Allowances Section */}
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="subtitle2" fontWeight={600} color="text.secondary" gutterBottom>
+                          Allowances
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="House Rent Allowance (HRA)"
+                          value={employee.salary?.allowances?.hra || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('allowances.hra', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Transport Allowance"
+                          value={employee.salary?.allowances?.transport || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('allowances.transport', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Medical Allowance"
+                          value={employee.salary?.allowances?.medical || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('allowances.medical', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Food Allowance"
+                          value={employee.salary?.allowances?.food || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('allowances.food', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Communication Allowance"
+                          value={employee.salary?.allowances?.communication || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('allowances.communication', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Special Allowance"
+                          value={employee.salary?.allowances?.special || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('allowances.special', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Other Allowances"
+                          value={employee.salary?.allowances?.other || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('allowances.other', val)}
+                        />
+                      </Grid>
 
-                      {/* Deductions */}
-                      {(employee.salary.providentFund || employee.salary.incomeTax || employee.salary.professionalTax) && (
-                        <>
-                          <Grid item xs={12}>
-                            <Typography variant="subtitle2" fontWeight={600} color="text.secondary" sx={{ mt: 1 }}>
-                              Deductions
-                            </Typography>
-                          </Grid>
-                          {employee.salary.providentFund > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <SalaryItem
-                                label="PF"
-                                amount={employee.salary.providentFund}
-                                currency={employee.salary.currency}
-                                deduction
-                              />
-                            </Grid>
-                          )}
-                          {employee.salary.incomeTax > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <SalaryItem
-                                label="Income Tax"
-                                amount={employee.salary.incomeTax}
-                                currency={employee.salary.currency}
-                                deduction
-                              />
-                            </Grid>
-                          )}
-                          {employee.salary.professionalTax > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <SalaryItem
-                                label="Professional Tax"
-                                amount={employee.salary.professionalTax}
-                                currency={employee.salary.currency}
-                                deduction
-                              />
-                            </Grid>
-                          )}
-                        </>
-                      )}
+                      {/* Deductions Section */}
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="subtitle2" fontWeight={600} color="text.secondary" gutterBottom>
+                          Deductions
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Provident Fund (PF)"
+                          value={employee.salary?.deductions?.pf || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('deductions.pf', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Income Tax (TDS)"
+                          value={employee.salary?.deductions?.incomeTax || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('deductions.incomeTax', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Professional Tax"
+                          value={employee.salary?.deductions?.professionalTax || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('deductions.professionalTax', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="ESI"
+                          value={employee.salary?.deductions?.esi || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('deductions.esi', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Other Deductions"
+                          value={employee.salary?.deductions?.other || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('deductions.other', val)}
+                        />
+                      </Grid>
 
-                      {/* Summary */}
-                      {(employee.salary.ctc || employee.salary.takeHome) && (
-                        <>
-                          <Grid item xs={12}>
-                            <Divider sx={{ my: 1 }} />
-                          </Grid>
-                          {employee.salary.ctc > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <Paper sx={{ p: 2, bgcolor: '#eff6ff', borderRadius: 2, border: '1px solid #3b82f6' }}>
-                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                  Annual CTC
-                                </Typography>
-                                <Typography variant="h6" fontWeight={700} color="#2563eb">
-                                  {formatCurrency(employee.salary.ctc, employee.salary.currency)}
-                                </Typography>
-                              </Paper>
-                            </Grid>
-                          )}
-                          {employee.salary.takeHome > 0 && (
-                            <Grid item xs={12} sm={6}>
-                              <Paper sx={{ p: 2, bgcolor: '#f0fdf4', borderRadius: 2, border: '1px solid #10b981' }}>
-                                <Typography variant="body2" color="text.secondary" gutterBottom>
-                                  Take Home
-                                </Typography>
-                                <Typography variant="h6" fontWeight={700} color="#059669">
-                                  {formatCurrency(employee.salary.takeHome, employee.salary.currency)}
-                                </Typography>
-                              </Paper>
-                            </Grid>
-                          )}
-                        </>
-                      )}
+                      {/* Benefits Section */}
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="subtitle2" fontWeight={600} color="text.secondary" gutterBottom>
+                          Additional Benefits
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Bonus"
+                          value={employee.salary?.benefits?.bonus || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('benefits.bonus', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Incentive"
+                          value={employee.salary?.benefits?.incentive || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('benefits.incentive', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6} md={4}>
+                        <InfoField
+                          label="Overtime Pay"
+                          value={employee.salary?.benefits?.overtime || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('benefits.overtime', val)}
+                        />
+                      </Grid>
+
+                      {/* Summary Section */}
+                      <Grid item xs={12}>
+                        <Divider sx={{ my: 1 }} />
+                        <Typography variant="subtitle2" fontWeight={600} color="text.secondary" gutterBottom>
+                          Summary
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <InfoField
+                          label="Annual CTC"
+                          value={employee.salary?.taxInformation?.ctc || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('taxInformation.ctc', val)}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <InfoField
+                          label="Take Home Salary"
+                          value={employee.salary?.taxInformation?.takeHome || ''}
+                          editing={editing}
+                          type="number"
+                          onChange={(val) => handleSalaryChange('taxInformation.takeHome', val)}
+                        />
+                      </Grid>
                     </Grid>
                   )}
 
@@ -687,12 +1125,6 @@ const EmployeeProfileModern = () => {
                       </Typography>
                     </Box>
                   )}
-
-                  {showSensitive && !employee.salary && (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      No salary information configured for this employee
-                    </Alert>
-                  )}
                 </CardContent>
               </Card>
             )}
@@ -702,10 +1134,13 @@ const EmployeeProfileModern = () => {
               <Card sx={{ mb: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.08)' }}>
                 <CardContent sx={{ p: 3 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Typography variant="h6" fontWeight={600}>
-                      <CardIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#6366f1' }} />
-                      Statutory & Banking
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Typography variant="h6" fontWeight={600}>
+                        <CardIcon sx={{ verticalAlign: 'middle', mr: 1, color: '#6366f1' }} />
+                        Statutory & Banking
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Chip label="Confidential" size="small" color="error" />
                       {!editing && (
@@ -804,6 +1239,22 @@ const EmployeeProfileModern = () => {
                         onChange={(val) => handleChange('ifscCode', val)}
                       />
                     </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <InfoField
+                        label="Bank Branch"
+                        value={employee.bankBranch}
+                        editing={editing}
+                        onChange={(val) => handleChange('bankBranch', val)}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <InfoField
+                        label="Account Holder Name"
+                        value={employee.accountHolderName}
+                        editing={editing}
+                        onChange={(val) => handleChange('accountHolderName', val)}
+                      />
+                    </Grid>
                   </Grid>
                   )}
                 </CardContent>
@@ -812,6 +1263,89 @@ const EmployeeProfileModern = () => {
           </Grid>
         </Grid>
       </Box>
+
+      {/* Sticky Floating Action Bar - Only visible in edit mode */}
+      {editing && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            bgcolor: 'white',
+            borderTop: '2px solid',
+            borderColor: 'warning.main',
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+            zIndex: 1100,
+            py: 2,
+            px: 3
+          }}
+        >
+          <Box
+            sx={{
+              maxWidth: '1400px',
+              margin: '0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+              flexWrap: 'wrap'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Chip 
+                icon={<EditIcon />}
+                label="Edit Mode Active" 
+                color="warning" 
+                sx={{ fontWeight: 600 }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', md: 'block' } }}>
+                Make your changes and click Save to update the profile
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="outlined"
+                startIcon={<CancelIcon />}
+                onClick={handleCancel}
+                disabled={saving}
+                sx={{
+                  borderColor: '#cbd5e1',
+                  color: '#64748b',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#94a3b8',
+                    bgcolor: 'rgba(148, 163, 184, 0.05)'
+                  }
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={saving ? <CircularProgress size={20} /> : <SaveIcon />}
+                onClick={handleSave}
+                disabled={saving}
+                sx={{
+                  bgcolor: '#10b981',
+                  color: 'white',
+                  fontWeight: 600,
+                  px: 4,
+                  '&:hover': {
+                    bgcolor: '#059669',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 16px rgba(16, 185, 129, 0.3)'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Save Changes
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
       
       {/* Payslip Viewer Dialog */}
       <PayslipViewer
@@ -859,27 +1393,6 @@ const InfoField = ({ label, value, editing, onChange, type = 'text', required = 
         {sensitive && value ? '••••••••' : value || '-'}
       </Typography>
     </Box>
-  );
-};
-
-// Salary Item Component
-const SalaryItem = ({ label, amount, currency = 'INR', deduction = false }) => {
-  return (
-    <Paper
-      sx={{
-        p: 1.5,
-        bgcolor: deduction ? '#fef2f2' : '#f0f9ff',
-        borderRadius: 2,
-        border: `1px solid ${deduction ? '#fecaca' : '#bfdbfe'}`
-      }}
-    >
-      <Typography variant="caption" color="text.secondary" gutterBottom display="block">
-        {label}
-      </Typography>
-      <Typography variant="body1" fontWeight={600} color={deduction ? '#dc2626' : '#0284c7'}>
-        {currency} {Number(amount).toLocaleString()}
-      </Typography>
-    </Paper>
   );
 };
 

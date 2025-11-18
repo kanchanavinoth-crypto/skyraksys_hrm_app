@@ -144,9 +144,15 @@ class TimesheetService {
   }
 
   // Get timesheets by week
-  async getByWeek(weekStartDate) {
-    logger.debug('🔍 TimesheetService.getByWeek called with:', weekStartDate);
+  async getByWeek(weekStartDate, employeeId = null) {
+    logger.debug('🔍 TimesheetService.getByWeek called with:', { weekStartDate, employeeId });
     const params = { startDate: weekStartDate };
+    
+    // Include employeeId if provided (for admin users to filter specific employee)
+    if (employeeId) {
+      params.employeeId = employeeId;
+    }
+    
     logger.debug('📡 API call params:', params);
     
     const response = await http.get('/timesheets', { params });

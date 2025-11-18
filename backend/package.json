@@ -71,7 +71,7 @@
     "winston": "^3.11.0"
   },
   "devDependencies": {
-    "axios": "^1.11.0",
+    "axios": "^1.13.2",
     "colors": "^1.4.0",
     "dotenv": "^17.2.2",
     "jest": "^29.7.0",

@@ -250,10 +250,44 @@ class AuthService {
     }
   }
 
-  // Delete user (Admin only)
+  // Terminate user (Admin only) - Soft delete by deactivating
   async deleteUser(userId) {
     try {
       const response = await http.delete(`/auth/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  }
+
+  // Alias for clarity
+  async terminateUser(userId) {
+    return this.deleteUser(userId);
+  }
+
+  // Lock/Unlock user account (Admin only)
+  async lockUserAccount(userId, isLocked, reason = '') {
+    try {
+      const response = await http.put(`/auth/users/${userId}/lock`, { isLocked, reason });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
+  }
+
+  // Send welcome email to user (Admin/HR only)
+  async sendWelcomeEmail(userId, includePassword = false, tempPassword = '') {
+    try {
+      const response = await http.post(`/auth/users/${userId}/send-welcome-email`, {
+        includePassword,
+        tempPassword
+      });
       return response.data;
     } catch (error) {
       if (error.response?.data) {

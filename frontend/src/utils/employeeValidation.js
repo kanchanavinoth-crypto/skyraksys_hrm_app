@@ -251,26 +251,26 @@ export const validateEmployeeForm = (formData, options = {}) => {
   
   // ========== SALARY VALIDATION ==========
   
-  // Basic Salary - Required if salary object exists
-  if (formData.salary && Object.keys(formData.salary).length > 0) {
-    if (!formData.salary.basicSalary || formData.salary.basicSalary <= 0) {
-      errors['salary.basicSalary'] = 'Basic salary is required and must be greater than 0';
+  // Salary is completely optional - only validate if basic salary is provided
+  if (formData.salary?.basicSalary && Number(formData.salary.basicSalary) > 0) {
+    // If basic salary is provided, validate it's a positive number
+    const basicSalary = Number(formData.salary.basicSalary);
+    if (isNaN(basicSalary) || basicSalary <= 0) {
+      errors['salary.basicSalary'] = 'Basic salary must be a positive number';
     }
     
-    // Currency - Required if salary exists
+    // Currency - Required only if salary is provided
     if (!formData.salary.currency) {
-      errors['salary.currency'] = 'Currency is required';
+      errors['salary.currency'] = 'Currency is required when salary is provided';
     }
     
-    // Pay Frequency - Required if salary exists
+    // Pay Frequency - Required only if salary is provided
     if (!formData.salary.payFrequency) {
-      errors['salary.payFrequency'] = 'Pay frequency is required';
+      errors['salary.payFrequency'] = 'Pay frequency is required when salary is provided';
     }
     
-    // Effective From - Required if salary exists
-    if (!formData.salary.effectiveFrom) {
-      errors['salary.effectiveFrom'] = 'Effective from date is required';
-    } else {
+    // Effective From - Validate format if provided
+    if (formData.salary.effectiveFrom) {
       const effectiveDate = new Date(formData.salary.effectiveFrom);
       if (isNaN(effectiveDate.getTime())) {
         errors['salary.effectiveFrom'] = 'Please enter a valid date';
@@ -377,8 +377,39 @@ export const transformEmployeeDataForAPI = (formData) => {
   addIfNotEmpty(transformedData, 'positionId', formData.positionId ? String(formData.positionId) : null);
   
   // Optional personal fields
-  addIfNotEmpty(transformedData, 'phone', formData.phone);
-  addIfNotEmpty(transformedData, 'dateOfBirth', formData.dateOfBirth);
+  // Phone: only add if it's a non-empty string with valid format
+  if (formData.phone && formData.phone.trim() && PHONE_REGEX.test(formData.phone.trim())) {
+    transformedData.phone = formData.phone.trim();
+  }
+  
+  // Date of Birth: only add if it's a valid, non-empty date string
+  console.log('🔍 dateOfBirth raw value:', formData.dateOfBirth);
+  console.log('🔍 dateOfBirth type:', typeof formData.dateOfBirth);
+  
+  if (formData.dateOfBirth && typeof formData.dateOfBirth === 'string' && formData.dateOfBirth.trim()) {
+    const dobStr = formData.dateOfBirth.trim();
+    console.log('🔍 dateOfBirth trimmed:', dobStr);
+    
+    // Check if it's not just whitespace or placeholder text
+    if (dobStr && dobStr !== 'Invalid Date' && dobStr !== 'null' && dobStr !== 'undefined') {
+      const dob = new Date(dobStr);
+      console.log('🔍 dateOfBirth parsed:', dob);
+      console.log('🔍 dateOfBirth isValid:', !isNaN(dob.getTime()));
+      console.log('🔍 dateOfBirth isInPast:', dob < new Date());
+      
+      // Verify it's a valid date and in the past
+      if (!isNaN(dob.getTime()) && dob < new Date()) {
+        // Format as YYYY-MM-DD for backend
+        const formattedDate = dob.toISOString().split('T')[0];
+        console.log('✅ dateOfBirth formatted for backend:', formattedDate);
+        transformedData.dateOfBirth = formattedDate;
+      } else {
+        console.warn('⚠️ dateOfBirth validation failed - not adding to payload');
+      }
+    }
+  } else {
+    console.log('ℹ️ dateOfBirth is empty or invalid type - skipping');
+  }
   addIfNotEmpty(transformedData, 'gender', formData.gender);
   addIfNotEmpty(transformedData, 'address', formData.address);
   addIfNotEmpty(transformedData, 'city', formData.city);

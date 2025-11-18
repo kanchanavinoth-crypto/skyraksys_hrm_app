@@ -54,8 +54,13 @@ import {
   ToggleOff as DeactivateIcon,
   ToggleOn as ActivateIcon,
   Refresh as RefreshIcon,
-  People as PeopleIcon
+  People as PeopleIcon,
+  MoreVert as MoreVertIcon,
+  LockOpen as LockOpenIcon,
+  Send as SendIcon
 } from '@mui/icons-material';
+import Menu from '@mui/material/Menu';
+import Checkbox from '@mui/material/Checkbox';
 import { authService } from '../../../services/auth.service';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -98,6 +103,13 @@ const UserManagementEnhanced = () => {
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [userToReset, setUserToReset] = useState(null);
   const [newPassword, setNewPassword] = useState('');
+  
+  // Quick actions menu state
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  
+  // Bulk selection state
+  const [selectedUsers, setSelectedUsers] = useState([]);
 
   const roles = [
     { value: 'employee', label: 'Employee', description: 'Basic user access', color: 'default' },
@@ -287,16 +299,16 @@ const UserManagementEnhanced = () => {
       const result = await authService.deleteUser(userToDelete.id);
       
       if (result.success) {
-        setSuccess('User deleted successfully!');
+        setSuccess('User terminated successfully (account deactivated)');
         setDeleteDialogOpen(false);
         setUserToDelete(null);
         loadUsers();
       } else {
-        setError(result.message || 'Failed to delete user');
+        setError(result.message || 'Failed to terminate user');
       }
     } catch (err) {
-      setError('Failed to delete user');
-      console.error('Delete user error:', err);
+      setError('Failed to terminate user');
+      console.error('Terminate user error:', err);
     } finally {
       setLoading(false);
     }
@@ -351,6 +363,179 @@ const UserManagementEnhanced = () => {
     setFilterRole('');
     setFilterStatus('');
     setPage(0);
+  };
+  
+  // Quick Actions Menu Handlers
+  const handleQuickActionsClick = (event, user) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedUser(user);
+  };
+
+  const handleQuickActionsClose = () => {
+    setAnchorEl(null);
+    setSelectedUser(null);
+  };
+
+  const handleQuickAction = (action) => {
+    handleQuickActionsClose();
+    
+    switch(action) {
+      case 'reset-password':
+        handleResetPasswordClick(selectedUser);
+        break;
+      case 'toggle-status':
+        handleToggleStatus(selectedUser.id, selectedUser.isActive);
+        break;
+      case 'lock-account':
+        handleLockAccount(selectedUser);
+        break;
+      case 'send-email':
+        handleSendEmail(selectedUser);
+        break;
+      case 'delete':
+        handleDeleteClick(selectedUser);
+        break;
+      case 'view-details':
+        // Navigate to user details
+        console.log('View user details:', selectedUser);
+        break;
+      default:
+        break;
+    }
+  };
+  
+  // Bulk Actions Handlers
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      const selectableUsers = users.filter(u => u.id !== currentUser?.id);
+      setSelectedUsers(selectableUsers.map(u => u.id));
+    } else {
+      setSelectedUsers([]);
+    }
+  };
+
+  const handleSelectUser = (userId) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleBulkActivate = async () => {
+    if (selectedUsers.length === 0) return;
+    
+    setLoading(true);
+    try {
+      for (const userId of selectedUsers) {
+        const user = users.find(u => u.id === userId);
+        if (user && !user.isActive) {
+          await authService.toggleUserStatus(userId);
+        }
+      }
+      setSuccess(`${selectedUsers.length} user(s) activated successfully`);
+      setSelectedUsers([]);
+      loadUsers();
+    } catch (err) {
+      setError('Failed to activate users');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (selectedUsers.length === 0) return;
+    
+    setLoading(true);
+    try {
+      for (const userId of selectedUsers) {
+        const user = users.find(u => u.id === userId);
+        if (user && user.isActive) {
+          await authService.toggleUserStatus(userId);
+        }
+      }
+      setSuccess(`${selectedUsers.length} user(s) deactivated successfully`);
+      setSelectedUsers([]);
+      loadUsers();
+    } catch (err) {
+      setError('Failed to deactivate users');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Quick Filter Handlers
+  const applyQuickFilter = (type) => {
+    switch(type) {
+      case 'active-admins':
+        setFilterRole('admin');
+        setFilterStatus('active');
+        break;
+      case 'inactive-users':
+        setFilterStatus('inactive');
+        setFilterRole('');
+        break;
+      case 'managers':
+        setFilterRole('manager');
+        setFilterStatus('');
+        break;
+      case 'never-logged-in':
+        // This would need backend support
+        setFilterStatus('active');
+        break;
+      default:
+        clearFilters();
+    }
+    setPage(0);
+  };
+  
+  // Lock/Unlock Account Handler
+  const handleLockAccount = async (user) => {
+    const isCurrentlyLocked = user.isLocked || false;
+    const action = isCurrentlyLocked ? 'unlock' : 'lock';
+    
+    if (!window.confirm(`Are you sure you want to ${action} ${user.email}'s account?`)) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const reason = isCurrentlyLocked ? '' : prompt('Reason for locking account (optional):') || 'Security';
+      const result = await authService.lockUserAccount(user.id, !isCurrentlyLocked, reason);
+      
+      if (result.success) {
+        setSuccess(`User account ${action}ed successfully`);
+        loadUsers();
+      } else {
+        setError(result.message || `Failed to ${action} account`);
+      }
+    } catch (err) {
+      setError(`Failed to ${action} account`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Send Welcome Email Handler
+  const handleSendEmail = async (user) => {
+    if (!window.confirm(`Send welcome email to ${user.email}?`)) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const result = await authService.sendWelcomeEmail(user.id, false);
+      
+      if (result.success) {
+        setSuccess('Welcome email sent successfully');
+      } else {
+        setError(result.message || 'Failed to send email');
+      }
+    } catch (err) {
+      setError('Failed to send email. Email service may not be configured.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -620,6 +805,38 @@ const UserManagementEnhanced = () => {
               {/* Manage Users Table */}
               {activeTab === 1 && (
                 <Box>
+                  {/* Quick Filters Row */}
+                  <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                      Quick Filters:
+                    </Typography>
+                    <Chip
+                      label="All Users"
+                      onClick={() => applyQuickFilter('all')}
+                      color={!filterRole && !filterStatus ? 'primary' : 'default'}
+                      size="small"
+                      sx={{ fontWeight: 'medium' }}
+                    />
+                    <Chip
+                      label="Active Admins"
+                      onClick={() => applyQuickFilter('active-admins')}
+                      color={filterRole === 'admin' && filterStatus === 'active' ? 'primary' : 'default'}
+                      size="small"
+                    />
+                    <Chip
+                      label="Managers"
+                      onClick={() => applyQuickFilter('managers')}
+                      color={filterRole === 'manager' ? 'primary' : 'default'}
+                      size="small"
+                    />
+                    <Chip
+                      label="Inactive Users"
+                      onClick={() => applyQuickFilter('inactive-users')}
+                      color={filterStatus === 'inactive' ? 'primary' : 'default'}
+                      size="small"
+                    />
+                  </Box>
+
                   {/* Filters */}
                   <Grid container spacing={2} sx={{ mb: 3 }}>
                     <Grid item xs={12} md={4}>
@@ -679,35 +896,96 @@ const UserManagementEnhanced = () => {
                     </Grid>
                   </Grid>
 
+                  {/* Bulk Actions Toolbar */}
+                  {selectedUsers.length > 0 && (
+                    <Paper 
+                      sx={{ 
+                        mb: 2, 
+                        p: 2, 
+                        bgcolor: 'primary.50',
+                        border: '1px solid',
+                        borderColor: 'primary.200',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}
+                    >
+                      <Typography variant="body1" fontWeight="medium" color="primary.main">
+                        {selectedUsers.length} user(s) selected
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="success"
+                          onClick={handleBulkActivate}
+                          startIcon={<ActivateIcon />}
+                        >
+                          Activate
+                        </Button>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          color="warning"
+                          onClick={handleBulkDeactivate}
+                          startIcon={<DeactivateIcon />}
+                        >
+                          Deactivate
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => setSelectedUsers([])}
+                        >
+                          Cancel
+                        </Button>
+                      </Box>
+                    </Paper>
+                  )}
+
                   {/* Users Table */}
                   <TableContainer>
                     <Table>
                       <TableHead sx={{ bgcolor: '#f8f9fa' }}>
                         <TableRow>
+                          <TableCell padding="checkbox">
+                            <Checkbox
+                              indeterminate={selectedUsers.length > 0 && selectedUsers.length < users.filter(u => u.id !== currentUser?.id).length}
+                              checked={selectedUsers.length > 0 && selectedUsers.length === users.filter(u => u.id !== currentUser?.id).length}
+                              onChange={handleSelectAll}
+                            />
+                          </TableCell>
                           <TableCell><strong>Name</strong></TableCell>
                           <TableCell><strong>Email</strong></TableCell>
                           <TableCell align="center"><strong>Role</strong></TableCell>
                           <TableCell align="center"><strong>Status</strong></TableCell>
                           <TableCell><strong>Last Login</strong></TableCell>
-                          <TableCell align="center"><strong>Actions</strong></TableCell>
+                          <TableCell align="center"><strong>Quick Actions</strong></TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {loading && users.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                               <CircularProgress />
                             </TableCell>
                           </TableRow>
                         ) : users.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={6} align="center" sx={{ py: 5 }}>
+                            <TableCell colSpan={7} align="center" sx={{ py: 5 }}>
                               <Typography color="textSecondary">No users found</Typography>
                             </TableCell>
                           </TableRow>
                         ) : (
                           users.map((user) => (
-                            <TableRow key={user.id} hover>
+                            <TableRow key={user.id} hover selected={selectedUsers.includes(user.id)}>
+                              <TableCell padding="checkbox">
+                                <Checkbox
+                                  checked={selectedUsers.includes(user.id)}
+                                  onChange={() => handleSelectUser(user.id)}
+                                  disabled={user.id === currentUser?.id}
+                                />
+                              </TableCell>
                               <TableCell>
                                 <Typography variant="body2" fontWeight={500}>
                                   {user.firstName} {user.lastName}
@@ -725,11 +1003,22 @@ const UserManagementEnhanced = () => {
                                 />
                               </TableCell>
                               <TableCell align="center">
-                                <Chip
-                                  label={user.isActive ? 'Active' : 'Inactive'}
-                                  color={user.isActive ? 'success' : 'default'}
-                                  size="small"
-                                />
+                                <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center', alignItems: 'center' }}>
+                                  {user.isLocked && (
+                                    <Chip
+                                      icon={<LockIcon fontSize="small" />}
+                                      label="Locked"
+                                      color="error"
+                                      size="small"
+                                      sx={{ fontWeight: 'bold', mr: 0.5 }}
+                                    />
+                                  )}
+                                  <Chip
+                                    label={user.isActive ? 'Active' : 'Inactive'}
+                                    color={user.isActive ? 'success' : 'default'}
+                                    size="small"
+                                  />
+                                </Box>
                               </TableCell>
                               <TableCell>
                                 <Typography variant="caption">
@@ -739,41 +1028,19 @@ const UserManagementEnhanced = () => {
                                 </Typography>
                               </TableCell>
                               <TableCell align="center">
-                                <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                                  <Tooltip title="Reset Password">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleResetPasswordClick(user)}
-                                      sx={{ color: 'warning.main' }}
-                                    >
-                                      <VpnKeyIcon fontSize="small" />
-                                    </IconButton>
-                                  </Tooltip>
-                                  
-                                  <Tooltip title={user.isActive ? 'Deactivate' : 'Activate'}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleToggleStatus(user.id, user.isActive)}
-                                      sx={{ color: user.isActive ? 'error.main' : 'success.main' }}
-                                      disabled={user.id === currentUser?.id}
-                                    >
-                                      {user.isActive ? <DeactivateIcon fontSize="small" /> : <ActivateIcon fontSize="small" />}
-                                    </IconButton>
-                                  </Tooltip>
-
-                                  {currentUser?.role === 'admin' && (
-                                    <Tooltip title="Delete User">
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => handleDeleteClick(user)}
-                                        sx={{ color: 'error.main' }}
-                                        disabled={user.id === currentUser?.id}
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Tooltip>
-                                  )}
-                                </Box>
+                                <Tooltip title="Quick Actions">
+                                  <IconButton
+                                    size="small"
+                                    onClick={(e) => handleQuickActionsClick(e, user)}
+                                    disabled={user.id === currentUser?.id}
+                                    sx={{ 
+                                      bgcolor: 'action.hover',
+                                      '&:hover': { bgcolor: 'primary.light' }
+                                    }}
+                                  >
+                                    <MoreVertIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
                               </TableCell>
                             </TableRow>
                           ))
@@ -781,6 +1048,60 @@ const UserManagementEnhanced = () => {
                       </TableBody>
                     </Table>
                   </TableContainer>
+
+                  {/* Quick Actions Menu */}
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleQuickActionsClose}
+                    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                  >
+                    <MenuItem onClick={() => handleQuickAction('reset-password')}>
+                      <VpnKeyIcon fontSize="small" sx={{ mr: 1, color: 'warning.main' }} />
+                      Reset Password
+                    </MenuItem>
+                    <MenuItem onClick={() => handleQuickAction('lock-account')}>
+                      {selectedUser?.isLocked ? (
+                        <>
+                          <LockOpenIcon fontSize="small" sx={{ mr: 1, color: 'success.main' }} />
+                          Unlock Account
+                        </>
+                      ) : (
+                        <>
+                          <LockIcon fontSize="small" sx={{ mr: 1, color: 'error.main' }} />
+                          Lock Account
+                        </>
+                      )}
+                    </MenuItem>
+                    <MenuItem onClick={() => handleQuickAction('toggle-status')}>
+                      {selectedUser?.isActive ? (
+                        <>
+                          <DeactivateIcon fontSize="small" sx={{ mr: 1, color: 'error.main' }} />
+                          Deactivate User
+                        </>
+                      ) : (
+                        <>
+                          <ActivateIcon fontSize="small" sx={{ mr: 1, color: 'success.main' }} />
+                          Activate User
+                        </>
+                      )}
+                    </MenuItem>
+                    <MenuItem onClick={() => handleQuickAction('send-email')}>
+                      <SendIcon fontSize="small" sx={{ mr: 1, color: 'info.main' }} />
+                      Send Welcome Email
+                    </MenuItem>
+                    <MenuItem onClick={() => handleQuickAction('view-details')}>
+                      <EditIcon fontSize="small" sx={{ mr: 1, color: 'info.main' }} />
+                      View Details
+                    </MenuItem>
+                    {currentUser?.role === 'admin' && (
+                      <MenuItem onClick={() => handleQuickAction('delete')} sx={{ color: 'error.main' }}>
+                        <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+                        Terminate User
+                      </MenuItem>
+                    )}
+                  </Menu>
 
                   {/* Pagination */}
                   <TablePagination
@@ -800,26 +1121,27 @@ const UserManagementEnhanced = () => {
             </CardContent>
           </Card>
 
-          {/* Delete Confirmation Dialog */}
+          {/* Terminate User Confirmation Dialog */}
           <Dialog
             open={deleteDialogOpen}
             onClose={() => setDeleteDialogOpen(false)}
             maxWidth="sm"
             fullWidth
           >
-            <DialogTitle sx={{ bgcolor: 'error.main', color: 'white' }}>
+            <DialogTitle sx={{ bgcolor: 'warning.main', color: 'white' }}>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <DeleteIcon sx={{ mr: 1 }} />
-                Confirm Delete User
+                Terminate User Account
               </Box>
             </DialogTitle>
             <DialogContent sx={{ mt: 2 }}>
-              <Alert severity="warning" sx={{ mb: 2 }}>
-                <strong>Warning:</strong> This action cannot be undone!
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <strong>Note:</strong> This will deactivate the user account, not permanently delete it.
               </Alert>
               <DialogContentText>
-                Are you sure you want to delete the user account for <strong>{userToDelete?.email}</strong>?
-                This will permanently remove the user from the system.
+                Are you sure you want to terminate the user account for <strong>{userToDelete?.email}</strong>?
+                The account will be deactivated and the user will no longer be able to log in.
+                You can reactivate this account later if needed.
               </DialogContentText>
             </DialogContent>
             <DialogActions sx={{ p: 2 }}>
@@ -828,12 +1150,12 @@ const UserManagementEnhanced = () => {
               </Button>
               <Button
                 variant="contained"
-                color="error"
+                color="warning"
                 onClick={handleDeleteConfirm}
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} /> : <DeleteIcon />}
               >
-                {loading ? 'Deleting...' : 'Delete User'}
+                {loading ? 'Terminating...' : 'Terminate User'}
               </Button>
             </DialogActions>
           </Dialog>

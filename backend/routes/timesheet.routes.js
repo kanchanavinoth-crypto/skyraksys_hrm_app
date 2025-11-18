@@ -453,10 +453,15 @@ router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res,
             const subordinateIds = subordinates.map(e => e.id);
             where.employeeId = { [Op.in]: [...subordinateIds, req.employeeId] };
         } else if (req.userRole === 'employee') {
+            // Employees can only see their own timesheets
             where.employeeId = req.employeeId;
         }
         // Admin/HR can see all timesheets by default, or filter by specific employee
-        // No default filtering for admin/hr roles
+        
+        // Admin/HR can filter by specific employee
+        if (employeeId && (req.userRole === 'admin' || req.userRole === 'hr')) {
+            where.employeeId = employeeId;
+        }
 
         // Additional filters  
         if (status) {
@@ -470,15 +475,21 @@ router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res,
         
         // Handle startDate parameter for weekly filtering
         if (startDate) {
-            logger.debug('Filtering timesheets by startDate', { startDate, employeeId: req.employeeId });
+            logger.debug('Filtering timesheets by startDate', { 
+                startDate, 
+                employeeId: req.employeeId,
+                userRole: req.userRole,
+                requestEmployeeId: employeeId
+            });
             // Ensure exact match for week start date
             where.weekStartDate = { [Op.eq]: startDate };
+            
+            // For non-admin users requesting specific week, ensure they can only see their own timesheets
+            if (req.userRole !== 'admin' && req.userRole !== 'hr' && !employeeId) {
+                where.employeeId = req.employeeId;
+            }
+            
             logger.debug('WHERE condition for timesheet query:', where);
-        }
-        
-        // Admin/HR can filter by specific employee
-        if (employeeId && (req.userRole === 'admin' || req.userRole === 'hr')) {
-            where.employeeId = employeeId;
         }
 
         const { count, rows: timesheets } = await Timesheet.findAndCountAll({
@@ -494,28 +505,14 @@ router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res,
             offset,
         });
 
-        // Defensive filtering: Ensure returned timesheets match the requested week
-        if (startDate) {
-            const originalCount = timesheets.length;
-            const filteredTimesheets = timesheets.filter(ts => ts.weekStartDate === startDate);
-            if (filteredTimesheets.length !== originalCount) {
-                logger.warn('Week mismatch detected in query results', {
-                    requestedWeek: startDate,
-                    originalCount,
-                    filteredCount: filteredTimesheets.length,
-                    mismatchedTimesheets: timesheets.filter(ts => ts.weekStartDate !== startDate).map(ts => ({
-                        id: ts.id,
-                        actualWeek: ts.weekStartDate
-                    }))
-                });
-            }
-            timesheets = filteredTimesheets;
-        }
+        // No need for defensive filtering since WHERE clause now works correctly
+        // The database query already filters by weekStartDate in the WHERE clause
+        const finalTimesheets = timesheets;
 
         logger.debug('Timesheet query results:', {
             requestedStartDate: startDate,
-            count: timesheets.length,
-            timesheets: timesheets.map(ts => ({
+            count: finalTimesheets.length,
+            timesheets: finalTimesheets.map(ts => ({
                 id: ts.id,
                 weekStartDate: ts.weekStartDate,
                 status: ts.status,
@@ -525,11 +522,11 @@ router.get('/', validateQuery(validators.timesheetQuerySchema), async (req, res,
 
         res.json({
             success: true,
-            data: timesheets,
+            data: finalTimesheets,
             pagination: {
                 currentPage: parseInt(page),
-                totalPages: Math.ceil(timesheets.length / limit),
-                totalItems: timesheets.length,
+                totalPages: Math.ceil(finalTimesheets.length / limit),
+                totalItems: finalTimesheets.length,
                 itemsPerPage: parseInt(limit)
             }
         });

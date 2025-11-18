@@ -31,7 +31,6 @@ const PerformanceDashboard = lazy(() => import('./components/features/dashboard/
 const EmployeeList = lazy(() => import('./components/features/employees/EmployeeList'));
 const EmployeeForm = lazy(() => import('./components/features/employees/EmployeeForm'));
 const EmployeeProfile = lazy(() => import('./components/features/employees/EmployeeProfileModern'));
-const EmployeeEdit = lazy(() => import('./components/features/employees/EmployeeEdit'));
 const EmployeeRecords = lazy(() => import('./components/features/employees/EmployeeRecords'));
 const MyProfile = lazy(() => import('./components/features/employees/MyProfile'));
 const UserAccountManagementPage = lazy(() => import('./components/features/employees/UserAccountManagementPage'));
@@ -57,6 +56,7 @@ const EmployeePayslips = lazy(() => import('./components/features/payroll/Employ
 
 // Admin Components
 const UserManagement = lazy(() => import('./components/features/admin/UserManagementEnhanced'));
+const EmailConfiguration = lazy(() => import('./components/features/admin/EmailConfiguration'));
 const PositionManagement = lazy(() => import('./components/features/admin/PositionManagement'));
 const SystemSettings = lazy(() => import('./components/features/admin/SystemSettings'));
 const ProjectTaskConfiguration = lazy(() => import('./components/features/admin/ProjectTaskConfiguration'));
@@ -190,13 +190,6 @@ function App() {
                           </Suspense>
                         </SmartErrorBoundary>
                       } />
-                      <Route path="employees/:id/edit" element={
-                        <SmartErrorBoundary level="page">
-                          <Suspense fallback={<EnhancedLoadingFallback text="Loading Employee Edit..." />}>
-                            <EmployeeEdit />
-                          </Suspense>
-                        </SmartErrorBoundary>
-                      } />
                       <Route path="employees/:id/user-account" element={
                         <SmartErrorBoundary level="page">
                           <Suspense fallback={<EnhancedLoadingFallback text="Loading User Account Management..." />}>
@@ -313,6 +306,13 @@ function App() {
                         <SmartErrorBoundary level="page">
                           <Suspense fallback={<EnhancedLoadingFallback text="Loading User Management..." />}>
                             <UserManagement />
+                          </Suspense>
+                        </SmartErrorBoundary>
+                      } />
+                      <Route path="email-configuration" element={
+                        <SmartErrorBoundary level="page">
+                          <Suspense fallback={<EnhancedLoadingFallback text="Loading Email Configuration..." />}>
+                            <EmailConfiguration />
                           </Suspense>
                         </SmartErrorBoundary>
                       } />

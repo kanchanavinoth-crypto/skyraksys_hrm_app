@@ -517,7 +517,7 @@ router.get('/users',
     }
 );
 
-// Delete user (Admin only)
+// Terminate user (Admin only) - Soft delete by deactivating
 router.delete('/users/:userId',
     authenticateToken,
     authorize('admin'),
@@ -526,11 +526,11 @@ router.delete('/users/:userId',
         try {
             const { userId } = req.validatedParams;
 
-            // Prevent admin from deleting themselves
+            // Prevent admin from terminating themselves
             if (userId === req.user.id) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Cannot delete your own account'
+                    message: 'Cannot terminate your own account'
                 });
             }
 
@@ -539,11 +539,93 @@ router.delete('/users/:userId',
                 throw new NotFoundError('User not found');
             }
 
-            await user.destroy();
+            // Soft delete: deactivate instead of destroying
+            await user.update({
+                isActive: false,
+                terminatedAt: new Date()
+            });
 
             res.json({
                 success: true,
-                message: 'User deleted successfully'
+                message: 'User terminated successfully (account deactivated)'
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// Lock/Unlock user account (Admin only)
+router.put('/users/:userId/lock',
+    authenticateToken,
+    authorize('admin'),
+    validateParams(validators.userIdParamSchema),
+    async (req, res, next) => {
+        try {
+            const { userId } = req.validatedParams;
+            const { isLocked, reason } = req.body;
+
+            if (userId === req.user.id) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot lock your own account'
+                });
+            }
+
+            const user = await User.findByPk(userId);
+            if (!user) {
+                throw new NotFoundError('User not found');
+            }
+
+            await user.update({
+                isLocked: isLocked,
+                lockedAt: isLocked ? new Date() : null,
+                lockedReason: isLocked ? reason : null
+            });
+
+            res.json({
+                success: true,
+                message: `User account ${isLocked ? 'locked' : 'unlocked'} successfully`
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+);
+
+// Send welcome email to user (Admin/HR only)
+router.post('/users/:userId/send-welcome-email',
+    authenticateToken,
+    authorize('admin', 'hr'),
+    validateParams(validators.userIdParamSchema),
+    async (req, res, next) => {
+        try {
+            const { userId } = req.validatedParams;
+            const { includePassword, tempPassword } = req.body;
+
+            const user = await User.findByPk(userId);
+            if (!user) {
+                throw new NotFoundError('User not found');
+            }
+
+            const emailService = require('../services/email.service');
+            
+            if (!emailService.isConfigured()) {
+                return res.status(503).json({
+                    success: false,
+                    message: 'Email service not configured. Please contact administrator.'
+                });
+            }
+
+            if (includePassword && tempPassword) {
+                await emailService.sendWelcomeEmail(user, tempPassword);
+            } else {
+                await emailService.sendAccountStatusChangeEmail(user, user.isActive);
+            }
+
+            res.json({
+                success: true,
+                message: 'Email sent successfully'
             });
         } catch (error) {
             next(error);

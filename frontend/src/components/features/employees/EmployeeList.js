@@ -410,7 +410,7 @@ const EmployeeList = () => {
             <TableRow key={emp.id} hover>
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar src={emp.photoUrl} sx={{ width: 32, height: 32 }}>
+                  <Avatar src={emp.photoUrl ? `http://localhost:5000${emp.photoUrl}` : undefined} sx={{ width: 32, height: 32 }}>
                     {emp.firstName?.charAt(0)}
                   </Avatar>
                   <Box>
@@ -473,8 +473,8 @@ const EmployeeList = () => {
                     <VisibilityIcon />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Edit">
-                  <IconButton size="small" onClick={() => navigate(`/employees/${emp.id}/edit`)}>
+                <Tooltip title="Edit Employee">
+                  <IconButton size="small" onClick={() => navigate(`/employees/${emp.id}`)}>
                     <EditIcon />
                   </IconButton>
                 </Tooltip>
@@ -694,7 +694,7 @@ const EmployeeList = () => {
                       {/* Avatar & Name */}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar
-                          src={employee.photoUrl}
+                          src={employee.photoUrl ? `http://localhost:5000${employee.photoUrl}` : undefined}
                           sx={{
                             width: 56,
                             height: 56,
@@ -842,7 +842,7 @@ const EmployeeList = () => {
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/employees/${employee.id}/edit`);
+                              navigate(`/employees/${employee.id}`);
                             }}
                             sx={{
                               bgcolor: alpha(theme.palette.primary.main, 0.1),

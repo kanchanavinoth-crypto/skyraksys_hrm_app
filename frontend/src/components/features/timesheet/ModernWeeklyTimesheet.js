@@ -245,10 +245,29 @@ const ModernWeeklyTimesheet = () => {
         currentWeek: currentWeek.format('YYYY-MM-DD')
       });
       
-      const response = await timesheetService.getByDateRange(weekStart, weekEnd);
+      // Use getByWeek instead of getByDateRange for more precise filtering
+      // Pass employee ID to get timesheets for current user specifically
+      const response = await timesheetService.getByWeek(weekStart, user?.employee?.id);
       console.log('Loaded timesheet response:', response);
       
       if (response.data && response.data.data && response.data.data.length > 0) {
+        // Debug: Log raw timesheet data for analysis
+        console.log('🔍 RAW TIMESHEET DATA DEBUG:');
+        console.log('   Expected week start:', weekStart);
+        console.log('   Expected employee ID:', user?.employee?.id);
+        console.log('   Total timesheets returned:', response.data.data.length);
+        
+        response.data.data.forEach((ts, i) => {
+          const tsWeekStart = dayjs(ts.weekStartDate).format('YYYY-MM-DD');
+          console.log(`   Timesheet ${i + 1}:`);
+          console.log(`      Week: ${ts.weekStartDate} -> formatted: ${tsWeekStart}`);
+          console.log(`      Employee ID: ${ts.employeeId}`);
+          console.log(`      Status: ${ts.status}`);
+          console.log(`      Week matches? ${tsWeekStart === weekStart}`);
+          console.log(`      Employee matches? ${ts.employeeId === user?.employee?.id}`);
+          console.log(`      Both match? ${tsWeekStart === weekStart && ts.employeeId === user?.employee?.id}`);
+        });
+        
         // Filter to ensure we only get timesheets for the selected week AND current user
         const weekTimesheets = response.data.data.filter(ts => {
           const tsWeekStart = dayjs(ts.weekStartDate).format('YYYY-MM-DD');
@@ -288,8 +307,23 @@ const ModernWeeklyTimesheet = () => {
           
           console.log('Transformed tasks:', transformedTasks);
           setTasks(transformedTasks);
-          setTimesheetStatus(weekTimesheets[0]?.status?.toLowerCase() || 'draft');
-          setIsReadOnly(weekTimesheets[0]?.status?.toLowerCase() !== 'draft');
+          
+          // Set status and determine if timesheet is editable
+          const firstTimesheetStatus = weekTimesheets[0]?.status?.toLowerCase() || 'draft';
+          console.log('Setting timesheet status:', firstTimesheetStatus);
+          setTimesheetStatus(firstTimesheetStatus);
+          
+          // Editable Logic:
+          // - Draft: Editable (can modify and submit)
+          // - Rejected: Editable (can modify and resubmit) 
+          // - Submitted: Read-only (cannot edit, awaiting approval)
+          // - Approved: Read-only (cannot edit, finalized)
+          const isEditable = firstTimesheetStatus === 'draft' || firstTimesheetStatus === 'rejected';
+          console.log('Setting editable mode:', isEditable, 'for status:', firstTimesheetStatus);
+          setIsReadOnly(!isEditable);
+          
+          // Status is now displayed in the UI itself via status badges/chips
+          // No need for repetitive toast notifications on every load
         } else {
           // No timesheet for this specific week
           console.log('No timesheet for this specific week, starting fresh');
@@ -543,12 +577,9 @@ const ModernWeeklyTimesheet = () => {
       
       console.log('Submitting draft timesheets:', draftTimesheets);
       
-      // Use proper submission workflow - submit each draft timesheet
-      const submissionPromises = draftTimesheets.map(timesheet => 
-        timesheetService.submit(timesheet.id)
-      );
-      
-      await Promise.all(submissionPromises);
+      // Submit only the first timesheet - backend will automatically handle bulk submission
+      // when it detects multiple tasks for the same week
+      await timesheetService.submit(draftTimesheets[0].id);
       
       setTimesheetStatus('submitted');
       setIsReadOnly(true);

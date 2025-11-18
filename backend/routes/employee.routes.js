@@ -802,7 +802,6 @@ router.post('/', isAdminOrHR, uploadEmployeePhoto, handleUploadError, validate(v
 
         const existingEmployee = await Employee.findOne({ where: { email: email } });
         if (existingEmployee) {
-            await transaction.rollback();
             throw new ConflictError('An employee with this email already exists.');
         }
 
@@ -810,7 +809,6 @@ router.post('/', isAdminOrHR, uploadEmployeePhoto, handleUploadError, validate(v
         if (employeeData.employeeId) {
             const existingEmployeeById = await Employee.findOne({ where: { employeeId: employeeData.employeeId } });
             if (existingEmployeeById) {
-                await transaction.rollback();
                 throw new ConflictError(`An employee with ID '${employeeData.employeeId}' already exists.`);
             }
         }

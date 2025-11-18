@@ -202,6 +202,9 @@ const timesheetQuerySchema = Joi.object({
   weekStartDate: Joi.date()
     .optional(),
 
+  startDate: Joi.date()
+    .optional(),
+
   weekEndDate: Joi.date()
     .optional()
     .when('weekStartDate', {

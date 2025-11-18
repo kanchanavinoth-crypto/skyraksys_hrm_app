@@ -114,6 +114,23 @@ const uploadEmployeePhoto = (req, res, next) => {
       }
     }
     
+    // Convert date strings to Date objects for Joi validation
+    // FormData sends everything as strings, but Joi.date() expects Date objects
+    const dateFields = ['dateOfBirth', 'hireDate', 'joiningDate', 'confirmationDate', 'resignationDate', 'lastWorkingDate'];
+    dateFields.forEach(field => {
+      if (req.body[field] && typeof req.body[field] === 'string' && req.body[field].trim()) {
+        const dateValue = new Date(req.body[field]);
+        if (!isNaN(dateValue.getTime())) {
+          req.body[field] = dateValue;
+          console.log(`✅ Converted ${field} to Date:`, dateValue);
+        } else {
+          console.warn(`⚠️ Invalid date format for ${field}:`, req.body[field]);
+          // Remove invalid date to let validator handle it
+          delete req.body[field];
+        }
+      }
+    });
+    
     return next();
   });
 };

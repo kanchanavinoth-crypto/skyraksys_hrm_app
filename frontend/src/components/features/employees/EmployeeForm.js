@@ -31,7 +31,12 @@ import {
   Radio,
   IconButton,
   Tooltip,
-  InputAdornment
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions
 } from '@mui/material';
 import {
   Save as SaveIcon,
@@ -46,9 +51,10 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   HelpOutline as HelpIcon,
-  InfoOutlined as InfoIcon
+  InfoOutlined as InfoIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, unstable_useBlocker as useBlocker } from 'react-router-dom';
 import { validateEmployeeForm, transformEmployeeDataForAPI, validateField } from '../../../utils/employeeValidation';
 import { employeeService } from '../../../services/employee.service';
 import { authService } from '../../../services/auth.service';
@@ -246,6 +252,16 @@ const TabBasedEmployeeForm = () => {
   // Photo upload state
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
+  
+  // Unsaved changes tracking
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+  
+  // Auto-save state
+  const [lastSaved, setLastSaved] = useState(null);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const autoSaveTimeoutRef = React.useRef(null);
 
   // Check authentication on component mount
   useEffect(() => {
@@ -254,11 +270,93 @@ const TabBasedEmployeeForm = () => {
       setCurrentUser(user);
       setIsAuthenticated(true);
       loadReferenceData();
+      
+      // Try to restore draft from localStorage
+      const savedDraft = localStorage.getItem('employeeFormDraft');
+      if (savedDraft) {
+        try {
+          const draftData = JSON.parse(savedDraft);
+          const savedTime = new Date(draftData.savedAt);
+          const hoursSinceLastSave = (new Date() - savedTime) / (1000 * 60 * 60);
+          
+          // Only restore if saved within last 24 hours
+          if (hoursSinceLastSave < 24) {
+            const shouldRestore = window.confirm(
+              `Found a draft saved ${Math.round(hoursSinceLastSave * 60)} minutes ago. Would you like to restore it?`
+            );
+            
+            if (shouldRestore) {
+              const { savedAt, isDraft, ...restoredData } = draftData;
+              setFormData(prevData => ({
+                ...prevData,
+                ...restoredData
+              }));
+              setLastSaved(savedTime);
+              console.log('✅ Draft restored from localStorage');
+            }
+          } else {
+            // Clean up old draft
+            localStorage.removeItem('employeeFormDraft');
+          }
+        } catch (error) {
+          console.error('Error restoring draft:', error);
+          localStorage.removeItem('employeeFormDraft');
+        }
+      }
     } else {
       setSubmitError('Please login to access this page.');
       setLoadingRefData(false);
     }
   }, []);
+  
+  // Warn user about unsaved changes when leaving page
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+  
+  // Auto-save to localStorage every 30 seconds or on form change
+  useEffect(() => {
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Only auto-save if user has made changes
+    if (hasUnsavedChanges && isAuthenticated) {
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        setAutoSaving(true);
+        try {
+          const draftData = {
+            ...formData,
+            savedAt: new Date().toISOString(),
+            isDraft: true
+          };
+          localStorage.setItem('employeeFormDraft', JSON.stringify(draftData));
+          setLastSaved(new Date());
+          console.log('💾 Auto-saved to localStorage');
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+        } finally {
+          setAutoSaving(false);
+        }
+      }, 30000); // Auto-save after 30 seconds of inactivity
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, hasUnsavedChanges, isAuthenticated]);
 
   // Load reference data function
   const loadReferenceData = useCallback(async () => {
@@ -457,6 +555,9 @@ const TabBasedEmployeeForm = () => {
       return newFormData;
     });
     
+    // Mark form as having unsaved changes
+    setHasUnsavedChanges(true);
+    
     // Clear error for this field when user types (don't revalidate until blur)
     setErrors(prevErrors => ({
       ...prevErrors,
@@ -507,28 +608,54 @@ const TabBasedEmployeeForm = () => {
     const validation = validateEmployeeForm(formData);
     
     switch (activeTab) {
-      case 0: // Personal Information (phone is optional)
+      case 0: // Personal Information
         const personalFields = ['firstName', 'lastName', 'email'];
         return personalFields.every(field => !validation.errors[field]);
         
-      case 1: // Employment Information  
+      case 1: // Employment & Compensation (combined tab)
         const employmentFields = ['hireDate', 'departmentId', 'positionId'];
         return employmentFields.every(field => !validation.errors[field]);
         
-      case 2: // Salary Structure
-        const salaryFields = ['salary.basicSalary', 'salary.currency', 'salary.payFrequency', 'salary.effectiveFrom'];
-        return salaryFields.every(field => !validation.errors[field]);
-        
-      case 3: // Contact & Emergency Details (all optional)
+      case 2: // Contact & Emergency (all optional)
         return true;
         
-      case 4: // Statutory & Banking Details (all optional)
+      case 3: // Statutory, Banking & Access (all optional)
         return true;
         
       default:
         return validation.isValid;
     }
   }, [formData, activeTab, wasSubmitted]);
+  
+  // Get validation status for all tabs (for badge display)
+  const getTabValidationStatus = useMemo(() => {
+    const validation = validateEmployeeForm(formData);
+    
+    return {
+      0: { // Personal Information
+        requiredFields: ['firstName', 'lastName', 'email'],
+        hasErrors: ['firstName', 'lastName', 'email'].some(field => validation.errors[field]),
+        isComplete: formData.firstName && formData.lastName && formData.email &&
+                    !validation.errors.firstName && !validation.errors.lastName && !validation.errors.email
+      },
+      1: { // Employment & Compensation
+        requiredFields: ['hireDate', 'departmentId', 'positionId'],
+        hasErrors: ['hireDate', 'departmentId', 'positionId'].some(field => validation.errors[field]),
+        isComplete: formData.hireDate && formData.departmentId && formData.positionId &&
+                    !validation.errors.hireDate && !validation.errors.departmentId && !validation.errors.positionId
+      },
+      2: { // Contact & Emergency
+        requiredFields: [],
+        hasErrors: ['phone', 'emergencyContactPhone'].some(field => validation.errors[field]),
+        isComplete: true // All fields optional
+      },
+      3: { // Statutory, Banking & Access
+        requiredFields: [],
+        hasErrors: ['aadhaarNumber', 'panNumber', 'ifscCode'].some(field => validation.errors[field]),
+        isComplete: true // All fields optional
+      }
+    };
+  }, [formData]);
 
   // Handle tab change
   const handleTabChange = useCallback((event, newValue) => {
@@ -633,6 +760,8 @@ const TabBasedEmployeeForm = () => {
       console.log('=== Employee Creation Debug ===');
       console.log('Original form data:', formData);
       console.log('Transformed API data:', apiData);
+      console.log('Transformed API data FULL:', JSON.stringify(apiData, null, 2));
+      console.log('dateOfBirth in apiData:', apiData.dateOfBirth);
       console.log('Selected photo:', selectedPhoto ? selectedPhoto.name : 'None');
       console.log('API endpoint: POST /api/employees');
       
@@ -675,6 +804,9 @@ const TabBasedEmployeeForm = () => {
       // Clear draft after successful creation
       localStorage.removeItem('employeeFormDraft');
       console.log('🗑️ Draft cleared after successful creation');
+      
+      // Clear unsaved changes flag
+      setHasUnsavedChanges(false);
       
       // Optional: Reset form or navigate
       setTimeout(() => {
@@ -745,12 +877,32 @@ const TabBasedEmployeeForm = () => {
 
   // Navigation handler
   const handleBackToEmployees = useCallback(() => {
-    navigate('/employees');
-  }, [navigate]);
+    if (hasUnsavedChanges) {
+      setPendingNavigation('/employees');
+      setShowUnsavedDialog(true);
+    } else {
+      navigate('/employees');
+    }
+  }, [navigate, hasUnsavedChanges]);
 
   // Handle login redirect
   const handleLoginRedirect = () => {
     navigate('/login');
+  };
+  
+  // Unsaved changes dialog handlers
+  const handleCancelNavigation = () => {
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+  };
+  
+  const handleConfirmNavigation = () => {
+    setShowUnsavedDialog(false);
+    setHasUnsavedChanges(false);
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+      setPendingNavigation(null);
+    }
   };
 
   // Photo handling functions
@@ -766,6 +918,37 @@ const TabBasedEmployeeForm = () => {
   const handlePhotoRemove = () => {
     setSelectedPhoto(null);
     setPhotoPreview(null);
+  };
+  
+  // Save as Draft handler
+  const handleSaveAsDraft = async () => {
+    try {
+      setLoading(true);
+      setSubmitError('');
+      
+      // Save form data to localStorage
+      const draftData = {
+        ...formData,
+        savedAt: new Date().toISOString(),
+        isDraft: true
+      };
+      
+      localStorage.setItem('employeeFormDraft', JSON.stringify(draftData));
+      setLastSaved(new Date());
+      
+      setSubmitSuccess('Draft saved successfully! You can continue later.');
+      setHasUnsavedChanges(false);
+      
+      // Navigate back after a delay
+      setTimeout(() => {
+        navigate('/employees');
+      }, 1500);
+    } catch (error) {
+      console.error('Error saving draft:', error);
+      setSubmitError('Failed to save draft. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Show modern authentication error if not logged in
@@ -864,10 +1047,7 @@ const TabBasedEmployeeForm = () => {
                 component="h1" 
                 sx={{ 
                   fontWeight: 700,
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
+                  color: 'primary.main',
                   mb: 0.5,
                   fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
                 }}
@@ -887,12 +1067,39 @@ const TabBasedEmployeeForm = () => {
             </Box>
             
             <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+              {/* Auto-save Status Indicator */}
+              {lastSaved && (
+                <Chip
+                  size="small"
+                  icon={autoSaving ? <CircularProgress size={14} color="inherit" /> : <SaveIcon fontSize="small" />}
+                  label={
+                    autoSaving 
+                      ? 'Saving...' 
+                      : `Saved ${(() => {
+                          const minutes = Math.floor((new Date() - lastSaved) / 60000);
+                          if (minutes < 1) return 'just now';
+                          if (minutes === 1) return '1 min ago';
+                          if (minutes < 60) return `${minutes} mins ago`;
+                          const hours = Math.floor(minutes / 60);
+                          return hours === 1 ? '1 hour ago' : `${hours} hours ago`;
+                        })()}`
+                  }
+                  sx={{
+                    bgcolor: autoSaving ? 'rgba(99, 102, 241, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                    color: autoSaving ? 'primary.main' : '#10b981',
+                    border: `1px solid ${autoSaving ? 'rgba(99, 102, 241, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }}
+                />
+              )}
+              
               {currentUser && (
                 <Chip 
                   avatar={
                     <Avatar 
                       sx={{ 
-                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        bgcolor: 'primary.main',
                         width: 28,
                         height: 28
                       }}
@@ -941,14 +1148,14 @@ const TabBasedEmployeeForm = () => {
           <Card 
             elevation={0} 
             sx={{ 
-              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)',
-              border: '1px solid rgba(99, 102, 241, 0.1)',
+              bgcolor: 'primary.50',
+              border: '1px solid',
+              borderColor: 'primary.100',
               borderRadius: 2
             }}
           >
             <CardContent sx={{ p: 2 }}>
-              <Typography 
-                variant="body2" 
+              <Box 
                 sx={{ 
                   color: theme.palette.text.secondary,
                   fontSize: '0.875rem',
@@ -959,11 +1166,21 @@ const TabBasedEmployeeForm = () => {
                 }}
               >
                 <Box component="span" sx={{ fontSize: '1.1rem' }}>💡</Box>
-                <strong>Quick Tips:</strong>
-                Press <Chip label="Ctrl+S" size="small" sx={{ height: 20, fontSize: '0.7rem', mx: 0.5 }} /> to save • 
-                <Chip label="Esc" size="small" sx={{ height: 20, fontSize: '0.7rem', mx: 0.5 }} /> to cancel • 
-                Form auto-saves as you type
-              </Typography>
+                <Typography component="span" variant="body2">
+                  <strong>Quick Tips:</strong>
+                </Typography>
+                <Typography component="span" variant="body2">
+                  Press
+                </Typography>
+                <Chip label="Ctrl+S" size="small" sx={{ height: 20, fontSize: '0.7rem', mx: 0.5 }} />
+                <Typography component="span" variant="body2">
+                  to save •
+                </Typography>
+                <Chip label="Esc" size="small" sx={{ height: 20, fontSize: '0.7rem', mx: 0.5 }} />
+                <Typography component="span" variant="body2">
+                  to cancel • Form auto-saves as you type
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
         </Box>
@@ -1051,39 +1268,183 @@ const TabBasedEmployeeForm = () => {
           >
             <Tab 
               icon={<PersonIcon />} 
-              label="Personal Info" 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Personal Info</span>
+                  {getTabValidationStatus[0].hasErrors && (
+                    <Chip 
+                      label="✗" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#fee2e2',
+                        color: '#dc2626',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                  {!getTabValidationStatus[0].hasErrors && getTabValidationStatus[0].isComplete && (
+                    <Chip 
+                      label="✓" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#d1fae5',
+                        color: '#059669',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                  {!getTabValidationStatus[0].hasErrors && !getTabValidationStatus[0].isComplete && (
+                    <Chip 
+                      label="⚠" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#fef3c7',
+                        color: '#d97706',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                </Box>
+              }
               id="employee-tab-0"
               aria-controls="employee-tabpanel-0"
             />
             <Tab 
               icon={<WorkIcon />} 
-              label="Employment" 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Employment & Compensation</span>
+                  {getTabValidationStatus[1].hasErrors && (
+                    <Chip 
+                      label="✗" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#fee2e2',
+                        color: '#dc2626',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                  {!getTabValidationStatus[1].hasErrors && getTabValidationStatus[1].isComplete && (
+                    <Chip 
+                      label="✓" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#d1fae5',
+                        color: '#059669',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                  {!getTabValidationStatus[1].hasErrors && !getTabValidationStatus[1].isComplete && (
+                    <Chip 
+                      label="⚠" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#fef3c7',
+                        color: '#d97706',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                </Box>
+              }
               id="employee-tab-1"
               aria-controls="employee-tabpanel-1"
             />
             <Tab 
-              icon={<AttachMoneyIcon />} 
-              label="Salary Structure" 
+              icon={<ContactIcon />} 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Contact & Emergency</span>
+                  {getTabValidationStatus[2].hasErrors && (
+                    <Chip 
+                      label="✗" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#fee2e2',
+                        color: '#dc2626',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                  {!getTabValidationStatus[2].hasErrors && (
+                    <Chip 
+                      label="✓" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#d1fae5',
+                        color: '#059669',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                </Box>
+              }
               id="employee-tab-2"
               aria-controls="employee-tabpanel-2"
             />
             <Tab 
-              icon={<ContactIcon />} 
-              label="Contact & Emergency" 
+              icon={<BankIcon />} 
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <span>Statutory, Banking & Access</span>
+                  {getTabValidationStatus[3].hasErrors && (
+                    <Chip 
+                      label="✗" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#fee2e2',
+                        color: '#dc2626',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                  {!getTabValidationStatus[3].hasErrors && (
+                    <Chip 
+                      label="✓" 
+                      size="small" 
+                      sx={{ 
+                        height: 20, 
+                        minWidth: 20,
+                        fontSize: '0.7rem',
+                        bgcolor: '#d1fae5',
+                        color: '#059669',
+                        '& .MuiChip-label': { px: 0.5 }
+                      }} 
+                    />
+                  )}
+                </Box>
+              }
               id="employee-tab-3"
               aria-controls="employee-tabpanel-3"
-            />
-            <Tab 
-              icon={<BankIcon />} 
-              label="Statutory & Banking" 
-              id="employee-tab-4"
-              aria-controls="employee-tabpanel-4"
-            />
-            <Tab 
-              icon={<LoginIcon />} 
-              label="User Account" 
-              id="employee-tab-5"
-              aria-controls="employee-tabpanel-5"
             />
           </Tabs>
 
@@ -1103,30 +1464,33 @@ const TabBasedEmployeeForm = () => {
         </TabPanel>
         
         <TabPanel value={activeTab} index={1}>
-          <EmploymentInformationTab
-            formData={formData}
-            errors={errors}
-            touchedFields={touchedFields}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-            departments={departments}
-            positions={positions}
-            managers={managers}
-            loadingRefData={loadingRefData}
-          />
+          {/* Combined Employment & Compensation Tab */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <EmploymentInformationTab
+              formData={formData}
+              errors={errors}
+              touchedFields={touchedFields}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+              departments={departments}
+              positions={positions}
+              managers={managers}
+              loadingRefData={loadingRefData}
+            />
+            <Divider sx={{ my: 2 }}>
+              <Chip label="Compensation Details" size="small" />
+            </Divider>
+            <SalaryStructureTab
+              formData={formData}
+              errors={errors}
+              touchedFields={touchedFields}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+            />
+          </Box>
         </TabPanel>
         
         <TabPanel value={activeTab} index={2}>
-          <SalaryStructureTab
-            formData={formData}
-            errors={errors}
-            touchedFields={touchedFields}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-          />
-        </TabPanel>
-        
-        <TabPanel value={activeTab} index={3}>
           <ContactEmergencyTab
             formData={formData}
             errors={errors}
@@ -1136,24 +1500,27 @@ const TabBasedEmployeeForm = () => {
           />
         </TabPanel>
         
-        <TabPanel value={activeTab} index={4}>
-          <StatutoryBankingTab
-            formData={formData}
-            errors={errors}
-            touchedFields={touchedFields}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-          />
-        </TabPanel>
-
-        <TabPanel value={activeTab} index={5}>
-          <UserAccountTab
-            formData={formData}
-            errors={errors}
-            touchedFields={touchedFields}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-          />
+        <TabPanel value={activeTab} index={3}>
+          {/* Combined Statutory, Banking & Access Tab */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <StatutoryBankingTab
+              formData={formData}
+              errors={errors}
+              touchedFields={touchedFields}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+            />
+            <Divider sx={{ my: 2 }}>
+              <Chip label="User Access" size="small" />
+            </Divider>
+            <UserAccountTab
+              formData={formData}
+              errors={errors}
+              touchedFields={touchedFields}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+            />
+          </Box>
         </TabPanel>
 
         {/* Modern Form Actions */}
@@ -1185,7 +1552,7 @@ const TabBasedEmployeeForm = () => {
               Previous
             </Button>
             <Button
-              disabled={activeTab === 5}
+              disabled={activeTab === 3}
               variant="outlined"
               onClick={() => setActiveTab(prev => prev + 1)}
               sx={{ 
@@ -1203,7 +1570,7 @@ const TabBasedEmployeeForm = () => {
             {/* Progress Indicator */}
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
-                Step {activeTab + 1} of 6
+                Step {activeTab + 1} of 4
               </Typography>
               <Box 
                 sx={{ 
@@ -1216,7 +1583,7 @@ const TabBasedEmployeeForm = () => {
               >
                 <Box 
                   sx={{ 
-                    width: `${((activeTab + 1) / 6) * 100}%`, 
+                    width: `${((activeTab + 1) / 4) * 100}%`, 
                     height: '100%', 
                     bgcolor: 'primary.main',
                     transition: 'width 0.3s ease'
@@ -1268,6 +1635,29 @@ const TabBasedEmployeeForm = () => {
                 Cancel
               </Button>
               <Button
+                variant="outlined"
+                onClick={handleSaveAsDraft}
+                disabled={isLoading}
+                startIcon={<SaveIcon />}
+                sx={{ 
+                  minWidth: 140,
+                  py: 1.5,
+                  px: 3,
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  borderColor: 'primary.main',
+                  color: 'primary.main',
+                  '&:hover': {
+                    borderColor: 'primary.dark',
+                    bgcolor: 'primary.50'
+                  }
+                }}
+              >
+                Save as Draft
+              </Button>
+              <Button
                 variant="contained"
                 onClick={handleSubmit}
                 disabled={isLoading || !isCurrentTabValid}
@@ -1280,17 +1670,14 @@ const TabBasedEmployeeForm = () => {
                   textTransform: 'none',
                   fontWeight: 700,
                   fontSize: '1rem',
-                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.25)',
-                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  boxShadow: 2,
                   '&:hover': {
-                    boxShadow: '0 6px 16px rgba(99, 102, 241, 0.35)',
-                    transform: 'translateY(-2px)',
+                    boxShadow: 4
                   },
                   '&:disabled': {
-                    background: '#cbd5e1',
-                    color: '#94a3b8'
-                  },
-                  transition: 'all 0.2s ease'
+                    bgcolor: 'grey.300',
+                    color: 'grey.500'
+                  }
                 }}
               >
                 {isLoading ? 'Creating Employee...' : 'Create Employee'}
@@ -1300,6 +1687,57 @@ const TabBasedEmployeeForm = () => {
         </Box>
         </Card>
       </Box>
+      
+      {/* Unsaved Changes Warning Dialog */}
+      <Dialog
+        open={showUnsavedDialog}
+        onClose={handleCancelNavigation}
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            minWidth: { xs: '90%', sm: 400 },
+            p: 1
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1 }}>
+          <WarningIcon color="warning" />
+          <Typography variant="h6" component="span" fontWeight={600}>
+            Unsaved Changes
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            You have unsaved changes that will be lost if you leave this page. 
+            Are you sure you want to continue?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button 
+            onClick={handleCancelNavigation}
+            variant="outlined"
+            sx={{ 
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2
+            }}
+          >
+            Stay on Page
+          </Button>
+          <Button 
+            onClick={handleConfirmNavigation}
+            variant="contained"
+            color="warning"
+            sx={{ 
+              textTransform: 'none',
+              fontWeight: 600,
+              borderRadius: 2
+            }}
+          >
+            Leave Without Saving
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
@@ -1819,7 +2257,7 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
         fullWidth
         id="salary.basicSalary"
         name="salary.basicSalary"
-        label="Basic Salary *"
+        label="Basic Salary"
         type="text"
         value={formData.salary?.basicSalary || ''}
         onChange={(e) => {
@@ -1828,7 +2266,7 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
         }}
         onBlur={() => onBlur && onBlur('salary.basicSalary')}
         error={touchedFields['salary.basicSalary'] && !!errors['salary.basicSalary']}
-        helperText={touchedFields['salary.basicSalary'] && errors['salary.basicSalary'] ? errors['salary.basicSalary'] : 'Enter basic salary amount'}
+        helperText={touchedFields['salary.basicSalary'] && errors['salary.basicSalary'] ? errors['salary.basicSalary'] : 'Optional: Enter basic salary amount'}
         InputProps={{
           startAdornment: <InputAdornment position="start">₹</InputAdornment>,
         }}
@@ -1838,14 +2276,14 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
     
     <Grid item xs={12} sm={6}>
       <FormControl fullWidth error={touchedFields['salary.currency'] && !!errors['salary.currency']}>
-        <InputLabel>Currency *</InputLabel>
+        <InputLabel>Currency</InputLabel>
         <Select
           id="salary.currency"
           name="salary.currency"
           value={formData.salary?.currency || 'INR'}
           onChange={(e) => onChange('salary.currency', e.target.value)}
           onBlur={() => onBlur && onBlur('salary.currency')}
-          label="Currency *"
+          label="Currency"
         >
           <MenuItem value="INR">INR</MenuItem>
           <MenuItem value="USD">USD</MenuItem>
@@ -1858,14 +2296,14 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
     
     <Grid item xs={12} sm={6}>
       <FormControl fullWidth error={touchedFields['salary.payFrequency'] && !!errors['salary.payFrequency']}>
-        <InputLabel>Pay Frequency *</InputLabel>
+        <InputLabel>Pay Frequency</InputLabel>
         <Select
           id="salary.payFrequency"
           name="salary.payFrequency"
           value={formData.salary?.payFrequency || 'monthly'}
           onChange={(e) => onChange('salary.payFrequency', e.target.value)}
           onBlur={() => onBlur && onBlur('salary.payFrequency')}
-          label="Pay Frequency *"
+          label="Pay Frequency"
         >
           <MenuItem value="weekly">Weekly</MenuItem>
           <MenuItem value="biweekly">Bi-weekly</MenuItem>
@@ -1881,7 +2319,7 @@ const SalaryStructureTab = ({ formData, errors, touchedFields = {}, onChange, on
         fullWidth
         id="salary.effectiveFrom"
         name="salary.effectiveFrom"
-        label="Effective From *"
+        label="Effective From"
         type="date"
         value={formData.salary?.effectiveFrom || ''}
         onChange={(e) => onChange('salary.effectiveFrom', e.target.value)}
@@ -2275,6 +2713,7 @@ const ContactEmergencyTab = ({ formData, errors, touchedFields = {}, onChange, o
         value={formData.emergencyContactName}
         onChange={(e) => onChange('emergencyContactName', e.target.value)}
         onBlur={() => onBlur && onBlur('emergencyContactName')}
+        helperText="Optional"
       />
     </Grid>
     <Grid item xs={12} sm={6}>
@@ -2291,7 +2730,7 @@ const ContactEmergencyTab = ({ formData, errors, touchedFields = {}, onChange, o
         }}
         onBlur={() => onBlur && onBlur('emergencyContactPhone')}
         error={touchedFields.emergencyContactPhone && !!errors.emergencyContactPhone}
-        helperText={touchedFields.emergencyContactPhone && errors.emergencyContactPhone ? errors.emergencyContactPhone : 'Format: 1234567890 (10-15 digits)'}
+        helperText={touchedFields.emergencyContactPhone && errors.emergencyContactPhone ? errors.emergencyContactPhone : 'Optional - Format: 1234567890 (10-15 digits)'}
         placeholder="1234567890"
       />
     </Grid>
@@ -2332,6 +2771,9 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
       <Typography variant="h6" gutterBottom>
         Statutory Details
       </Typography>
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        All statutory fields are optional but recommended for payroll compliance
+      </Typography>
       <Divider sx={{ mb: 3 }} />
     </Grid>
     <Grid item xs={12} sm={6}>
@@ -2348,7 +2790,7 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
         }}
         onBlur={() => onBlur && onBlur('aadhaarNumber')}
         error={touchedFields.aadhaarNumber && !!errors.aadhaarNumber}
-        helperText={touchedFields.aadhaarNumber && errors.aadhaarNumber ? errors.aadhaarNumber : 'Format: 123456789012 (12 digits)'}
+        helperText={touchedFields.aadhaarNumber && errors.aadhaarNumber ? errors.aadhaarNumber : 'Optional - Format: 123456789012 (12 digits)'}
         placeholder="123456789012"
         InputProps={{
           endAdornment: (
@@ -2377,7 +2819,7 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
         }}
         onBlur={() => onBlur && onBlur('panNumber')}
         error={touchedFields.panNumber && !!errors.panNumber}
-        helperText={touchedFields.panNumber && errors.panNumber ? errors.panNumber : 'Format: ABCDE1234F (5 letters, 4 digits, 1 letter)'}
+        helperText={touchedFields.panNumber && errors.panNumber ? errors.panNumber : 'Optional - Format: ABCDE1234F (5 letters, 4 digits, 1 letter)'}
         placeholder="ABCDE1234F"
         InputProps={{
           endAdornment: (
@@ -2406,7 +2848,7 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
         }}
         onBlur={() => onBlur && onBlur('uanNumber')}
         error={touchedFields.uanNumber && !!errors.uanNumber}
-        helperText={touchedFields.uanNumber && errors.uanNumber ? errors.uanNumber : 'Universal Account Number for EPF (12+ alphanumeric)'}
+        helperText={touchedFields.uanNumber && errors.uanNumber ? errors.uanNumber : 'Optional - Universal Account Number for EPF (12+ alphanumeric)'}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -2430,7 +2872,7 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
         onChange={(e) => onChange('pfNumber', e.target.value)}
         onBlur={() => onBlur && onBlur('pfNumber')}
         error={touchedFields.pfNumber && !!errors.pfNumber}
-        helperText={touchedFields.pfNumber && errors.pfNumber ? errors.pfNumber : 'Employee Provident Fund number'}
+        helperText={touchedFields.pfNumber && errors.pfNumber ? errors.pfNumber : 'Optional - Employee Provident Fund number'}
       />
     </Grid>
     <Grid item xs={12} sm={6}>
@@ -2447,7 +2889,7 @@ const StatutoryBankingTab = ({ formData, errors, touchedFields = {}, onChange, o
         }}
         onBlur={() => onBlur && onBlur('esiNumber')}
         error={touchedFields.esiNumber && !!errors.esiNumber}
-        helperText={touchedFields.esiNumber && errors.esiNumber ? errors.esiNumber : 'Employee State Insurance number (10-17 alphanumeric)'}
+        helperText={touchedFields.esiNumber && errors.esiNumber ? errors.esiNumber : 'Optional - Employee State Insurance number (10-17 alphanumeric)'}
         placeholder="ESI00000001234"
         InputProps={{
           endAdornment: (

@@ -177,9 +177,10 @@ const createEmployeeSchema = Joi.object({
 
   // New comprehensive salary structure (nested JSON object)
   // This is the preferred format going forward
+  // The entire salary object is optional, and basicSalary is optional within it
   salary: Joi.object({
     basicSalary: Joi.number()
-      .required()
+      .optional()
       .min(0)
       .max(10000000)
       .precision(2)
@@ -233,6 +234,11 @@ const createEmployeeSchema = Joi.object({
   accountNumber: Joi.string()
     .max(20)
     .optional(),
+    
+  bankAccountNumber: Joi.string()
+    .max(20)
+    .optional()
+    .allow('', null),
 
   ifscCode: Joi.string()
     .pattern(/^[A-Z]{4}0[A-Z0-9]{6}$/)
@@ -278,6 +284,55 @@ const createEmployeeSchema = Joi.object({
       'string.pattern.base': 'ESI number must be 10-17 alphanumeric characters'
     }),
 
+  // Emergency Contact Information
+  emergencyContactName: Joi.string()
+    .max(100)
+    .optional()
+    .allow('', null),
+
+  emergencyContactPhone: Joi.string()
+    .pattern(/^\d{10,15}$/)
+    .optional()
+    .allow('', null)
+    .messages({
+      'string.pattern.base': 'Emergency contact phone must be 10-15 digits'
+    }),
+
+  emergencyContactRelation: Joi.string()
+    .valid('Spouse', 'Parent', 'Child', 'Sibling', 'Friend', 'Guardian', 'Other')
+    .optional()
+    .allow('', null),
+
+  // Additional Bank Details
+  bankBranch: Joi.string()
+    .max(200)
+    .optional()
+    .allow('', null),
+
+  accountHolderName: Joi.string()
+    .max(100)
+    .optional()
+    .allow('', null),
+
+  // Work Dates
+  confirmationDate: Joi.date()
+    .optional()
+    .allow(null),
+
+  resignationDate: Joi.date()
+    .optional()
+    .allow(null),
+
+  lastWorkingDate: Joi.date()
+    .optional()
+    .allow(null),
+
+  // Photo URL
+  photoUrl: Joi.string()
+    .uri({ allowRelative: true })
+    .optional()
+    .allow('', null),
+
   nationality: Joi.string()
     .max(50)
     .optional()
@@ -304,6 +359,27 @@ const updateEmployeeSchema = Joi.object({
     .pattern(/^\d{10}$/)
     .optional(),
 
+  dateOfBirth: Joi.date()
+    .optional()
+    .allow(null)
+    .max('now')
+    .custom((value, helpers) => {
+      if (!value) return value;
+      const age = (new Date() - value) / (365.25 * 24 * 60 * 60 * 1000);
+      if (age < 18) {
+        return helpers.error('any.invalid', { message: 'Employee must be at least 18 years old' });
+      }
+      return value;
+    }),
+
+  gender: Joi.string()
+    .valid('Male', 'Female', 'Other')
+    .optional(),
+
+  maritalStatus: Joi.string()
+    .valid('Single', 'Married', 'Divorced', 'Widowed')
+    .optional(),
+
   address: Joi.string()
     .max(200)
     .optional(),
@@ -320,6 +396,10 @@ const updateEmployeeSchema = Joi.object({
     .pattern(/^\d{6}$/)
     .optional(),
 
+  country: Joi.string()
+    .max(50)
+    .optional(),
+
   departmentId: Joi.string()
     .uuid()
     .optional(),
@@ -327,6 +407,10 @@ const updateEmployeeSchema = Joi.object({
   positionId: Joi.string()
     .uuid()
     .optional(),
+
+  hireDate: Joi.date()
+    .optional()
+    .max('now'),
 
   managerId: Joi.string()
     .uuid()
@@ -340,6 +424,10 @@ const updateEmployeeSchema = Joi.object({
   status: Joi.string()
     .valid('Active', 'Inactive', 'On Leave', 'Terminated')
     .optional(),
+
+  joiningDate: Joi.date()
+    .optional()
+    .allow(null),
 
   workLocation: Joi.string()
     .max(200)
@@ -371,6 +459,11 @@ const updateEmployeeSchema = Joi.object({
   accountNumber: Joi.string()
     .max(20)
     .optional(),
+    
+  bankAccountNumber: Joi.string()
+    .max(20)
+    .optional()
+    .allow('', null),
 
   ifscCode: Joi.string()
     .pattern(/^[A-Z]{4}0[A-Z0-9]{6}$/)
@@ -398,6 +491,55 @@ const updateEmployeeSchema = Joi.object({
 
   esiNumber: Joi.string()
     .pattern(/^[A-Z0-9]{10,17}$/)
+    .optional()
+    .allow('', null),
+
+  // Emergency Contact Information
+  emergencyContactName: Joi.string()
+    .max(100)
+    .optional()
+    .allow('', null),
+
+  emergencyContactPhone: Joi.string()
+    .pattern(/^\d{10,15}$/)
+    .optional()
+    .allow('', null)
+    .messages({
+      'string.pattern.base': 'Emergency contact phone must be 10-15 digits'
+    }),
+
+  emergencyContactRelation: Joi.string()
+    .valid('Spouse', 'Parent', 'Child', 'Sibling', 'Friend', 'Guardian', 'Other')
+    .optional()
+    .allow('', null),
+
+  // Additional Bank Details
+  bankBranch: Joi.string()
+    .max(200)
+    .optional()
+    .allow('', null),
+
+  accountHolderName: Joi.string()
+    .max(100)
+    .optional()
+    .allow('', null),
+
+  // Work Dates
+  confirmationDate: Joi.date()
+    .optional()
+    .allow(null),
+
+  resignationDate: Joi.date()
+    .optional()
+    .allow(null),
+
+  lastWorkingDate: Joi.date()
+    .optional()
+    .allow(null),
+
+  // Photo URL
+  photoUrl: Joi.string()
+    .uri({ allowRelative: true })
     .optional()
     .allow('', null),
 

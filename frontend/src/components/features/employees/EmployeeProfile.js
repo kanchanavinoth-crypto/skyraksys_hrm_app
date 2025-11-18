@@ -101,6 +101,7 @@ function EnhancedEmployeeProfile() {
   const [securityAlerts, setSecurityAlerts] = useState([]);
   const [showPayslipViewer, setShowPayslipViewer] = useState(false);
   const [isLoadingEmployee, setIsLoadingEmployee] = useState(true);
+  const [tabChangeDialog, setTabChangeDialog] = useState({ open: false, targetTab: null });
 
   // Constants for sensitive fields (matching backend field names)
   const SENSITIVE_FIELDS = [
@@ -243,6 +244,23 @@ function EnhancedEmployeeProfile() {
     }
     
     setEmployee(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: null, permission: null }));
+  };
+
+  // Handle nested salary field changes
+  const handleSalaryFieldChange = (field, value) => {
+    if (!canEditField('salary')) {
+      setErrors({ permission: `You don't have permission to edit salary information` });
+      return;
+    }
+    
+    setEmployee(prev => ({
+      ...prev,
+      salary: {
+        ...prev.salary,
+        [field]: value
+      }
+    }));
     setErrors(prev => ({ ...prev, [field]: null, permission: null }));
   };
 
@@ -569,7 +587,14 @@ function EnhancedEmployeeProfile() {
           >
             <Tabs 
               value={activeTab} 
-              onChange={(e, newValue) => setActiveTab(newValue)}
+              onChange={(e, newValue) => {
+                if (editing) {
+                  // Show warning dialog when switching tabs in edit mode
+                  setTabChangeDialog({ open: true, targetTab: newValue });
+                } else {
+                  setActiveTab(newValue);
+                }
+              }}
               variant="fullWidth"
               sx={{ 
                 bgcolor: 'grey.50',
@@ -607,14 +632,22 @@ function EnhancedEmployeeProfile() {
             </Tabs>
 
             {/* Tab Content */}
-            <Box sx={{ p: { xs: 3, md: 4 }, bgcolor: 'white', minHeight: '600px' }}>
+            <Box sx={{ 
+              p: { xs: 3, md: 4 }, 
+              bgcolor: 'white', 
+              minHeight: '600px',
+              pb: editing ? 12 : 4  // Extra bottom padding when editing to prevent sticky bar overlap
+            }}>
               {activeTab === 0 && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {/* Essential Information */}
                   <Box>
-                    <Typography variant="h6" gutterBottom color="primary.main" fontWeight={700} sx={{ mb: 3 }}>
-                      Essential Information
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
+                        Essential Information
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Grid container spacing={3}>
                       <Grid item xs={12} sm={6}>
                         <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
@@ -708,9 +741,12 @@ function EnhancedEmployeeProfile() {
 
                   {/* Personal Details */}
                   <Box>
-                    <Typography variant="h6" gutterBottom color="primary.main" fontWeight={700} sx={{ mb: 3 }}>
-                      Personal Details
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
+                        Personal Details
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Grid container spacing={3}>
                       <Grid item xs={12} sm={6}>
                         <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
@@ -807,9 +843,12 @@ function EnhancedEmployeeProfile() {
 
                   {/* Address Information */}
                   <Box>
-                    <Typography variant="h6" gutterBottom color="primary.main" fontWeight={700} sx={{ mb: 3 }}>
-                      Address Information
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
+                        Address Information
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Grid container spacing={3}>
                       <Grid item xs={12}>
                         <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2, display: 'flex', alignItems: 'flex-start', gap: 1 }}>
@@ -887,9 +926,12 @@ function EnhancedEmployeeProfile() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {/* Employment Information */}
                   <Box>
-                    <Typography variant="h6" gutterBottom color="primary.main" fontWeight={700} sx={{ mb: 3 }}>
-                      Employment Information
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
+                        Employment Information
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Grid container spacing={3}>
                       <Grid item xs={12} sm={6}>
                         <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
@@ -1034,6 +1076,145 @@ function EnhancedEmployeeProfile() {
                           )}
                         </Box>
                       </Grid>
+                      
+                      {/* Additional Employment Dates */}
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Joining Date
+                          </Typography>
+                          {editing && canEditField('joiningDate') ? (
+                            <TextField
+                              fullWidth
+                              type="date"
+                              value={employee.joiningDate ? employee.joiningDate.split('T')[0] : ''}
+                              onChange={(e) => handleFieldChange('joiningDate', e.target.value)}
+                              variant="outlined"
+                              size="small"
+                              InputLabelProps={{ shrink: true }}
+                            />
+                          ) : (
+                            <Typography variant="h6" fontWeight={600}>
+                              {employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : 'Not provided'}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Confirmation Date
+                          </Typography>
+                          {editing && canEditField('confirmationDate') ? (
+                            <TextField
+                              fullWidth
+                              type="date"
+                              value={employee.confirmationDate ? employee.confirmationDate.split('T')[0] : ''}
+                              onChange={(e) => handleFieldChange('confirmationDate', e.target.value)}
+                              variant="outlined"
+                              size="small"
+                              InputLabelProps={{ shrink: true }}
+                            />
+                          ) : (
+                            <Typography variant="h6" fontWeight={600}>
+                              {employee.confirmationDate ? new Date(employee.confirmationDate).toLocaleDateString() : 'Not provided'}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Probation Period (months)
+                          </Typography>
+                          {editing && canEditField('probationPeriod') ? (
+                            <TextField
+                              fullWidth
+                              type="number"
+                              value={employee.probationPeriod || ''}
+                              onChange={(e) => handleFieldChange('probationPeriod', parseInt(e.target.value) || 0)}
+                              variant="outlined"
+                              size="small"
+                              inputProps={{ min: 0, max: 24 }}
+                            />
+                          ) : (
+                            <Typography variant="h6" fontWeight={600}>
+                              {employee.probationPeriod ? `${employee.probationPeriod} months` : 'Not specified'}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Notice Period (days)
+                          </Typography>
+                          {editing && canEditField('noticePeriod') ? (
+                            <TextField
+                              fullWidth
+                              type="number"
+                              value={employee.noticePeriod || ''}
+                              onChange={(e) => handleFieldChange('noticePeriod', parseInt(e.target.value) || 0)}
+                              variant="outlined"
+                              size="small"
+                              inputProps={{ min: 0, max: 365 }}
+                            />
+                          ) : (
+                            <Typography variant="h6" fontWeight={600}>
+                              {employee.noticePeriod ? `${employee.noticePeriod} days` : 'Not specified'}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Resignation Date
+                          </Typography>
+                          {editing && canEditField('resignationDate') ? (
+                            <TextField
+                              fullWidth
+                              type="date"
+                              value={employee.resignationDate ? employee.resignationDate.split('T')[0] : ''}
+                              onChange={(e) => handleFieldChange('resignationDate', e.target.value)}
+                              variant="outlined"
+                              size="small"
+                              InputLabelProps={{ shrink: true }}
+                            />
+                          ) : (
+                            <Typography variant="h6" fontWeight={600}>
+                              {employee.resignationDate ? new Date(employee.resignationDate).toLocaleDateString() : 'Not provided'}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
+                      
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Last Working Date
+                          </Typography>
+                          {editing && canEditField('lastWorkingDate') ? (
+                            <TextField
+                              fullWidth
+                              type="date"
+                              value={employee.lastWorkingDate ? employee.lastWorkingDate.split('T')[0] : ''}
+                              onChange={(e) => handleFieldChange('lastWorkingDate', e.target.value)}
+                              variant="outlined"
+                              size="small"
+                              InputLabelProps={{ shrink: true }}
+                            />
+                          ) : (
+                            <Typography variant="h6" fontWeight={600}>
+                              {employee.lastWorkingDate ? new Date(employee.lastWorkingDate).toLocaleDateString() : 'Not provided'}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
                     </Grid>
                   </Box>
 
@@ -1063,13 +1244,25 @@ function EnhancedEmployeeProfile() {
                           </Grid>
                           
                           <Grid item xs={12} sm={6} md={3}>
-                            <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
+                            <Box sx={{ p: 2, bgcolor: editing ? 'grey.50' : 'success.50', borderRadius: 2, border: '1px solid', borderColor: editing ? 'grey.300' : 'success.200' }}>
                               <Typography variant="body2" color="text.secondary" gutterBottom>
                                 Basic Salary
                               </Typography>
-                              <Typography variant="h5" fontWeight={700} color="success.main">
-                                {employee.salary.currency || 'INR'} {employee.salary.basicSalary?.toLocaleString() || '0'}
-                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.basicSalary || ''}
+                                  onChange={(e) => handleSalaryFieldChange('basicSalary', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0, step: 1000 }}
+                                />
+                              ) : (
+                                <Typography variant="h5" fontWeight={700} color="success.main">
+                                  {employee.salary.currency || 'INR'} {employee.salary.basicSalary?.toLocaleString() || '0'}
+                                </Typography>
+                              )}
                             </Box>
                           </Grid>
                           
@@ -1078,9 +1271,23 @@ function EnhancedEmployeeProfile() {
                               <Typography variant="body2" color="text.secondary" gutterBottom>
                                 Currency
                               </Typography>
-                              <Typography variant="h6" fontWeight={600}>
-                                {employee.salary.currency || 'INR'}
-                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <FormControl fullWidth size="small">
+                                  <Select
+                                    value={employee.salary.currency || 'INR'}
+                                    onChange={(e) => handleSalaryFieldChange('currency', e.target.value)}
+                                  >
+                                    <MenuItem value="INR">INR</MenuItem>
+                                    <MenuItem value="USD">USD</MenuItem>
+                                    <MenuItem value="EUR">EUR</MenuItem>
+                                    <MenuItem value="GBP">GBP</MenuItem>
+                                  </Select>
+                                </FormControl>
+                              ) : (
+                                <Typography variant="h6" fontWeight={600}>
+                                  {employee.salary.currency || 'INR'}
+                                </Typography>
+                              )}
                             </Box>
                           </Grid>
                           
@@ -1089,9 +1296,23 @@ function EnhancedEmployeeProfile() {
                               <Typography variant="body2" color="text.secondary" gutterBottom>
                                 Pay Frequency
                               </Typography>
-                              <Typography variant="h6" fontWeight={600}>
-                                {employee.salary.payFrequency || 'Not set'}
-                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <FormControl fullWidth size="small">
+                                  <Select
+                                    value={employee.salary.payFrequency || 'monthly'}
+                                    onChange={(e) => handleSalaryFieldChange('payFrequency', e.target.value)}
+                                  >
+                                    <MenuItem value="weekly">Weekly</MenuItem>
+                                    <MenuItem value="biweekly">Bi-weekly</MenuItem>
+                                    <MenuItem value="monthly">Monthly</MenuItem>
+                                    <MenuItem value="annually">Annually</MenuItem>
+                                  </Select>
+                                </FormControl>
+                              ) : (
+                                <Typography variant="h6" fontWeight={600}>
+                                  {employee.salary.payFrequency || 'Not set'}
+                                </Typography>
+                              )}
                             </Box>
                           </Grid>
                           
@@ -1100,265 +1321,454 @@ function EnhancedEmployeeProfile() {
                               <Typography variant="body2" color="text.secondary" gutterBottom>
                                 Effective From
                               </Typography>
-                              <Typography variant="h6" fontWeight={600}>
-                                {employee.salary.effectiveFrom ? new Date(employee.salary.effectiveFrom).toLocaleDateString() : 'Not set'}
-                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="date"
+                                  value={employee.salary.effectiveFrom ? employee.salary.effectiveFrom.split('T')[0] : ''}
+                                  onChange={(e) => handleSalaryFieldChange('effectiveFrom', e.target.value)}
+                                  variant="outlined"
+                                  size="small"
+                                  InputLabelProps={{ shrink: true }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600}>
+                                  {employee.salary.effectiveFrom ? new Date(employee.salary.effectiveFrom).toLocaleDateString() : 'Not set'}
+                                </Typography>
+                              )}
                             </Box>
                           </Grid>
 
                           {/* Allowances Section */}
-                          {(employee.salary.houseRentAllowance || employee.salary.transportAllowance || 
-                            employee.salary.medicalAllowance || employee.salary.foodAllowance || 
-                            employee.salary.communicationAllowance || employee.salary.specialAllowance || 
-                            employee.salary.otherAllowances) && (
-                            <>
-                              <Grid item xs={12} sx={{ mt: 2 }}>
-                                <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                                  Allowances
+                          <Grid item xs={12} sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                              Allowances {editing && <Chip label="Edit Mode" size="small" color="info" sx={{ ml: 1 }} />}
+                            </Typography>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                House Rent Allowance (HRA)
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.houseRentAllowance || ''}
+                                  onChange={(e) => handleSalaryFieldChange('houseRentAllowance', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="info.main">
+                                  {employee.salary.houseRentAllowance > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.houseRentAllowance?.toLocaleString()}` : 'Not set'}
                                 </Typography>
-                              </Grid>
-                              
-                              {employee.salary.houseRentAllowance > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      House Rent Allowance (HRA)
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="info.main">
-                                      {employee.salary.currency || 'INR'} {employee.salary.houseRentAllowance?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
                               )}
-                              
-                              {employee.salary.transportAllowance > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Transport Allowance
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="info.main">
-                                      {employee.salary.currency || 'INR'} {employee.salary.transportAllowance?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Transport Allowance
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.transportAllowance || ''}
+                                  onChange={(e) => handleSalaryFieldChange('transportAllowance', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="info.main">
+                                  {employee.salary.transportAllowance > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.transportAllowance?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.medicalAllowance > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Medical Allowance
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="info.main">
-                                      {employee.salary.currency || 'INR'} {employee.salary.medicalAllowance?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Medical Allowance
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.medicalAllowance || ''}
+                                  onChange={(e) => handleSalaryFieldChange('medicalAllowance', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="info.main">
+                                  {employee.salary.medicalAllowance > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.medicalAllowance?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.foodAllowance > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Food Allowance
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="info.main">
-                                      {employee.salary.currency || 'INR'} {employee.salary.foodAllowance?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Food Allowance
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.foodAllowance || ''}
+                                  onChange={(e) => handleSalaryFieldChange('foodAllowance', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="info.main">
+                                  {employee.salary.foodAllowance > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.foodAllowance?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.communicationAllowance > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Communication Allowance
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="info.main">
-                                      {employee.salary.currency || 'INR'} {employee.salary.communicationAllowance?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Communication Allowance
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.communicationAllowance || ''}
+                                  onChange={(e) => handleSalaryFieldChange('communicationAllowance', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="info.main">
+                                  {employee.salary.communicationAllowance > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.communicationAllowance?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.specialAllowance > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Special Allowance
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="info.main">
-                                      {employee.salary.currency || 'INR'} {employee.salary.specialAllowance?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Special Allowance
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.specialAllowance || ''}
+                                  onChange={(e) => handleSalaryFieldChange('specialAllowance', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="info.main">
+                                  {employee.salary.specialAllowance > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.specialAllowance?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.otherAllowances > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Other Allowances
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="info.main">
-                                      {employee.salary.currency || 'INR'} {employee.salary.otherAllowances?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'info.50', borderRadius: 2, border: '1px solid', borderColor: 'info.100' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Other Allowances
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.otherAllowances || ''}
+                                  onChange={(e) => handleSalaryFieldChange('otherAllowances', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="info.main">
+                                  {employee.salary.otherAllowances > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.otherAllowances?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                            </>
-                          )}
+                            </Box>
+                          </Grid>
 
                           {/* Deductions Section */}
-                          {(employee.salary.providentFund || employee.salary.professionalTax || 
-                            employee.salary.incomeTax || employee.salary.esi || 
-                            employee.salary.otherDeductions) && (
-                            <>
-                              <Grid item xs={12} sx={{ mt: 2 }}>
-                                <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                                  Deductions
+                          <Grid item xs={12} sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                              Deductions {editing && <Chip label="Edit Mode" size="small" color="warning" sx={{ ml: 1 }} />}
+                            </Typography>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Provident Fund (PF)
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.providentFund || ''}
+                                  onChange={(e) => handleSalaryFieldChange('providentFund', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="warning.dark">
+                                  {employee.salary.providentFund > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.providentFund?.toLocaleString()}` : 'Not set'}
                                 </Typography>
-                              </Grid>
-                              
-                              {employee.salary.providentFund > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Provident Fund (PF)
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="warning.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.providentFund?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
                               )}
-                              
-                              {employee.salary.professionalTax > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Professional Tax
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="warning.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.professionalTax?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Professional Tax
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.professionalTax || ''}
+                                  onChange={(e) => handleSalaryFieldChange('professionalTax', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="warning.dark">
+                                  {employee.salary.professionalTax > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.professionalTax?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.incomeTax > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Income Tax (TDS)
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="warning.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.incomeTax?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Income Tax (TDS)
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.incomeTax || ''}
+                                  onChange={(e) => handleSalaryFieldChange('incomeTax', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="warning.dark">
+                                  {employee.salary.incomeTax > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.incomeTax?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.esi > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      ESI
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="warning.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.esi?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                ESI
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.esi || ''}
+                                  onChange={(e) => handleSalaryFieldChange('esi', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="warning.dark">
+                                  {employee.salary.esi > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.esi?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.otherDeductions > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Other Deductions
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="warning.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.otherDeductions?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'warning.50', borderRadius: 2, border: '1px solid', borderColor: 'warning.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Other Deductions
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.otherDeductions || ''}
+                                  onChange={(e) => handleSalaryFieldChange('otherDeductions', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="warning.dark">
+                                  {employee.salary.otherDeductions > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.otherDeductions?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                            </>
-                          )}
+                            </Box>
+                          </Grid>
 
                           {/* Additional Benefits */}
-                          {(employee.salary.bonus || employee.salary.incentive || employee.salary.overtime) && (
-                            <>
-                              <Grid item xs={12} sx={{ mt: 2 }}>
-                                <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                                  Additional Benefits
+                          <Grid item xs={12} sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                              Additional Benefits {editing && <Chip label="Edit Mode" size="small" color="success" sx={{ ml: 1 }} />}
+                            </Typography>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Bonus
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.bonus || ''}
+                                  onChange={(e) => handleSalaryFieldChange('bonus', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="success.dark">
+                                  {employee.salary.bonus > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.bonus?.toLocaleString()}` : 'Not set'}
                                 </Typography>
-                              </Grid>
-                              
-                              {employee.salary.bonus > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Bonus
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="success.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.bonus?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
                               )}
-                              
-                              {employee.salary.incentive > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Incentive
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="success.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.incentive?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Incentive
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.incentive || ''}
+                                  onChange={(e) => handleSalaryFieldChange('incentive', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="success.dark">
+                                  {employee.salary.incentive > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.incentive?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                              
-                              {employee.salary.overtime > 0 && (
-                                <Grid item xs={12} sm={6} md={4}>
-                                  <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Overtime Pay
-                                    </Typography>
-                                    <Typography variant="h6" fontWeight={600} color="success.dark">
-                                      {employee.salary.currency || 'INR'} {employee.salary.overtime?.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </Grid>
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6} md={4}>
+                            <Box sx={{ p: 2, bgcolor: 'success.50', borderRadius: 2, border: '1px solid', borderColor: 'success.200' }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Overtime Pay
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.overtime || ''}
+                                  onChange={(e) => handleSalaryFieldChange('overtime', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h6" fontWeight={600} color="success.dark">
+                                  {employee.salary.overtime > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.overtime?.toLocaleString()}` : 'Not set'}
+                                </Typography>
                               )}
-                            </>
-                          )}
+                            </Box>
+                          </Grid>
 
                           {/* Summary Cards */}
-                          {(employee.salary.ctc || employee.salary.takeHome) && (
-                            <>
-                              <Grid item xs={12} sx={{ mt: 2 }}>
-                                <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                                  Summary
+                          <Grid item xs={12} sx={{ mt: 2 }}>
+                            <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                              Summary {editing && <Chip label="Edit Mode" size="small" color="primary" sx={{ ml: 1 }} />}
+                            </Typography>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ 
+                              p: 3, 
+                              bgcolor: 'primary.50', 
+                              borderRadius: 2, 
+                              border: '2px solid', 
+                              borderColor: 'primary.main' 
+                            }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Cost to Company (CTC)
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.ctc || ''}
+                                  onChange={(e) => handleSalaryFieldChange('ctc', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h4" fontWeight={700} color="primary.main">
+                                  {employee.salary.ctc > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.ctc?.toLocaleString()}` : 'Not set'}
                                 </Typography>
-                              </Grid>
-                              
-                              {employee.salary.ctc > 0 && (
-                                <Grid item xs={12} sm={6}>
-                                  <Box sx={{ 
-                                    p: 3, 
-                                    bgcolor: 'primary.50', 
-                                    borderRadius: 2, 
-                                    border: '2px solid', 
-                                    borderColor: 'primary.main' 
-                                  }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                      Cost to Company (CTC)
+                              )}
+                            </Box>
+                          </Grid>
+                          
+                          <Grid item xs={12} sm={6}>
+                            <Box sx={{ 
+                              p: 3, 
+                              bgcolor: 'success.50', 
+                              borderRadius: 2, 
+                              border: '2px solid', 
+                              borderColor: 'success.main' 
+                            }}>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                Take Home Salary
+                              </Typography>
+                              {editing && canEditField('salary') ? (
+                                <TextField
+                                  fullWidth
+                                  type="number"
+                                  value={employee.salary.takeHome || ''}
+                                  onChange={(e) => handleSalaryFieldChange('takeHome', parseFloat(e.target.value) || 0)}
+                                  variant="outlined"
+                                  size="small"
+                                  inputProps={{ min: 0 }}
+                                />
+                              ) : (
+                                <Typography variant="h4" fontWeight={700} color="success.main">
+                                  {employee.salary.takeHome > 0 ? `${employee.salary.currency || 'INR'} ${employee.salary.takeHome?.toLocaleString()}` : 'Not set'}
+                                </Typography>
+                              )}
+                            </Box>
+                          </Grid>
                                     </Typography>
                                     <Typography variant="h4" fontWeight={700} color="primary.main">
                                       {employee.salary.currency || 'INR'} {employee.salary.ctc?.toLocaleString()}
@@ -1449,9 +1859,12 @@ function EnhancedEmployeeProfile() {
 
               {activeTab === 2 && (
                 <Box>
-                  <Typography variant="h6" gutterBottom color="primary.main" fontWeight={700} sx={{ mb: 3 }}>
-                    Emergency Contact
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                    <Typography variant="h6" color="primary.main" fontWeight={700}>
+                      Emergency Contact
+                    </Typography>
+                    {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                  </Box>
                   <Grid container spacing={3}>
                     <Grid item xs={12} sm={6}>
                       <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
@@ -1521,9 +1934,12 @@ function EnhancedEmployeeProfile() {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {/* Statutory Information */}
                   <Box>
-                    <Typography variant="h6" gutterBottom color="primary.main" fontWeight={700} sx={{ mb: 3 }}>
-                      Statutory Information
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
+                        Statutory Information
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Grid container spacing={3}>
                       {SENSITIVE_FIELDS.map((field) => (
                         <Grid item xs={12} sm={6} key={field.key}>
@@ -1555,9 +1971,12 @@ function EnhancedEmployeeProfile() {
 
                   {/* Banking Information */}
                   <Box>
-                    <Typography variant="h6" gutterBottom color="primary.main" fontWeight={700} sx={{ mb: 3 }}>
-                      Banking Information
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                      <Typography variant="h6" color="primary.main" fontWeight={700}>
+                        Banking Information
+                      </Typography>
+                      {editing && <Chip label="Editing" size="small" color="warning" icon={<EditIcon />} />}
+                    </Box>
                     <Grid container spacing={3}>
                       <Grid item xs={12} sm={6}>
                         <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
@@ -1642,6 +2061,26 @@ function EnhancedEmployeeProfile() {
                           )}
                         </Box>
                       </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+                          <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Bank Branch
+                          </Typography>
+                          {editing && canEditField('bankBranch') ? (
+                            <TextField
+                              fullWidth
+                              value={employee.bankBranch || ''}
+                              onChange={(e) => handleFieldChange('bankBranch', e.target.value)}
+                              variant="outlined"
+                              size="small"
+                            />
+                          ) : (
+                            <Typography variant="h6" fontWeight={600}>
+                              {employee.bankBranch || 'Not provided'}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Grid>
                     </Grid>
                   </Box>
                 </Box>
@@ -1650,6 +2089,87 @@ function EnhancedEmployeeProfile() {
           </Card>
         </Box>
       </Box>
+
+      {/* Sticky Floating Action Bar - Only visible in edit mode */}
+      {editing && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            bgcolor: 'white',
+            borderTop: '2px solid',
+            borderColor: 'warning.main',
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+            zIndex: 1100,
+            py: 2,
+            px: 3
+          }}
+        >
+          <Box
+            sx={{
+              maxWidth: '1400px',
+              margin: '0 auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 2,
+              flexWrap: 'wrap'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Chip 
+                icon={<EditIcon />}
+                label="Edit Mode Active" 
+                color="warning" 
+                sx={{ fontWeight: 600 }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', md: 'block' } }}>
+                Make your changes and click Save to update the profile
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Button
+                variant="outlined"
+                startIcon={<CancelIcon />}
+                onClick={handleCancel}
+                sx={{
+                  borderColor: '#cbd5e1',
+                  color: '#64748b',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#94a3b8',
+                    bgcolor: 'rgba(148, 163, 184, 0.05)'
+                  }
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<SaveIcon />}
+                onClick={handleSave}
+                sx={{
+                  bgcolor: '#10b981',
+                  color: 'white',
+                  fontWeight: 600,
+                  px: 4,
+                  '&:hover': {
+                    bgcolor: '#059669',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 8px 16px rgba(16, 185, 129, 0.3)'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Save Changes
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       {/* Audit History Dialog */}
       <Dialog 
@@ -1687,6 +2207,37 @@ function EnhancedEmployeeProfile() {
         employee={employee}
         mode="generate"
       />
+
+      {/* Tab Change Warning Dialog */}
+      <Dialog
+        open={tabChangeDialog.open}
+        onClose={() => setTabChangeDialog({ open: false, targetTab: null })}
+      >
+        <DialogTitle>Switch Tab?</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            You are currently in edit mode. Switching tabs will not save your changes.
+          </Alert>
+          <Typography>
+            Do you want to switch to another tab? Your unsaved changes will remain but won't be saved until you click "Save Changes".
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTabChangeDialog({ open: false, targetTab: null })}>
+            Stay Here
+          </Button>
+          <Button 
+            onClick={() => {
+              setActiveTab(tabChangeDialog.targetTab);
+              setTabChangeDialog({ open: false, targetTab: null });
+            }}
+            variant="contained"
+            color="warning"
+          >
+            Switch Tab
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
