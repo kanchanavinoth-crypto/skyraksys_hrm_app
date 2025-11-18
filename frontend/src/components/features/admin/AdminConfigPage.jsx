@@ -21,7 +21,7 @@ export default function AdminConfigPage() {
   const [loading, setLoading] = useState(false);
   const [diag, setDiag] = useState({ running: false, results: [] });
 
-  const apiBase = useMemo(() => process.env.REACT_APP_API_URL || 'http://localhost:8080/api', []);
+  const apiBase = useMemo(() => process.env.REACT_APP_API_URL || 'http://localhost:5000/api', []);
 
   const loadConfig = async () => {
     setLoading(true);

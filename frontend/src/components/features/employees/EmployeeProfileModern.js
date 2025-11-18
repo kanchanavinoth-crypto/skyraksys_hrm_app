@@ -322,7 +322,7 @@ const EmployeeProfileModern = () => {
                 {/* Avatar */}
                 <Grid item xs={12} sm="auto">
                   <Avatar
-                    src={employee.photoUrl ? `http://localhost:5000${employee.photoUrl}` : undefined}
+                    src={employee.photoUrl ? `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${employee.photoUrl}` : undefined}
                     sx={{
                       width: 120,
                       height: 120,

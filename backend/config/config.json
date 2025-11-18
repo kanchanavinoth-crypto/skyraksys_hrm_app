@@ -24,8 +24,8 @@
     "logging": false
   },
   "production": {
-    "username": "hrm_app",
-    "password": null,
+    "username": "skyraksys_admin",
+    "password": "SkyRakDB#2025!Prod@HRM$Secure",
     "database": "skyraksys_hrm_prod",
     "host": "localhost",
     "port": 5432,

@@ -410,7 +410,7 @@ const EmployeeList = () => {
             <TableRow key={emp.id} hover>
               <TableCell>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Avatar src={emp.photoUrl ? `http://localhost:5000${emp.photoUrl}` : undefined} sx={{ width: 32, height: 32 }}>
+                  <Avatar src={emp.photoUrl ? `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${emp.photoUrl}` : undefined} sx={{ width: 32, height: 32 }}>
                     {emp.firstName?.charAt(0)}
                   </Avatar>
                   <Box>
@@ -694,7 +694,7 @@ const EmployeeList = () => {
                       {/* Avatar & Name */}
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Avatar
-                          src={employee.photoUrl ? `http://localhost:5000${employee.photoUrl}` : undefined}
+                          src={employee.photoUrl ? `${process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000'}${employee.photoUrl}` : undefined}
                           sx={{
                             width: 56,
                             height: 56,

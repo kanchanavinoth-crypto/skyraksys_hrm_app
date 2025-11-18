@@ -1,17 +1,17 @@
 module.exports = {
   apps: [
     {
-      name: 'skyraksys-hrm-backend',
+      name: 'skyraksys-hrm',
       script: 'backend/server.js',
       instances: 2,
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
-        PORT: 5000
+        PORT: 3001
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 5000
+        PORT: 3001
       },
       log_file: './logs/combined.log',
       out_file: './logs/out.log',

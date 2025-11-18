@@ -47,7 +47,7 @@ const PhotoUpload = ({
       // If currentPhotoUrl is a relative path, convert to full URL
       const isRelativePath = currentPhotoUrl.startsWith('/');
       if (isRelativePath) {
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
         const serverBaseUrl = baseUrl.replace('/api', ''); // Remove /api suffix
         setPreviewUrl(`${serverBaseUrl}${currentPhotoUrl}`);
       } else {
@@ -100,7 +100,7 @@ const PhotoUpload = ({
       const formData = new FormData();
       formData.append('photo', selectedFile);
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080/api'}/employees/${employeeId}/photo`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/employees/${employeeId}/photo`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
@@ -157,7 +157,7 @@ const PhotoUpload = ({
     setSuccess('');
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8080/api'}/employees/${employeeId}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/employees/${employeeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

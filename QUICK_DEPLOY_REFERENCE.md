@@ -2,7 +2,16 @@
 
 ## ⚡ FASTEST DEPLOYMENT OPTIONS
 
-### **Option 1: Direct from GitHub** ⭐ **RECOMMENDED**
+### **Option 1: Ultra-Fast Git Deployment** ⭐ **NEW & READY TO USE**
+```bash
+ssh root@95.216.14.232
+curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/rhel-quick-deploy.sh | bash
+```
+✅ **Complete RHEL production setup in one command**  
+✅ **All settings pre-configured for your server**  
+✅ **Production optimized with security headers**
+
+### **Option 2: Existing GitHub Deploy** 
 ```bash
 ssh root@95.216.14.232
 curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/deploy-from-github.sh | bash
@@ -11,24 +20,24 @@ curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_
 ✅ **Always gets latest code**  
 ✅ **No file management needed**
 
-### **Option 2: Git Clone + Deploy**
+### **Option 3: Git Clone + Deploy**
 ```bash
 ssh root@95.216.14.232
-cd /opt/skyraksys-hrm
+cd /opt
 git clone https://github.com/kanchanavinoth-crypto/skyraksys_hrm_app.git
 cd skyraksys_hrm_app
 chmod +x *.sh
-./FINAL-PRODUCTION-DEPLOY.sh
+./rhel-quick-deploy.sh
 ```
 
-### **Option 3: Update Existing Setup**
+### **Option 4: Quick Update Existing**
 ```bash
 ssh root@95.216.14.232
-cd /opt/skyraksys-hrm/skyraksys_hrm_app
-git pull origin master
-chmod +x *.sh
-./master-deploy.sh
+curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/quick-update.sh | bash
 ```
+✅ **Smart update with automatic backup**  
+✅ **Only rebuilds what changed**  
+✅ **Rollback if update fails**
 
 ## 🎯 DEPLOYMENT SCRIPT CHOICES
 
@@ -48,14 +57,19 @@ chmod +x *.sh
 
 ## 🎯 QUICK COMMANDS
 
-### Deploy from GitHub (Recommended)
+### ⚡ Ultra-Fast Deployment (READY TO USE!)
 ```bash
-curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/deploy-from-github.sh | bash
+curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/rhel-quick-deploy.sh | bash
 ```
 
-### Update & Deploy
+### 🔄 Quick Update 
 ```bash
-cd /opt/skyraksys-hrm/skyraksys_hrm_app && git pull origin master && ./master-deploy.sh
+curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/quick-update.sh | bash
+```
+
+### 📋 View All Commands
+```bash
+curl -sSL https://raw.githubusercontent.com/kanchanavinoth-crypto/skyraksys_hrm_app/master/deployment-commands.sh | bash
 ```
 
 ### Check Status

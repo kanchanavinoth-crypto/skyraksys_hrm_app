@@ -5,7 +5,7 @@ import axios from 'axios';
  * Features: Caching, Request Deduplication, Performance Tracking, Batch Requests
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance with optimized defaults
 const apiClient = axios.create({
