@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 
 # =============================================================================
 # SkyrakSys HRM - RHEL Quick Git Deployment v3.0
