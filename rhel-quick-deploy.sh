@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# 🚀 SkyrakSys HRM - RHEL Quick Git Deployment v3.0
+# SkyrakSys HRM - RHEL Quick Git Deployment v3.0
 # =============================================================================
 # Ultra-fast deployment directly from Git repository
 # 
@@ -29,7 +29,7 @@ DB_HOST="localhost"
 
 # Server Configuration
 DOMAIN="95.216.14.232"
-SERVER_PORT="3001"
+SERVER_PORT="5000"
 CLIENT_PORT="80"
 SSL_PORT="443"
 
@@ -56,16 +56,16 @@ exec 2>&1
 print_header() {
     echo -e "${CYAN}"
     echo "=============================================================================="
-    echo "  🚀 $1"
+    echo "  >>> $1"
     echo "=============================================================================="
     echo -e "${NC}"
 }
 
-print_step() { echo -e "${BLUE}[$(date '+%H:%M:%S')] 📋 $1${NC}"; }
-print_success() { echo -e "${GREEN}[$(date '+%H:%M:%S')] ✅ $1${NC}"; }
-print_error() { echo -e "${RED}[$(date '+%H:%M:%S')] ❌ $1${NC}"; }
-print_warning() { echo -e "${YELLOW}[$(date '+%H:%M:%S')] ⚠️  $1${NC}"; }
-print_info() { echo -e "${PURPLE}[$(date '+%H:%M:%S')] ℹ️  $1${NC}"; }
+print_step() { echo -e "${BLUE}[$(date '+%H:%M:%S')] [STEP] $1${NC}"; }
+print_success() { echo -e "${GREEN}[$(date '+%H:%M:%S')] [OK] $1${NC}"; }
+print_error() { echo -e "${RED}[$(date '+%H:%M:%S')] [ERROR] $1${NC}"; }
+print_warning() { echo -e "${YELLOW}[$(date '+%H:%M:%S')] [WARNING] $1${NC}"; }
+print_info() { echo -e "${PURPLE}[$(date '+%H:%M:%S')] [INFO] $1${NC}"; }
 
 # Error handling
 error_exit() {
@@ -236,13 +236,30 @@ EOF
     
     npm install >/dev/null 2>&1
     npm run build >/dev/null 2>&1
-    print_success "Frontend built"
+    if [ -d "build" ] && [ -f "build/index.html" ]; then
+        print_success "Frontend built successfully"
+    else
+        error_exit "Frontend build failed - no build directory or index.html found"
+    fi
     
     # Database migrations
     step "Running database migrations"
     cd ../backend
-    npm run migrate >/dev/null 2>&1 || true
-    print_success "Database migrations completed"
+    
+    # Test database connectivity first
+    if node -e "const {Pool} = require('pg'); const pool = new Pool({user:'$DB_USER', password:'$DB_PASSWORD', host:'$DB_HOST', database:'$DB_NAME', port:5432}); pool.query('SELECT 1').then(() => {console.log('DB OK'); pool.end()}).catch(e => {console.error('DB FAIL:', e.message); process.exit(1)})" 2>/dev/null; then
+        print_success "Database connectivity verified"
+    else
+        error_exit "Database connection failed - check credentials and service"
+    fi
+    
+    if npm run migrate >/dev/null 2>&1; then
+        print_success "Database migrations completed successfully"
+    else
+        print_warning "Migration failed or no migrations found - continuing with deployment"
+        # Try to create basic tables if migrations fail
+        npm run db:setup >/dev/null 2>&1 || true
+    fi
     
     # Configure SSL certificates
     step "Setting up SSL certificates"
@@ -434,7 +451,15 @@ EOF
     # Start application with PM2
     pm2 delete $SERVICE_NAME >/dev/null 2>&1 || true
     pm2 start ecosystem.config.js >/dev/null 2>&1
-    pm2 save >/dev/null 2>&1
+    
+    # Validate PM2 service started
+    sleep 3
+    if pm2 show $SERVICE_NAME >/dev/null 2>&1; then
+        print_success "PM2 service started successfully"
+        pm2 save >/dev/null 2>&1
+    else
+        error_exit "Failed to start PM2 service - check ecosystem.config.js"
+    fi
     
     # Setup PM2 startup
     pm2 startup >/dev/null 2>&1 || true
@@ -461,16 +486,16 @@ EOF
         print_warning "Some services may not be running properly"
     fi
     
-    print_header "🎉 Secure Deployment Complete!"
+    print_header "*** Secure Deployment Complete! ***"
     
     if [ "$ENABLE_SSL" = true ]; then
-        print_info "🔒 Secure Application URL: https://$DOMAIN"
-        print_info "🔒 Secure API Health Check: https://$DOMAIN/api/health"
-        print_info "⚠️  HTTP Redirect: http://$DOMAIN → https://$DOMAIN"
+        print_info "[SSL] Secure Application URL: https://$DOMAIN"
+        print_info "[SSL] Secure API Health Check: https://$DOMAIN/api/health"
+        print_info "[REDIRECT] HTTP Redirect: http://$DOMAIN -> https://$DOMAIN"
         print_info ""
         if [ "$USE_SELF_SIGNED" = true ]; then
-            print_warning "⚠️  Using self-signed SSL certificate"
-            print_warning "   Browser will show 'Not Secure' warning - click 'Advanced' → 'Proceed'"
+            print_warning "Using self-signed SSL certificate"
+            print_warning "   Browser will show 'Not Secure' warning - click 'Advanced' -> 'Proceed'"
             print_warning "   For production with real domain, set USE_SELF_SIGNED=false"
         fi
     else
@@ -479,7 +504,7 @@ EOF
     fi
     
     print_info ""
-    print_info "🔑 Admin Login Credentials:"
+    print_info "[ADMIN] Login Credentials:"
     print_info "  Email: admin@example.com"
     print_info "  Password: admin123"
     print_info ""
@@ -501,7 +526,7 @@ EOF
     print_info "Logs Location: $LOGFILE"
     
     if [ "$ENABLE_SSL" = true ]; then
-        print_success "🔒 SkyrakSys HRM is now running securely with HTTPS! 🛡️"
+        print_success "[SSL] SkyrakSys HRM is now running securely with HTTPS!"
     else
         print_success "SkyrakSys HRM is now running in production!"
     fi
