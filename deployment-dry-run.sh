@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # =============================================================================
 # SkyrakSys HRM Deployment - Dry Run Validation Script
 # =============================================================================
@@ -283,10 +283,10 @@ main() {
     if [ $failed -gt 0 ]; then
         print_error "Tests failed: $failed"
         print_error ""
-        print_error "⚠️  Please fix the issues above before deploying to production"
+        print_error "âš ï¸  Please fix the issues above before deploying to production"
         exit 1
     else
-        print_success "✅ All tests passed! Deployment script is ready for production"
+        print_success "âœ… All tests passed! Deployment script is ready for production"
         print_info ""
         print_info "Deploy with: sudo ./rhel-quick-deploy.sh"
     fi

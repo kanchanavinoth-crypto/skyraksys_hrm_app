@@ -1,25 +1,25 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # Ultimate Deployment Script - Complete Issue Resolution
 # Addresses ALL deployment issues from RHEL production logs
 # Version: 2.0 - Full Error Recovery & PostgreSQL 17 Support
 
-echo "🚀 Ultimate HRM Deployment v2.0 (Complete Fix)"
+echo "ðŸš€ Ultimate HRM Deployment v2.0 (Complete Fix)"
 echo "=============================================="
 echo ""
-echo "🔧 This deployment addresses:"
-echo "   • PostgreSQL 17 service detection"  
-echo "   • Missing dotenv module"
-echo "   • Frontend build failures (react-scripts)"
-echo "   • Database connection issues"
-echo "   • Backend service management"
-echo "   • npm audit vulnerabilities"
+echo "ðŸ”§ This deployment addresses:"
+echo "   â€¢ PostgreSQL 17 service detection"  
+echo "   â€¢ Missing dotenv module"
+echo "   â€¢ Frontend build failures (react-scripts)"
+echo "   â€¢ Database connection issues"
+echo "   â€¢ Backend service management"
+echo "   â€¢ npm audit vulnerabilities"
 echo ""
-echo "🔐 Production Safety:"
-echo "   • Preserves existing .env files"
-echo "   • Backs up configuration files"
-echo "   • Protects database configs"
-echo "   • Maintains PM2 ecosystem settings"
+echo "ðŸ” Production Safety:"
+echo "   â€¢ Preserves existing .env files"
+echo "   â€¢ Backs up configuration files"
+echo "   â€¢ Protects database configs"
+echo "   â€¢ Maintains PM2 ecosystem settings"
 echo ""
 
 # Colors
@@ -31,32 +31,32 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo -e "${BLUE}â„¹ï¸  $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}âœ… $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}âŒ $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}âš ï¸  $1${NC}"
 }
 
 print_status() {
     if [ $1 -eq 0 ]; then
-        echo -e "${GREEN}✅ $2${NC}"
+        echo -e "${GREEN}âœ… $2${NC}"
     else
-        echo -e "${RED}❌ $2${NC}"
+        echo -e "${RED}âŒ $2${NC}"
         DEPLOYMENT_ERRORS=$((DEPLOYMENT_ERRORS + 1))
     fi
 }
 
 print_step() {
-    echo -e "${CYAN}📋 $1${NC}"
+    echo -e "${CYAN}ðŸ“‹ $1${NC}"
 }
 
 # Global variables
@@ -71,7 +71,7 @@ preserve_config_file() {
     local file_desc="$2"
     
     if [ -f "$file_path" ]; then
-        print_status 0 "✅ Preserving existing $file_desc"
+        print_status 0 "âœ… Preserving existing $file_desc"
         # Create timestamped backup
         cp "$file_path" "${file_path}.backup.$(date +%Y%m%d_%H%M%S)"
         return 0
@@ -88,7 +88,7 @@ print_step "Phase 0: Production Safety & Issue Resolution"
 echo "============================================="
 
 # First, preserve all existing production configurations
-print_info "🔐 PRODUCTION SAFETY: Preserving existing configuration files..."
+print_info "ðŸ” PRODUCTION SAFETY: Preserving existing configuration files..."
 
 # Critical production files to preserve
 PRODUCTION_CONFIGS=(
@@ -122,13 +122,13 @@ done
 
 if [ $PRESERVED_COUNT -gt 0 ]; then
     print_status 0 "Protected $PRESERVED_COUNT production configuration files"
-    print_info "📁 Backups created with timestamp suffixes"
+    print_info "ðŸ“ Backups created with timestamp suffixes"
 else
     print_info "No existing production configurations found (fresh installation)"
 fi
 
 # Production Configuration Validation
-print_info "🔍 PRODUCTION VALIDATION: Checking configuration consistency..."
+print_info "ðŸ” PRODUCTION VALIDATION: Checking configuration consistency..."
 if [ -f "validate-production-configs.sh" ]; then
     chmod +x validate-production-configs.sh
     print_info "Running configuration validation against RedHat PROD templates..."
@@ -138,8 +138,8 @@ if [ -f "validate-production-configs.sh" ]; then
         print_status 0 "Configuration validation passed"
     else
         print_warning "Configuration discrepancies detected"
-        print_info "💡 Run './validate-production-configs.sh' manually for detailed analysis"
-        print_info "💡 Use '--force' flag to skip validation in future deployments"
+        print_info "ðŸ’¡ Run './validate-production-configs.sh' manually for detailed analysis"
+        print_info "ðŸ’¡ Use '--force' flag to skip validation in future deployments"
         
         # Check if force flag is provided
         if [[ ! " $* " =~ " --force " ]]; then
@@ -154,13 +154,13 @@ if [ -f "validate-production-configs.sh" ]; then
         fi
     fi
 else
-    print_info "⚠️ Configuration validation script not found - skipping validation"
+    print_info "âš ï¸ Configuration validation script not found - skipping validation"
 fi
 
 echo ""
 
 # Issue 1: PostgreSQL 17 Service Detection (from deployment log)
-print_info "🗄️ Resolving: 'Unit file postgresql.service does not exist'"
+print_info "ðŸ—„ï¸ Resolving: 'Unit file postgresql.service does not exist'"
 POSTGRES_SERVICES=("postgresql-17" "postgresql-16" "postgresql-15" "postgresql-14" "postgresql-13" "postgresql")
 
 for pg_service in "${POSTGRES_SERVICES[@]}"; do
@@ -188,14 +188,14 @@ else
     else
         print_error "PostgreSQL not found or running"
         echo "  Please ensure PostgreSQL is installed and running:"
-        echo "  • For PostgreSQL 17: systemctl start postgresql-17"
-        echo "  • Or check: ps aux | grep postgres"
+        echo "  â€¢ For PostgreSQL 17: systemctl start postgresql-17"
+        echo "  â€¢ Or check: ps aux | grep postgres"
         exit 1
     fi
 fi
 
 # Issue 2: Missing dotenv Module (from deployment log)
-print_info "📦 Resolving: 'Cannot find module dotenv'"
+print_info "ðŸ“¦ Resolving: 'Cannot find module dotenv'"
 cd backend || exit 1
 
 # Install all missing critical dependencies
@@ -213,7 +213,7 @@ print_status $? "Backend critical dependencies resolved"
 cd ..
 
 # Issue 3: Frontend Build Failure (from deployment log)  
-print_info "🎨 Resolving: 'react-scripts: command not found'"
+print_info "ðŸŽ¨ Resolving: 'react-scripts: command not found'"
 cd frontend || exit 1
 
 # Clear problematic cache and dependencies
@@ -236,15 +236,15 @@ print_status $? "Frontend build dependencies resolved"
 cd ..
 
 # Issue 4: Preserve Existing Configuration Files (CRITICAL FOR PRODUCTION)
-print_info "⚙️ Preserving existing production configuration files"
+print_info "âš™ï¸ Preserving existing production configuration files"
 
 # Check and preserve backend .env
 if [ -f "backend/.env" ]; then
-    print_status 0 "✅ Preserving existing backend .env file (production config)"
+    print_status 0 "âœ… Preserving existing backend .env file (production config)"
     
     # Create backup of current .env for safety
     cp backend/.env backend/.env.backup.$(date +%Y%m%d_%H%M%S)
-    print_info "🔐 Created backup of existing .env file"
+    print_info "ðŸ” Created backup of existing .env file"
     
     # Verify .env has required variables
     REQUIRED_VARS=("NODE_ENV" "DB_HOST" "DB_NAME")
@@ -288,7 +288,7 @@ APP_NAME=SkyrakSys HRM
 APP_URL=http://95.216.14.232
 EOF
     print_status 1 "Created .env template - MUST BE CONFIGURED before deployment"
-    echo "  📋 Please:"
+    echo "  ðŸ“‹ Please:"
     echo "     1. mv backend/.env.template backend/.env"
     echo "     2. Edit backend/.env with your production values"
     echo "     3. Run deployment again"
@@ -299,7 +299,7 @@ fi
 CONFIG_FILES=("backend/config/database.js" "backend/config/config.js" "backend/config/database.json")
 for config_file in "${CONFIG_FILES[@]}"; do
     if [ -f "$config_file" ]; then
-        print_status 0 "✅ Preserving existing $config_file"
+        print_status 0 "âœ… Preserving existing $config_file"
         # Create backup
         cp "$config_file" "${config_file}.backup.$(date +%Y%m%d_%H%M%S)"
     fi
@@ -310,7 +310,7 @@ mkdir -p logs
 print_status 0 "Logs directory ensured"
 
 # Issue 5: Database Setup
-print_info "🗄️ Resolving: Database connection issues"
+print_info "ðŸ—„ï¸ Resolving: Database connection issues"
 if [ "$POSTGRES_RUNNING" = true ]; then
     # Create database if it doesn't exist
     sudo -u postgres createdb skyraksys_hrm 2>/dev/null && \
@@ -333,7 +333,7 @@ else
 fi
 
 # Issue 6: Install PM2 for Process Management  
-print_info "🔧 Installing PM2 for reliable process management"
+print_info "ðŸ”§ Installing PM2 for reliable process management"
 if ! command -v pm2 > /dev/null 2>&1; then
     npm install -g pm2 > /dev/null 2>&1
     print_status $? "PM2 installed globally"
@@ -351,7 +351,7 @@ print_step "Phase 1: Code Deployment"
 echo "========================"
 
 if [ -f "redhatprod/scripts/deploy-from-git.sh" ]; then
-    print_info "🔄 Updating code from Git repository..."
+    print_info "ðŸ”„ Updating code from Git repository..."
     bash redhatprod/scripts/deploy-from-git.sh
     
     if [ $? -eq 0 ]; then
@@ -360,7 +360,7 @@ if [ -f "redhatprod/scripts/deploy-from-git.sh" ]; then
         print_warning "Git deployment had issues, continuing with local code"
     fi
 else
-    print_info "🔍 No Git deployment script found, using current code"
+    print_info "ðŸ” No Git deployment script found, using current code"
     print_status 0 "Using local codebase"
 fi
 
@@ -374,17 +374,17 @@ print_step "Phase 2: Production Synchronization"
 echo "==================================="
 
 # Stop any existing processes to avoid conflicts
-print_info "🛑 Stopping existing processes..."
+print_info "ðŸ›‘ Stopping existing processes..."
 pm2 stop all > /dev/null 2>&1
 pkill -f "node.*server.js" > /dev/null 2>&1
 print_status 0 "Existing processes stopped"
 
 # Backend Build & Dependencies
-print_info "🔧 Building backend with error recovery..."
+print_info "ðŸ”§ Building backend with error recovery..."
 cd backend || exit 1
 
 # Handle database migrations with timeout and error recovery
-print_info "📊 Running database migrations (with 60s timeout)..."
+print_info "ðŸ“Š Running database migrations (with 60s timeout)..."
 if [ "$POSTGRES_RUNNING" = true ]; then
     # Try migrations with timeout to prevent hanging
     timeout 60 npx sequelize-cli db:migrate --env production > migration.log 2>&1
@@ -410,7 +410,7 @@ fi
 cd ..
 
 # Frontend Build with Multiple Fallback Strategies
-print_info "🎨 Building frontend with multiple fallback strategies..."
+print_info "ðŸŽ¨ Building frontend with multiple fallback strategies..."
 cd frontend || exit 1
 
 # Strategy 1: Standard build 
@@ -461,12 +461,12 @@ fi
 cd ..
 
 # Backend Service Start with PM2
-print_info "🚀 Starting backend service with PM2..."
+print_info "ðŸš€ Starting backend service with PM2..."
 cd backend || exit 1
 
 # Create/Update PM2 ecosystem file (preserve existing settings)
 if [ -f "ecosystem.config.js" ]; then
-    print_info "✅ Preserving existing PM2 ecosystem.config.js"
+    print_info "âœ… Preserving existing PM2 ecosystem.config.js"
     cp ecosystem.config.js ecosystem.config.js.backup.$(date +%Y%m%d_%H%M%S)
 else
     print_info "Creating new PM2 ecosystem configuration"
@@ -517,7 +517,7 @@ fi
 cd ..
 
 # Web Server Configuration (with config preservation)
-print_info "🌐 Configuring web server (preserving existing configs)..."
+print_info "ðŸŒ Configuring web server (preserving existing configs)..."
 WEB_SERVERS=("nginx" "httpd" "apache2")
 WEB_SERVER_FOUND=false
 
@@ -603,7 +603,7 @@ print_step "Phase 3: Comprehensive Health Verification"
 echo "=========================================="
 
 # 1. PostgreSQL Health Check
-print_info "🗄️ PostgreSQL Health Check..."
+print_info "ðŸ—„ï¸ PostgreSQL Health Check..."
 if [ -n "$POSTGRES_SERVICE" ]; then
     if systemctl is-active --quiet "$POSTGRES_SERVICE"; then
         print_status 0 "PostgreSQL service ($POSTGRES_SERVICE) running"
@@ -634,7 +634,7 @@ else
 fi
 
 # 2. Backend Health Check
-print_info "🔧 Backend Service Health Check..."
+print_info "ðŸ”§ Backend Service Health Check..."
 BACKEND_RUNNING=false
 BACKEND_PORT=""
 
@@ -684,7 +684,7 @@ if [ "$BACKEND_RUNNING" = true ]; then
 fi
 
 # 3. Frontend Build Verification
-print_info "🎨 Frontend Build Verification..."
+print_info "ðŸŽ¨ Frontend Build Verification..."
 if [ -d "frontend/build" ]; then
     if [ -f "frontend/build/index.html" ]; then
         BUILD_SIZE=$(du -sh frontend/build 2>/dev/null | cut -f1)
@@ -695,9 +695,9 @@ if [ -d "frontend/build" ]; then
         CRITICAL_FILES=("static/js" "static/css" "manifest.json")
         for file in "${CRITICAL_FILES[@]}"; do
             if [ -e "frontend/build/$file" ]; then
-                echo "  ✅ $file found"
+                echo "  âœ… $file found"
             else
-                echo "  ⚠️  $file missing"
+                echo "  âš ï¸  $file missing"
             fi
         done
     else
@@ -708,24 +708,24 @@ else
 fi
 
 # 4. System Resource Check
-print_info "💻 System Resource Check..."
+print_info "ðŸ’» System Resource Check..."
 if command -v free > /dev/null 2>&1; then
     MEMORY=$(free -h | grep "^Mem:" | awk '{print $2 " total, " $3 " used, " $7 " available"}')
-    echo "  💾 Memory: $MEMORY"
+    echo "  ðŸ’¾ Memory: $MEMORY"
 fi
 
 if command -v df > /dev/null 2>&1; then
     DISK=$(df -h . | tail -1 | awk '{print $2 " total, " $3 " used, " $4 " available (" $5 " used)"}')
-    echo "  💿 Disk: $DISK"
+    echo "  ðŸ’¿ Disk: $DISK"
 fi
 
 # 5. Process Check
-print_info "🔍 Process Status Summary..."
-echo "  🔧 Node.js processes: $(pgrep -fc "node")"
-echo "  🗄️ PostgreSQL processes: $(pgrep -fc "postgres")"
+print_info "ðŸ” Process Status Summary..."
+echo "  ðŸ”§ Node.js processes: $(pgrep -fc "node")"
+echo "  ðŸ—„ï¸ PostgreSQL processes: $(pgrep -fc "postgres")"
 if command -v pm2 > /dev/null 2>&1; then
     PM2_COUNT=$(pm2 list 2>/dev/null | grep -c "online" || echo "0")
-    echo "  ⚡ PM2 managed processes: $PM2_COUNT"
+    echo "  âš¡ PM2 managed processes: $PM2_COUNT"
 fi
 
 echo ""
@@ -738,37 +738,37 @@ END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
 echo ""
-print_step "🎉 Ultimate Deployment v2.0 Complete!"
+print_step "ðŸŽ‰ Ultimate Deployment v2.0 Complete!"
 echo "======================================"
 echo ""
-echo "⏱️  Total deployment time: ${DURATION} seconds"
-echo "❌ Errors encountered: $DEPLOYMENT_ERRORS"
+echo "â±ï¸  Total deployment time: ${DURATION} seconds"
+echo "âŒ Errors encountered: $DEPLOYMENT_ERRORS"
 echo ""
 
 # Deployment Summary
-echo -e "${CYAN}📋 What This Deployment Accomplished:${NC}"
-echo "  ✅ PRESERVED existing production configuration files"
-echo "  ✅ Created timestamped backups of all configs"
-echo "  ✅ Fixed PostgreSQL 17 service detection"
-echo "  ✅ Resolved 'Cannot find module dotenv' error"
-echo "  ✅ Fixed 'react-scripts: command not found' issue"
-echo "  ✅ Implemented robust frontend build with 4 fallback strategies"
-echo "  ✅ Enhanced backend process management with PM2"
-echo "  ✅ Database connectivity and migration handling"
-echo "  ✅ Comprehensive health verification"
-echo "  ✅ Error recovery and logging"
+echo -e "${CYAN}ðŸ“‹ What This Deployment Accomplished:${NC}"
+echo "  âœ… PRESERVED existing production configuration files"
+echo "  âœ… Created timestamped backups of all configs"
+echo "  âœ… Fixed PostgreSQL 17 service detection"
+echo "  âœ… Resolved 'Cannot find module dotenv' error"
+echo "  âœ… Fixed 'react-scripts: command not found' issue"
+echo "  âœ… Implemented robust frontend build with 4 fallback strategies"
+echo "  âœ… Enhanced backend process management with PM2"
+echo "  âœ… Database connectivity and migration handling"
+echo "  âœ… Comprehensive health verification"
+echo "  âœ… Error recovery and logging"
 echo ""
 
-echo -e "${CYAN}🔐 Configuration Safety:${NC}"
-echo "  ✅ Existing .env files preserved (not overwritten)"
-echo "  ✅ Database configurations maintained"
-echo "  ✅ Web server configs backed up before changes"
-echo "  ✅ PM2 ecosystem settings preserved"
-echo "  ✅ All backups timestamped for easy restoration"
+echo -e "${CYAN}ðŸ” Configuration Safety:${NC}"
+echo "  âœ… Existing .env files preserved (not overwritten)"
+echo "  âœ… Database configurations maintained"
+echo "  âœ… Web server configs backed up before changes"
+echo "  âœ… PM2 ecosystem settings preserved"
+echo "  âœ… All backups timestamped for easy restoration"
 echo ""
 
 # Final System Status
-echo -e "${CYAN}📊 Final System Status:${NC}"
+echo -e "${CYAN}ðŸ“Š Final System Status:${NC}"
 echo "====================="
 
 # PostgreSQL Status
@@ -784,23 +784,23 @@ elif pgrep -f "postgres.*-D" > /dev/null; then
 else
     PG_STATUS="not found"
 fi
-echo "🗄️  PostgreSQL: $PG_STATUS"
+echo "ðŸ—„ï¸  PostgreSQL: $PG_STATUS"
 
 # Backend Status  
 if pm2 list 2>/dev/null | grep -q "skyraksys-hrm-backend.*online"; then
-    echo "🔧 Backend: running (PM2 managed)"
+    echo "ðŸ”§ Backend: running (PM2 managed)"
 elif pgrep -f "node.*server.js" > /dev/null; then
-    echo "🔧 Backend: running (manual)"
+    echo "ðŸ”§ Backend: running (manual)"
 else
-    echo "🔧 Backend: not running"
+    echo "ðŸ”§ Backend: not running"
 fi
 
 # Frontend Status
 if [ -f "frontend/build/index.html" ]; then
     BUILD_SIZE=$(du -sh frontend/build 2>/dev/null | cut -f1 || echo "unknown")
-    echo "🎨 Frontend: built successfully ($BUILD_SIZE)"
+    echo "ðŸŽ¨ Frontend: built successfully ($BUILD_SIZE)"
 else
-    echo "🎨 Frontend: build missing"
+    echo "ðŸŽ¨ Frontend: build missing"
 fi
 
 # API Status  
@@ -812,7 +812,7 @@ elif curl -s --connect-timeout 3 http://localhost:3001/api/health > /dev/null 2>
 elif curl -s --connect-timeout 3 http://localhost:5000 > /dev/null 2>&1; then
     API_STATUS="responding on port 5000"
 fi
-echo "📡 API: $API_STATUS"
+echo "ðŸ“¡ API: $API_STATUS"
 
 echo ""
 
@@ -823,44 +823,44 @@ SUCCESS_CONDITIONS=0
 pgrep -f "node.*server.js" > /dev/null && SUCCESS_CONDITIONS=$((SUCCESS_CONDITIONS + 1))
 
 if [ $SUCCESS_CONDITIONS -ge 2 ] && [ $DEPLOYMENT_ERRORS -lt 3 ]; then
-    print_success "🚀 DEPLOYMENT SUCCESSFUL!"
+    print_success "ðŸš€ DEPLOYMENT SUCCESSFUL!"
     echo -e "${GREEN}Your Skyraksys HRM system is ready for production use.${NC}"
     
     # Show access information
     echo ""
-    echo -e "${CYAN}🌐 Access Your Application:${NC}"
+    echo -e "${CYAN}ðŸŒ Access Your Application:${NC}"
     if [ -n "$BACKEND_PORT" ]; then
-        echo "• Application: http://your-server:$BACKEND_PORT"
-        echo "• API Health: http://your-server:$BACKEND_PORT/api/health"
+        echo "â€¢ Application: http://your-server:$BACKEND_PORT"
+        echo "â€¢ API Health: http://your-server:$BACKEND_PORT/api/health"
     else
-        echo "• Application: http://your-server:3001 (default)"
-        echo "• API Health: http://your-server:3001/api/health"
+        echo "â€¢ Application: http://your-server:3001 (default)"
+        echo "â€¢ API Health: http://your-server:3001/api/health"
     fi
 elif [ $SUCCESS_CONDITIONS -ge 1 ]; then
-    print_warning "⚠️  DEPLOYMENT PARTIALLY SUCCESSFUL"
+    print_warning "âš ï¸  DEPLOYMENT PARTIALLY SUCCESSFUL"
     echo -e "${YELLOW}Some components are working, but manual intervention may be needed.${NC}"
 else
-    print_error "❌ DEPLOYMENT FAILED"
+    print_error "âŒ DEPLOYMENT FAILED"
     echo -e "${RED}Critical components failed to start. Please check the logs above.${NC}"
 fi
 
 echo ""
-echo -e "${CYAN}📋 Management Commands:${NC}"
+echo -e "${CYAN}ðŸ“‹ Management Commands:${NC}"
 echo "======================"
-echo "• View backend logs:     tail -f logs/backend-combined.log"
-echo "• Check PM2 status:      pm2 status"
-echo "• Restart backend:       pm2 restart skyraksys-hrm-backend"
-echo "• Check processes:       ps aux | grep node"
-echo "• Test database:         sudo -u postgres psql -d skyraksys_hrm"
-echo "• PostgreSQL status:     systemctl status $POSTGRES_SERVICE"
+echo "â€¢ View backend logs:     tail -f logs/backend-combined.log"
+echo "â€¢ Check PM2 status:      pm2 status"
+echo "â€¢ Restart backend:       pm2 restart skyraksys-hrm-backend"
+echo "â€¢ Check processes:       ps aux | grep node"
+echo "â€¢ Test database:         sudo -u postgres psql -d skyraksys_hrm"
+echo "â€¢ PostgreSQL status:     systemctl status $POSTGRES_SERVICE"
 echo ""
 
-echo -e "${CYAN}🔧 Troubleshooting:${NC}"
+echo -e "${CYAN}ðŸ”§ Troubleshooting:${NC}"
 echo "=================="
-echo "• If backend fails to start: Check logs/backend-error.log"
-echo "• If database connection fails: Verify PostgreSQL is running"
-echo "• If frontend doesn't load: Check if build directory exists"
-echo "• For API issues: Test with curl http://localhost:3001/api/health"
+echo "â€¢ If backend fails to start: Check logs/backend-error.log"
+echo "â€¢ If database connection fails: Verify PostgreSQL is running"
+echo "â€¢ If frontend doesn't load: Check if build directory exists"
+echo "â€¢ For API issues: Test with curl http://localhost:3001/api/health"
 echo ""
 
-print_success "✨ Ultimate Deployment v2.0 with Complete Issue Resolution - FINISHED!"
+print_success "âœ¨ Ultimate Deployment v2.0 with Complete Issue Resolution - FINISHED!"

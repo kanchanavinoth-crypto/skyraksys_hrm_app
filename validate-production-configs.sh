@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # =============================================================================
 # SkyrakSys HRM Production Configuration Validator v2.0
@@ -21,23 +21,23 @@ print_header() {
 }
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo -e "${BLUE}â„¹ï¸  $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}âœ… $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}âš ï¸  $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}âŒ $1${NC}"
 }
 
 print_config() {
-    echo -e "${PURPLE}🔧 $1${NC}"
+    echo -e "${PURPLE}ðŸ”§ $1${NC}"
 }
 
 # Global variables
@@ -197,7 +197,7 @@ validate_config_file() {
 generate_override_script() {
     local override_script="override-production-configs.sh"
     
-    print_header "🔄 Generating Configuration Override Script"
+    print_header "ðŸ”„ Generating Configuration Override Script"
     
     cat > "$override_script" << 'EOF'
 #!/bin/bash
@@ -213,15 +213,15 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo -e "${BLUE}â„¹ï¸  $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}âœ… $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}âš ï¸  $1${NC}"
 }
 
 override_config() {
@@ -252,7 +252,7 @@ override_config() {
     fi
 }
 
-echo "🔄 Production Configuration Override"
+echo "ðŸ”„ Production Configuration Override"
 echo "=================================="
 echo ""
 print_warning "This will override production configurations with template versions"
@@ -296,7 +296,7 @@ EOF
 }
 
 show_detailed_differences() {
-    print_header "📊 Detailed Configuration Analysis"
+    print_header "ðŸ“Š Detailed Configuration Analysis"
     
     for config_name in "${!VALIDATION_RESULTS[@]}"; do
         local status="${VALIDATION_RESULTS[$config_name]}"
@@ -328,7 +328,7 @@ main() {
     fi
     
     if [ "$QUIET_MODE" = false ]; then
-        print_header "🔍 SkyrakSys HRM Production Configuration Validator"
+        print_header "ðŸ” SkyrakSys HRM Production Configuration Validator"
         print_info "Comparing production server configs with repository templates"
         echo ""
     fi
@@ -354,12 +354,12 @@ main() {
     echo ""
     
     # Summary
-    print_header "📋 Validation Summary"
+    print_header "ðŸ“‹ Validation Summary"
     echo ""
     print_info "Configurations checked: $CONFIGS_CHECKED"
     
     if [ $DISCREPANCIES_FOUND -eq 0 ]; then
-        print_success "All configurations are consistent! ✨"
+        print_success "All configurations are consistent! âœ¨"
         print_info "Your production server matches the repository templates"
     else
         print_warning "Found $DISCREPANCIES_FOUND configuration discrepancies"
@@ -369,7 +369,7 @@ main() {
     echo ""
     
     # Show results summary
-    print_header "🎯 Configuration Status"
+    print_header "ðŸŽ¯ Configuration Status"
     for config_name in "${!VALIDATION_RESULTS[@]}"; do
         local status="${VALIDATION_RESULTS[$config_name]}"
         case "$status" in
@@ -394,7 +394,7 @@ main() {
         show_detailed_differences
         
         echo ""
-        print_header "🔄 Override Options"
+        print_header "ðŸ”„ Override Options"
         print_info "You can override production configs with repository templates"
         print_warning "This will replace production files with template versions"
         print_info "All existing files will be backed up before replacement"
@@ -420,14 +420,14 @@ main() {
     fi
     
     echo ""
-    print_header "✨ Validation Complete"
+    print_header "âœ¨ Validation Complete"
     
     if [ $DISCREPANCIES_FOUND -eq 0 ]; then
-        print_success "🎉 All systems consistent - Ready for deployment!"
+        print_success "ðŸŽ‰ All systems consistent - Ready for deployment!"
     else
-        print_warning "⚠️  Review discrepancies before deployment"
+        print_warning "âš ï¸  Review discrepancies before deployment"
         if [ "$OVERRIDE_AVAILABLE" = true ]; then
-            print_info "💡 Use ./override-production-configs.sh to align configurations"
+            print_info "ðŸ’¡ Use ./override-production-configs.sh to align configurations"
         fi
     fi
 }

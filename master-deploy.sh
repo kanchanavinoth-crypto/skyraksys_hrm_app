@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # =============================================================================
 # SkyrakSys HRM Complete Production Setup & Deployment Script v2.0
@@ -38,23 +38,23 @@ print_header() {
 }
 
 print_step() {
-    echo -e "${BLUE}🔹 $1${NC}"
+    echo -e "${BLUE}ðŸ”¹ $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}âœ… $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}âš ï¸  $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}âŒ $1${NC}"
 }
 
 print_info() {
-    echo -e "${PURPLE}ℹ️  $1${NC}"
+    echo -e "${PURPLE}â„¹ï¸  $1${NC}"
 }
 
 # Global variables
@@ -114,8 +114,8 @@ check_existing_environment() {
     # Summary
     echo ""
     print_info "Environment Status Summary:"
-    print_info "• Environment files: $env_files_found/2 found"
-    print_info "• System configs: $configs_found found"
+    print_info "â€¢ Environment files: $env_files_found/2 found"
+    print_info "â€¢ System configs: $configs_found found"
     
     if [ $env_files_found -ge 1 ]; then
         ENV_EXISTS=true
@@ -686,17 +686,17 @@ verify_deployment() {
     echo ""
     
     if [ "$DEPLOYMENT_READY" = true ]; then
-        print_success "🎉 SkyrakSys HRM deployment completed successfully!"
+        print_success "ðŸŽ‰ SkyrakSys HRM deployment completed successfully!"
         echo ""
         print_info "Access your application:"
-        print_info "• Frontend: http://$PROD_SERVER_IP"  
-        print_info "• Backend API: http://$PROD_SERVER_IP/api"
-        print_info "• Health Check: http://$PROD_SERVER_IP/api/health"
+        print_info "â€¢ Frontend: http://$PROD_SERVER_IP"  
+        print_info "â€¢ Backend API: http://$PROD_SERVER_IP/api"
+        print_info "â€¢ Health Check: http://$PROD_SERVER_IP/api/health"
         echo ""
         print_info "System Management:"
-        print_info "• PM2 Status: pm2 status"
-        print_info "• PM2 Logs: pm2 logs"
-        print_info "• System Logs: tail -f logs/*.log"
+        print_info "â€¢ PM2 Status: pm2 status"
+        print_info "â€¢ PM2 Logs: pm2 logs"
+        print_info "â€¢ System Logs: tail -f logs/*.log"
     else
         print_error "Deployment completed with errors - please review and fix issues"
     fi
@@ -712,11 +712,11 @@ main() {
     print_header "SkyrakSys HRM Complete Production Setup & Deployment v2.0"
     
     echo -e "${CYAN}This script will:${NC}"
-    echo "1. 🔍 Review your existing production environment"
-    echo "2. ⚙️  Setup missing configurations automatically" 
-    echo "3. ✅ Validate all configurations"
-    echo "4. 🚀 Deploy the complete application"
-    echo "5. 🔍 Verify deployment success"
+    echo "1. ðŸ” Review your existing production environment"
+    echo "2. âš™ï¸  Setup missing configurations automatically" 
+    echo "3. âœ… Validate all configurations"
+    echo "4. ðŸš€ Deploy the complete application"
+    echo "5. ðŸ” Verify deployment success"
     echo ""
     echo -e "${YELLOW}Your production server: $PROD_SERVER_IP${NC}"
     echo -e "${YELLOW}Database: $PROD_DB_NAME${NC}"
@@ -745,12 +745,12 @@ main() {
     fi
     
     echo ""
-    print_header "🎯 Deployment Complete!"
+    print_header "ðŸŽ¯ Deployment Complete!"
     
     if [ "$DEPLOYMENT_READY" = true ]; then
-        echo -e "${GREEN}✨ Your SkyrakSys HRM system is ready for production use!${NC}"
+        echo -e "${GREEN}âœ¨ Your SkyrakSys HRM system is ready for production use!${NC}"
     else
-        echo -e "${YELLOW}⚠️  Please review any errors above and re-run if needed${NC}"
+        echo -e "${YELLOW}âš ï¸  Please review any errors above and re-run if needed${NC}"
     fi
 }
 

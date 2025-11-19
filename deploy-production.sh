@@ -1,9 +1,9 @@
-#!/bin/bash
+﻿#!/bin/bash
 
 # Final Deployment Script - Execute with Enhanced Configuration Protection
 # This script will run the ultimate-deploy.sh with all safety measures
 
-echo "🚀 SkyrakSys HRM Production Deployment"
+echo "ðŸš€ SkyrakSys HRM Production Deployment"
 echo "======================================"
 echo ""
 
@@ -16,24 +16,24 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 print_header() {
-    echo -e "${CYAN}🎯 $1${NC}"
+    echo -e "${CYAN}ðŸŽ¯ $1${NC}"
     echo "$(printf '=%.0s' {1..50})"
 }
 
 print_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo -e "${BLUE}â„¹ï¸  $1${NC}"
 }
 
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}âœ… $1${NC}"
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}âš ï¸  $1${NC}"
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}âŒ $1${NC}"
 }
 
 # Pre-deployment checks
@@ -70,9 +70,9 @@ if [ -f "validate-production-configs.sh" ]; then
     chmod +x validate-production-configs.sh
     
     if ./validate-production-configs.sh --quiet; then
-        print_success "✅ Configuration validation passed - all configs are consistent"
+        print_success "âœ… Configuration validation passed - all configs are consistent"
     else
-        print_warning "⚠️ Configuration discrepancies detected with RedHat PROD templates"
+        print_warning "âš ï¸ Configuration discrepancies detected with RedHat PROD templates"
         print_info "This may indicate configuration drift or missing updates"
         echo ""
         print_info "Options:"
@@ -95,33 +95,33 @@ fi
 
 print_header "Deployment Execution Plan"
 
-echo -e "${BLUE}📋 What will happen during deployment:${NC}"
+echo -e "${BLUE}ðŸ“‹ What will happen during deployment:${NC}"
 echo ""
-echo "1. 🔐 CONFIGURATION PRESERVATION:"
-echo "   • All existing .env files will be backed up"
-echo "   • Database configurations will be preserved"
-echo "   • Web server configs (nginx/apache) will be kept"
-echo "   • SSL certificates will be protected"
-echo "   • PM2 ecosystem settings will be maintained"
+echo "1. ðŸ” CONFIGURATION PRESERVATION:"
+echo "   â€¢ All existing .env files will be backed up"
+echo "   â€¢ Database configurations will be preserved"
+echo "   â€¢ Web server configs (nginx/apache) will be kept"
+echo "   â€¢ SSL certificates will be protected"
+echo "   â€¢ PM2 ecosystem settings will be maintained"
 echo ""
-echo "2. 🔄 CODE DEPLOYMENT:"
-echo "   • Latest code will be pulled from Git repository"
-echo "   • Dependencies will be updated (backend & frontend)"
-echo "   • Database migrations will be applied safely"
-echo "   • Frontend will be built with multiple fallback strategies"
+echo "2. ðŸ”„ CODE DEPLOYMENT:"
+echo "   â€¢ Latest code will be pulled from Git repository"
+echo "   â€¢ Dependencies will be updated (backend & frontend)"
+echo "   â€¢ Database migrations will be applied safely"
+echo "   â€¢ Frontend will be built with multiple fallback strategies"
 echo ""
-echo "3. 🚀 SERVICE MANAGEMENT:"
-echo "   • PostgreSQL service will be detected and started"
-echo "   • PM2 processes will be restarted with preserved configs"
-echo "   • Web server will be reloaded with existing configurations"
-echo "   • Health checks will verify all services are running"
+echo "3. ðŸš€ SERVICE MANAGEMENT:"
+echo "   â€¢ PostgreSQL service will be detected and started"
+echo "   â€¢ PM2 processes will be restarted with preserved configs"
+echo "   â€¢ Web server will be reloaded with existing configurations"
+echo "   â€¢ Health checks will verify all services are running"
 echo ""
 
 print_warning "IMPORTANT SAFETY MEASURES:"
-echo "• No existing configuration files will be overwritten"
-echo "• All configs are backed up with timestamps before any changes"
-echo "• Database schema changes are applied incrementally"
-echo "• Rollback capabilities are maintained throughout"
+echo "â€¢ No existing configuration files will be overwritten"
+echo "â€¢ All configs are backed up with timestamps before any changes"
+echo "â€¢ Database schema changes are applied incrementally"
+echo "â€¢ Rollback capabilities are maintained throughout"
 
 echo ""
 print_info "Press ENTER to start the deployment, or Ctrl+C to abort"
@@ -133,7 +133,7 @@ print_header "Starting Enhanced Deployment"
 chmod +x ultimate-deploy.sh
 
 # Execute the deployment with proper logging
-echo -e "${CYAN}🎬 Executing ultimate-deploy.sh...${NC}"
+echo -e "${CYAN}ðŸŽ¬ Executing ultimate-deploy.sh...${NC}"
 echo ""
 
 # Create logs directory if it doesn't exist
@@ -153,18 +153,18 @@ if ./ultimate-deploy.sh 2>&1 | tee "$LOG_FILE"; then
     print_header "Post-Deployment Summary"
     
     # Show final status
-    echo -e "${BLUE}📊 Final System Status:${NC}"
+    echo -e "${BLUE}ðŸ“Š Final System Status:${NC}"
     
     # Check PM2 status
     if command -v pm2 > /dev/null 2>&1; then
         echo ""
-        echo -e "${CYAN}📱 PM2 Processes:${NC}"
+        echo -e "${CYAN}ðŸ“± PM2 Processes:${NC}"
         pm2 list
     fi
     
     # Check web server status
     echo ""
-    echo -e "${CYAN}🌐 Web Server Status:${NC}"
+    echo -e "${CYAN}ðŸŒ Web Server Status:${NC}"
     if systemctl is-active nginx >/dev/null 2>&1; then
         print_success "Nginx is running"
     elif systemctl is-active httpd >/dev/null 2>&1; then
@@ -177,7 +177,7 @@ if ./ultimate-deploy.sh 2>&1 | tee "$LOG_FILE"; then
     
     # Check PostgreSQL status
     echo ""
-    echo -e "${CYAN}🗄️ Database Status:${NC}"
+    echo -e "${CYAN}ðŸ—„ï¸ Database Status:${NC}"
     for pg_service in postgresql-17 postgresql-16 postgresql-15 postgresql; do
         if systemctl is-active "$pg_service" >/dev/null 2>&1; then
             print_success "PostgreSQL ($pg_service) is running"
@@ -193,7 +193,7 @@ if ./ultimate-deploy.sh 2>&1 | tee "$LOG_FILE"; then
     print_info "4. Check application logs for any issues"
     
     echo ""
-    print_success "🎉 Deployment completed successfully with all configurations preserved!"
+    print_success "ðŸŽ‰ Deployment completed successfully with all configurations preserved!"
     
 else
     echo ""
