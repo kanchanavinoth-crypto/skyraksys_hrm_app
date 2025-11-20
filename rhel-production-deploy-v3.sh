@@ -182,9 +182,32 @@ setup_rhel_environment() {
     print_info "Installing EPEL repository..."
     dnf install -y epel-release >> "$LOGFILE" 2>&1 || error_exit "EPEL installation failed"
     
-    # Install essential packages
+    # Install essential packages (excluding PostgreSQL for now)
+    local essential_packages=(
+        "dnf-plugins-core"
+        "curl"
+        "wget"
+        "git"
+        "nginx"
+        "openssl"
+        "firewalld"
+    )
+    
     print_info "Installing essential RHEL packages..."
-    dnf install -y "${RHEL_PACKAGES[@]}" >> "$LOGFILE" 2>&1 || error_exit "Package installation failed"
+    dnf install -y "${essential_packages[@]}" >> "$LOGFILE" 2>&1 || error_exit "Essential package installation failed"
+    
+    # Install PostgreSQL with version detection
+    print_info "Installing PostgreSQL with proper version handling..."
+    if dnf install -y postgresql postgresql-server postgresql-contrib >> "$LOGFILE" 2>&1; then
+        print_success "PostgreSQL packages installed successfully"
+    else
+        print_warning "Standard PostgreSQL installation failed, trying specific versions..."
+        # Try PostgreSQL 15 or 16 which are common on RHEL 9
+        dnf install -y postgresql15 postgresql15-server postgresql15-contrib >> "$LOGFILE" 2>&1 || \
+        dnf install -y postgresql16 postgresql16-server postgresql16-contrib >> "$LOGFILE" 2>&1 || \
+        error_exit "All PostgreSQL installation attempts failed"
+        print_success "PostgreSQL packages installed with version-specific package"
+    fi
     
     # Configure SELinux for production
     print_info "Configuring SELinux for web applications..."
@@ -242,21 +265,95 @@ install_nodejs() {
 setup_postgresql() {
     print_step "Setting up PostgreSQL database for production"
     
+    # Check PostgreSQL installation and version
+    print_info "Checking PostgreSQL installation..."
+    if command -v postgresql-setup >/dev/null 2>&1; then
+        print_success "PostgreSQL setup utility found"
+    else
+        print_warning "postgresql-setup not found, trying alternative methods"
+    fi
+    
     # Initialize PostgreSQL if not already done
     print_info "Initializing PostgreSQL..."
     if [[ ! -f /var/lib/pgsql/data/postgresql.conf ]]; then
-        postgresql-setup --initdb >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL initialization failed"
+        # Try different initialization methods
+        if postgresql-setup --initdb >> "$LOGFILE" 2>&1; then
+            print_success "PostgreSQL initialized successfully"
+        elif postgresql-setup initdb >> "$LOGFILE" 2>&1; then
+            print_success "PostgreSQL initialized with alternative method"
+        else
+            print_warning "Standard initialization failed, trying manual initialization"
+            sudo -u postgres /usr/bin/initdb -D /var/lib/pgsql/data >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL initialization failed"
+            print_success "PostgreSQL manually initialized"
+        fi
     else
         print_info "PostgreSQL already initialized"
     fi
     
-    # Start and enable PostgreSQL
-    print_info "Starting PostgreSQL service..."
-    systemctl start postgresql >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL start failed"
+    # Fix permissions before starting
+    print_info "Setting proper PostgreSQL permissions..."
+    chown -R postgres:postgres /var/lib/pgsql/ >> "$LOGFILE" 2>&1 || error_exit "Failed to set PostgreSQL permissions"
+    chmod 700 /var/lib/pgsql/data >> "$LOGFILE" 2>&1 || error_exit "Failed to set PostgreSQL data directory permissions"
+    
+    # Clear any stale lock files
+    print_info "Clearing any stale PostgreSQL lock files..."
+    rm -f /var/lib/pgsql/data/postmaster.pid >> "$LOGFILE" 2>&1 || true
+    rm -f /tmp/.s.PGSQL.5432* >> "$LOGFILE" 2>&1 || true
+    
+    # Check for port conflicts
+    print_info "Checking for PostgreSQL port conflicts..."
+    if netstat -tlnp | grep :5432 >/dev/null 2>&1; then
+        print_warning "Port 5432 is in use, attempting to stop conflicting processes"
+        pkill -f postgres >> "$LOGFILE" 2>&1 || true
+        sleep 3
+    fi
+    
+    # Enable PostgreSQL first
+    print_info "Enabling PostgreSQL service..."
     systemctl enable postgresql >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL enable failed"
     
-    # Configure PostgreSQL for production
+    # Start PostgreSQL with better error handling
+    print_info "Starting PostgreSQL service..."
+    if systemctl start postgresql >> "$LOGFILE" 2>&1; then
+        print_success "PostgreSQL started successfully"
+    else
+        print_warning "Standard PostgreSQL start failed, checking service status..."
+        systemctl status postgresql >> "$LOGFILE" 2>&1 || true
+        journalctl -u postgresql --no-pager -n 20 >> "$LOGFILE" 2>&1 || true
+        
+        print_info "Attempting alternative PostgreSQL start method..."
+        if sudo -u postgres /usr/bin/pg_ctl -D /var/lib/pgsql/data -l /var/lib/pgsql/data/log/postgresql.log start >> "$LOGFILE" 2>&1; then
+            print_success "PostgreSQL started using alternative method"
+            sleep 3
+        else
+            print_error "All PostgreSQL startup methods failed"
+            print_error "Check the deployment log for details: $LOGFILE"
+            error_exit "PostgreSQL start failed - manual intervention required"
+        fi
+    fi
+    
+    # Verify PostgreSQL is actually running
+    print_info "Verifying PostgreSQL is running..."
+    sleep 2
+    if pgrep postgres >/dev/null 2>&1; then
+        print_success "PostgreSQL process verified running"
+    else
+        error_exit "PostgreSQL startup verification failed - no postgres processes found"
+    fi
+    
+    # Configure PostgreSQL for production (only after service is running)
     print_info "Configuring PostgreSQL for production..."
+    
+    # Test basic connection first
+    print_info "Testing basic PostgreSQL connection..."
+    if sudo -u postgres psql -c "SELECT version();" >> "$LOGFILE" 2>&1; then
+        print_success "PostgreSQL connection test successful"
+    else
+        print_warning "PostgreSQL connection test failed, waiting and retrying..."
+        sleep 5
+        sudo -u postgres psql -c "SELECT version();" >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL connection still failing after retry"
+        print_success "PostgreSQL connection successful on retry"
+    fi
     
     # Update postgresql.conf for production
     local pg_conf="/var/lib/pgsql/data/postgresql.conf"
@@ -287,6 +384,7 @@ EOF
     echo "host    $PROD_DB_NAME    $PROD_DB_USER    127.0.0.1/32    md5" >> "$pg_hba"
     
     # Restart PostgreSQL with new configuration
+    print_info "Restarting PostgreSQL with new configuration..."
     systemctl restart postgresql >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL restart failed"
     
     # Create database and user
