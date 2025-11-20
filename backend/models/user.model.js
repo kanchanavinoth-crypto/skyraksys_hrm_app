@@ -55,6 +55,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    loginAttempts: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false
+    },
+    lockUntil: {
+      type: DataTypes.DATE,
+      allowNull: true
+    },
     lastLoginAt: {
       type: DataTypes.DATE
     },

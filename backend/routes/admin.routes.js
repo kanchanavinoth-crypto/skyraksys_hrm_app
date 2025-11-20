@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { authenticateToken, authorize } = require('../middleware/auth.middleware');
+const { authenticateToken, authorize } = require('../middleware/auth.simple');
 
 // Path to store email configuration
 const CONFIG_FILE = path.join(__dirname, '../config/email.config.json');

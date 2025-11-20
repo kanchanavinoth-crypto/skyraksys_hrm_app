@@ -94,13 +94,62 @@ router.post('/login', validate(validators.loginSchema), async (req, res, next) =
       include: { model: Employee, as: 'employee', attributes: ['id'] },
     });
 
+    // Security Check 1: Account manually locked by admin
+    if (user?.isLocked) {
+      console.log(`🔒 Login attempt on locked account: ${email}`);
+      return res.status(423).json({
+        success: false,
+        message: 'Account is locked. Please contact your administrator.',
+        code: 'ACCOUNT_LOCKED'
+      });
+    }
+
+    // Security Check 2: Temporary lockout from failed attempts
+    if (user?.lockUntil && new Date() < user.lockUntil) {
+      const remainingTime = Math.ceil((user.lockUntil - new Date()) / (1000 * 60));
+      console.log(`⏰ Login attempt on temporarily locked account: ${email} (${remainingTime}m remaining)`);
+      return res.status(423).json({
+        success: false,
+        message: `Account temporarily locked. Please try again in ${remainingTime} minute(s).`,
+        code: 'ACCOUNT_TEMP_LOCKED'
+      });
+    }
+
+    // Validate credentials
     if (!user || !(await bcrypt.compare(password, user.password))) {
+      // Track failed login attempts
+      if (user) {
+        const attempts = (user.loginAttempts || 0) + 1;
+        const maxAttempts = 5; // Conservative: 5 failed attempts
+        const lockDuration = 15; // Conservative: 15 minutes lockout
+        
+        console.log(`❌ Failed login attempt ${attempts}/${maxAttempts} for: ${email}`);
+        
+        const updateData = { loginAttempts: attempts };
+        
+        // Apply temporary lockout after max attempts
+        if (attempts >= maxAttempts) {
+          updateData.lockUntil = new Date(Date.now() + lockDuration * 60 * 1000);
+          console.log(`🚫 Account temporarily locked due to ${attempts} failed attempts: ${email}`);
+        }
+        
+        await user.update(updateData);
+      }
+      
       throw new UnauthorizedError('Invalid credentials');
     }
 
     const accessToken = generateAccessToken(user);
 
-    await user.update({ lastLoginAt: new Date() });
+    // Reset security counters on successful login
+    const securityResetData = { lastLoginAt: new Date() };
+    if (user.loginAttempts > 0 || user.lockUntil) {
+      securityResetData.loginAttempts = 0;
+      securityResetData.lockUntil = null;
+      console.log(`✅ Security counters reset for successful login: ${email}`);
+    }
+    
+    await user.update(securityResetData);
 
     // Set httpOnly cookie for security (protects against XSS)
     const isProduction = process.env.NODE_ENV === 'production';
