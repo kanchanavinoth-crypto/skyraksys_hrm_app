@@ -237,18 +237,26 @@ const ModernWeeklyTimesheet = () => {
       const weekNumber = currentWeek.isoWeek();
       const year = currentWeek.year();
       
-      console.log('Loading timesheet for week:', { 
-        weekStart, 
-        weekEnd, 
-        weekNumber, 
-        year,
-        currentWeek: currentWeek.format('YYYY-MM-DD')
-      });
+      console.log('🚀 LOADING TIMESHEET FOR WEEK:');
+      console.log('   Week Start:', weekStart);
+      console.log('   Week End:', weekEnd); 
+      console.log('   Week Number:', weekNumber);
+      console.log('   Year:', year);
+      console.log('   Current Week (formatted):', currentWeek.format('YYYY-MM-DD'));
+      console.log('   User Employee ID:', user?.employee?.id);
+      console.log('   Is Current Week?:', dayjs().startOf('isoWeek').format('YYYY-MM-DD') === weekStart);
       
       // Use getByWeek instead of getByDateRange for more precise filtering
       // Pass employee ID to get timesheets for current user specifically
       const response = await timesheetService.getByWeek(weekStart, user?.employee?.id);
-      console.log('Loaded timesheet response:', response);
+      console.log('📡 API RESPONSE:', response);
+      console.log('   Response structure:', {
+        hasData: !!response.data,
+        hasDataData: !!(response.data && response.data.data),
+        dataLength: response.data?.data?.length || 0,
+        responseKeys: Object.keys(response.data || {}),
+        success: response.data?.success
+      });
       
       if (response.data && response.data.data && response.data.data.length > 0) {
         // Debug: Log raw timesheet data for analysis
@@ -259,13 +267,17 @@ const ModernWeeklyTimesheet = () => {
         
         response.data.data.forEach((ts, i) => {
           const tsWeekStart = dayjs(ts.weekStartDate).format('YYYY-MM-DD');
-          console.log(`   Timesheet ${i + 1}:`);
+          console.log(`   📋 Timesheet ${i + 1}:`);
+          console.log(`      ID: ${ts.id} (type: ${typeof ts.id})`);
           console.log(`      Week: ${ts.weekStartDate} -> formatted: ${tsWeekStart}`);
-          console.log(`      Employee ID: ${ts.employeeId}`);
+          console.log(`      Employee ID: ${ts.employeeId} (type: ${typeof ts.employeeId})`);
           console.log(`      Status: ${ts.status}`);
+          console.log(`      Project ID: ${ts.projectId}`);
+          console.log(`      Task ID: ${ts.taskId}`);
           console.log(`      Week matches? ${tsWeekStart === weekStart}`);
           console.log(`      Employee matches? ${ts.employeeId === user?.employee?.id}`);
           console.log(`      Both match? ${tsWeekStart === weekStart && ts.employeeId === user?.employee?.id}`);
+          console.log(`      Hours: Mon=${ts.mondayHours}, Tue=${ts.tuesdayHours}, Wed=${ts.wednesdayHours}, Thu=${ts.thursdayHours}, Fri=${ts.fridayHours}, Sat=${ts.saturdayHours}, Sun=${ts.sundayHours}`);
         });
         
         // Filter to ensure we only get timesheets for the selected week AND current user
@@ -277,16 +289,27 @@ const ModernWeeklyTimesheet = () => {
           return matchesWeek && matchesEmployee;
         });
         
-        console.log('Filtered timesheets for week and employee:', { 
+        console.log('🎯 FILTERED RESULTS:', { 
           total: response.data.data.length,
           filtered: weekTimesheets.length,
           weekStart,
-          employeeId: user?.employee?.id
+          employeeId: user?.employee?.id,
+          filterCriteria: {
+            expectedWeek: weekStart,
+            expectedEmployee: user?.employee?.id
+          }
         });
         
         if (weekTimesheets.length > 0) {
           // Debug: Log timesheet IDs from backend
-          console.log('🔍 Timesheet IDs from backend:', weekTimesheets.map(ts => ({ id: ts.id, type: typeof ts.id })));
+          console.log('✅ FOUND EXISTING TIMESHEETS:', weekTimesheets.map(ts => ({ 
+            id: ts.id, 
+            type: typeof ts.id,
+            week: ts.weekStartDate,
+            status: ts.status,
+            projectId: ts.projectId,
+            taskId: ts.taskId
+          })));
           
           // Transform backend data to UI format
           const transformedTasks = weekTimesheets.map(ts => ({
@@ -305,12 +328,12 @@ const ModernWeeklyTimesheet = () => {
             notes: ts.description || ''
           }));
           
-          console.log('Transformed tasks:', transformedTasks);
+          console.log('🔄 TRANSFORMED TASKS FOR UI:', transformedTasks);
           setTasks(transformedTasks);
           
           // Set status and determine if timesheet is editable
           const firstTimesheetStatus = weekTimesheets[0]?.status?.toLowerCase() || 'draft';
-          console.log('Setting timesheet status:', firstTimesheetStatus);
+          console.log('📊 SETTING TIMESHEET STATUS:', firstTimesheetStatus);
           setTimesheetStatus(firstTimesheetStatus);
           
           // Editable Logic:
@@ -319,24 +342,36 @@ const ModernWeeklyTimesheet = () => {
           // - Submitted: Read-only (cannot edit, awaiting approval)
           // - Approved: Read-only (cannot edit, finalized)
           const isEditable = firstTimesheetStatus === 'draft' || firstTimesheetStatus === 'rejected';
-          console.log('Setting editable mode:', isEditable, 'for status:', firstTimesheetStatus);
+          console.log('🔓 SETTING EDITABLE MODE:', isEditable, 'for status:', firstTimesheetStatus);
           setIsReadOnly(!isEditable);
           
-          // Status is now displayed in the UI itself via status badges/chips
-          // No need for repetitive toast notifications on every load
+          console.log('✅ SUCCESSFULLY LOADED EXISTING TIMESHEET WITH', transformedTasks.length, 'TASKS');
         } else {
           // No timesheet for this specific week
-          console.log('No timesheet for this specific week, starting fresh');
+          console.log('⚠️ NO TIMESHEET MATCHES - WEEK OR EMPLOYEE FILTER FAILED');
+          console.log('   Available weeks in response:', response.data.data.map(ts => ({
+            week: ts.weekStartDate,
+            formatted: dayjs(ts.weekStartDate).format('YYYY-MM-DD'),
+            employee: ts.employeeId
+          })));
           resetTimesheet();
         }
       } else {
         // No timesheet exists, start fresh
-        console.log('No existing timesheet, starting fresh');
+        console.log('❌ NO TIMESHEET DATA RETURNED FROM API');
+        console.log('   Response structure:', {
+          hasData: !!response.data,
+          hasDataData: !!(response.data && response.data.data),
+          dataLength: response.data?.data?.length || 0
+        });
         resetTimesheet();
       }
     } catch (error) {
-      console.error('Error loading timesheet:', error);
-      showError('Failed to load timesheet');
+      console.error('💥 ERROR LOADING TIMESHEET:', error);
+      console.error('   Error details:', error.response?.data || error.message);
+      console.error('   Week being loaded:', currentWeek.format('YYYY-MM-DD'));
+      console.error('   Employee ID:', user?.employee?.id);
+      showError('Failed to load timesheet: ' + (error.response?.data?.message || error.message));
       resetTimesheet();
     } finally {
       setLoading(false);
