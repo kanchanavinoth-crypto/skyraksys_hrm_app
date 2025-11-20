@@ -65,8 +65,10 @@ readonly RHEL_PACKAGES=(
 )
 
 # Node.js Configuration for RHEL
-readonly NODEJS_VERSION="18"
+readonly NODEJS_VERSION="20"
 readonly NODEJS_REPO_URL="https://rpm.nodesource.com/setup_${NODEJS_VERSION}.x"
+readonly MIN_NPM_VERSION="9.0.0"
+readonly RECOMMENDED_NPM_VERSION="10.0.0"
 
 # =============================================================================
 # COLORS AND LOGGING
@@ -265,8 +267,14 @@ setup_rhel_environment() {
     print_success "RHEL environment setup completed"
 }
 
+# Function to compare version numbers
+version_compare() {
+    # Returns 0 if $1 >= $2, 1 if $1 < $2
+    printf '%s\n%s\n' "$2" "$1" | sort -V -C
+}
+
 install_nodejs() {
-    print_step "Installing Node.js $NODEJS_VERSION for RHEL"
+    print_step "Installing Node.js $NODEJS_VERSION LTS for RHEL"
     
     # Add Node.js repository
     print_info "Adding Node.js repository..."
@@ -287,15 +295,57 @@ install_nodejs() {
     print_success "Node.js $node_version installed successfully"
     print_info "npm version: $npm_version"
     
-    # Install PM2 globally with security fixes
-    print_info "Installing PM2 process manager..."
-    npm install -g pm2 >> "$LOGFILE" 2>&1 || error_exit "PM2 installation failed"
+    # Check if npm version meets minimum requirements
+    if version_compare "$npm_version" "$MIN_NPM_VERSION"; then
+        print_success "npm version $npm_version meets minimum requirements"
+    else
+        print_warning "npm version $npm_version is below minimum $MIN_NPM_VERSION - updating required"
+    fi
     
-    # Configure npm for production security
-    print_info "Configuring npm for production security..."
+    # Update npm to latest stable version for better performance and security
+    print_info "Updating npm to latest stable version..."
+    npm install -g npm@latest --no-audit --no-fund >> "$LOGFILE" 2>&1 || print_warning "npm update failed - continuing with existing version"
+    
+    # Verify updated npm version
+    npm_updated_version=$(npm --version 2>/dev/null || echo "$npm_version")
+    if [[ "$npm_updated_version" != "$npm_version" ]]; then
+        print_success "npm updated from $npm_version to $npm_updated_version"
+    else
+        print_info "npm version unchanged: $npm_updated_version"
+    fi
+    
+    # Configure npm cache and performance settings
+    print_info "Optimizing npm for production performance..."
+    
+    # Clean npm cache for fresh start
+    npm cache clean --force >> "$LOGFILE" 2>&1 || print_warning "npm cache clean failed"
+    
+    # Set cache and performance configurations
+    npm config set cache ~/.npm-cache >> "$LOGFILE" 2>&1
+    npm config set tmp /tmp >> "$LOGFILE" 2>&1
+    npm config set fetch-retry-mintimeout 20000 >> "$LOGFILE" 2>&1
+    npm config set fetch-retry-maxtimeout 120000 >> "$LOGFILE" 2>&1
+    npm config set fetch-retries 3 >> "$LOGFILE" 2>&1
+    
+    # Install PM2 globally with optimized settings
+    print_info "Installing PM2 process manager..."
+    npm install -g pm2 --no-audit --no-fund >> "$LOGFILE" 2>&1 || error_exit "PM2 installation failed"
+    
+    # Configure npm for production security and performance
+    print_info "Configuring npm for production security and performance..."
     npm config set audit-level moderate >> "$LOGFILE" 2>&1
     npm config set fund false >> "$LOGFILE" 2>&1
     npm config set update-notifier false >> "$LOGFILE" 2>&1
+    npm config set progress false >> "$LOGFILE" 2>&1
+    npm config set loglevel error >> "$LOGFILE" 2>&1
+    npm config set maxsockets 20 >> "$LOGFILE" 2>&1
+    npm config set registry https://registry.npmjs.org/ >> "$LOGFILE" 2>&1
+    
+    # Additional performance optimizations for memory-constrained environments
+    npm config set prefer-offline true >> "$LOGFILE" 2>&1
+    npm config set shrinkwrap false >> "$LOGFILE" 2>&1
+    npm config set package-lock true >> "$LOGFILE" 2>&1
+    npm config set save-exact true >> "$LOGFILE" 2>&1
     
     # Setup PM2 startup script for RHEL
     print_info "Configuring PM2 startup for RHEL..."
@@ -521,12 +571,25 @@ quick_backend_setup() {
     
     cd "$APP_DIR/backend"
     
+    # Set optimal npm configuration for speed
+    export npm_config_progress=false
+    export npm_config_audit=false
+    export npm_config_fund=false
+    export npm_config_loglevel=error
+    
     # Install dependencies quickly without audit
     if [[ ! -d "node_modules" ]]; then
-        print_info "Installing backend dependencies (no audit for speed)..."
-        npm ci --only=production --no-audit --silent >> "$LOGFILE" 2>&1 || \
-        npm install --only=production --no-audit --silent >> "$LOGFILE" 2>&1 || \
-        error_exit "Quick backend dependency installation failed"
+        print_info "Installing backend dependencies (optimized for speed)..."
+        
+        # Try npm ci first (fastest), fallback to install
+        if [[ -f "package-lock.json" ]]; then
+            npm ci --only=production --no-audit --no-fund --silent --prefer-offline >> "$LOGFILE" 2>&1 || \
+            npm install --only=production --no-audit --no-fund --silent --prefer-offline >> "$LOGFILE" 2>&1 || \
+            error_exit "Quick backend dependency installation failed"
+        else
+            npm install --only=production --no-audit --no-fund --silent --prefer-offline >> "$LOGFILE" 2>&1 || \
+            error_exit "Quick backend dependency installation failed"
+        fi
         
         print_success "Backend dependencies installed quickly"
     fi
@@ -534,7 +597,7 @@ quick_backend_setup() {
     # Install sequelize-cli if needed
     if ! npm list -g sequelize-cli >/dev/null 2>&1 && ! npx sequelize-cli --version >/dev/null 2>&1; then
         print_info "Installing sequelize-cli..."
-        npm install -g sequelize-cli@latest --silent >> "$LOGFILE" 2>&1 || \
+        npm install -g sequelize-cli@latest --silent --no-audit >> "$LOGFILE" 2>&1 || \
         error_exit "sequelize-cli installation failed"
     fi
     
@@ -562,10 +625,17 @@ CORS_ORIGIN=http://$PROD_SERVER_IP
 API_BASE_URL=http://$PROD_SERVER_IP:5000/api
 EOF
 
-    # Start the backend service with PM2
-    print_info "Starting backend with PM2..."
+    # Start the backend service with PM2 and optimized Node.js settings
+    print_info "Starting backend with PM2 and memory optimization..."
     pm2 delete skyraksys-hrm-backend 2>/dev/null || true
-    pm2 start server.js --name "skyraksys-hrm-backend" --env production >> "$LOGFILE" 2>&1 || \
+    
+    # Use PM2 with Node.js memory optimization for production
+    NODE_OPTIONS="--max-old-space-size=1024 --optimize-for-size" pm2 start server.js \
+        --name "skyraksys-hrm-backend" \
+        --env production \
+        --max-memory-restart 1G \
+        --node-args="--max-old-space-size=1024" \
+        >> "$LOGFILE" 2>&1 || \
     error_exit "Failed to start backend with PM2"
     
     # Wait a moment for service to start
@@ -694,38 +764,46 @@ finalize_npm_security() {
     cd "$APP_DIR/backend"
     
     # Now that backend is running, handle security vulnerabilities
-    print_info "Running comprehensive npm security fixes..."
+    print_info "Running comprehensive npm security fixes (background process)..."
     
-    # Set npm configuration for security
+    # Set npm configuration for security with minimal output
     print_info "Configuring npm security settings..."
     npm config set audit-level moderate
     npm config set fund false
     npm config set update-notifier false
+    npm config set progress false
+    npm config set loglevel warn
     
-    # Run security fixes in background to avoid interrupting running service
+    # Run security fixes in background with timeout to avoid hanging
     {
-        # First, try standard fixes
-        npm audit fix --only=prod >> "$LOGFILE" 2>&1 || true
-        
-        # Force fix critical vulnerabilities  
-        npm audit fix --force >> "$LOGFILE" 2>&1 || true
-        
-        # Update specific vulnerable packages
-        npm update handlebars cookie debug parseuri tough-cookie >> "$LOGFILE" 2>&1 || true
-        npm install handlebars@latest cookie@latest debug@latest >> "$LOGFILE" 2>&1 || true
-        
-        # Log final audit status
-        echo "[$(date)] Final npm audit results:" >> "$LOGFILE"
-        npm audit >> "$LOGFILE" 2>&1 || true
+        # Set timeout for npm operations to prevent hanging
+        timeout 300 bash -c '
+            # First, try standard fixes (5 min timeout)
+            npm audit fix --only=prod --no-audit --silent 2>/dev/null || true
+            
+            # Force fix critical vulnerabilities (limited scope)  
+            npm audit fix --force --only=prod --no-audit --silent 2>/dev/null || true
+            
+            # Update specific vulnerable packages (common ones)
+            npm update handlebars cookie debug parseuri tough-cookie --silent 2>/dev/null || true
+            npm install handlebars@latest cookie@latest debug@latest --silent 2>/dev/null || true
+            
+            # Log final audit status (limited output)
+            echo "[$(date)] Final npm audit summary:" 
+            npm audit --audit-level critical --parseable 2>/dev/null | head -20 || echo "Audit completed"
+            
+        ' >> "$LOGFILE" 2>&1 || {
+            echo "[$(date)] npm security operations timed out or failed - continuing" >> "$LOGFILE"
+        }
         
     } &
     
     # Get background process ID
     SECURITY_PID=$!
     
-    print_info "Security fixes running in background (PID: $SECURITY_PID)"
+    print_info "Security fixes running in background (PID: $SECURITY_PID, 5min timeout)"
     print_info "Backend service continues running during security updates"
-    print_success "npm security finalization started"
+    print_success "npm security finalization started (non-blocking)"
 }
 
 # =============================================================================
