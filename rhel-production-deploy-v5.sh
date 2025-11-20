@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # =============================================================================
-# 🚀 SkyrakSys HRM - Complete RHEL Production Deployment Script v4.0
+# 🚀 SkyrakSys HRM - Complete RHEL Production Deployment Script v5.0
 # =============================================================================
-# Comprehensive audit and refactored deployment script for RHEL 9
+# Backend-first deployment strategy optimized for memory-constrained environments
 # 
 # This script includes:
 # ✅ Complete database migration and schema validation
@@ -19,6 +19,11 @@
 # ✅ V4.0: Automatic database seeding with fallbacks
 # ✅ V4.0: PostgreSQL 17 compatibility and tooling
 # ✅ V4.0: Git HTTPS authentication (no SSH required)
+# ✅ V5.0: Backend-first deployment strategy (immediate availability)
+# ✅ V5.0: Memory-optimized npm processing with 1GB Node.js limits
+# ✅ V5.0: Background security processing with 5-minute timeouts
+# ✅ V5.0: Silent npm operations to prevent memory overload
+# ✅ V5.0: Node.js 20 LTS upgrade with enhanced performance
 # =============================================================================
 
 set -euo pipefail  # Exit on any error, undefined variable, or pipe failure
@@ -322,7 +327,6 @@ install_nodejs() {
     
     # Set cache and performance configurations
     npm config set cache ~/.npm-cache >> "$LOGFILE" 2>&1
-    npm config set tmp /tmp >> "$LOGFILE" 2>&1
     npm config set fetch-retry-mintimeout 20000 >> "$LOGFILE" 2>&1
     npm config set fetch-retry-maxtimeout 120000 >> "$LOGFILE" 2>&1
     npm config set fetch-retries 3 >> "$LOGFILE" 2>&1
