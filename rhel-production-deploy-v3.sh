@@ -198,16 +198,34 @@ setup_rhel_environment() {
     
     # Install PostgreSQL with version detection
     print_info "Installing PostgreSQL with proper version handling..."
-    if dnf install -y postgresql postgresql-server postgresql-contrib >> "$LOGFILE" 2>&1; then
-        print_success "PostgreSQL packages installed successfully"
+    
+    # Check if PostgreSQL 17 is already available
+    if command -v psql >/dev/null 2>&1 && psql --version | grep -q "17\." 2>/dev/null; then
+        print_success "PostgreSQL 17 already installed"
+        PG_VERSION="17"
+    elif dnf list installed | grep -q postgresql17; then
+        print_success "PostgreSQL 17 packages already installed"
+        PG_VERSION="17"
     else
-        print_warning "Standard PostgreSQL installation failed, trying specific versions..."
-        # Try PostgreSQL 15 or 16 which are common on RHEL 9
-        dnf install -y postgresql15 postgresql15-server postgresql15-contrib >> "$LOGFILE" 2>&1 || \
-        dnf install -y postgresql16 postgresql16-server postgresql16-contrib >> "$LOGFILE" 2>&1 || \
-        error_exit "All PostgreSQL installation attempts failed"
-        print_success "PostgreSQL packages installed with version-specific package"
+        # Try to install PostgreSQL packages in order of preference
+        if dnf install -y postgresql17 postgresql17-server postgresql17-contrib >> "$LOGFILE" 2>&1; then
+            print_success "PostgreSQL 17 packages installed successfully"
+            PG_VERSION="17"
+        elif dnf install -y postgresql16 postgresql16-server postgresql16-contrib >> "$LOGFILE" 2>&1; then
+            print_success "PostgreSQL 16 packages installed successfully"
+            PG_VERSION="16"
+        elif dnf install -y postgresql15 postgresql15-server postgresql15-contrib >> "$LOGFILE" 2>&1; then
+            print_success "PostgreSQL 15 packages installed successfully"
+            PG_VERSION="15"
+        elif dnf install -y postgresql postgresql-server postgresql-contrib >> "$LOGFILE" 2>&1; then
+            print_success "Default PostgreSQL packages installed successfully"
+            PG_VERSION="default"
+        else
+            error_exit "All PostgreSQL installation attempts failed"
+        fi
     fi
+    
+    print_info "PostgreSQL version configured: $PG_VERSION"
     
     # Configure SELinux for production
     print_info "Configuring SELinux for web applications..."
@@ -275,29 +293,69 @@ setup_postgresql() {
     
     # Initialize PostgreSQL if not already done
     print_info "Initializing PostgreSQL..."
-    if [[ ! -f /var/lib/pgsql/data/postgresql.conf ]]; then
-        # Try different initialization methods
-        if postgresql-setup --initdb >> "$LOGFILE" 2>&1; then
-            print_success "PostgreSQL initialized successfully"
-        elif postgresql-setup initdb >> "$LOGFILE" 2>&1; then
-            print_success "PostgreSQL initialized with alternative method"
+    if [[ ! -f /var/lib/pgsql/data/postgresql.conf ]] && [[ ! -f /var/lib/pgsql/*/data/postgresql.conf ]]; then
+        # Try different initialization methods based on PostgreSQL version
+        if [[ "$PG_VERSION" == "17" ]]; then
+            print_info "Initializing PostgreSQL 17..."
+            if /usr/pgsql-17/bin/postgresql-17-setup initdb >> "$LOGFILE" 2>&1; then
+                print_success "PostgreSQL 17 initialized successfully"
+            elif sudo -u postgres /usr/pgsql-17/bin/initdb -D /var/lib/pgsql/17/data >> "$LOGFILE" 2>&1; then
+                print_success "PostgreSQL 17 manually initialized"
+            else
+                error_exit "PostgreSQL 17 initialization failed"
+            fi
+        elif [[ "$PG_VERSION" == "16" ]]; then
+            print_info "Initializing PostgreSQL 16..."
+            /usr/pgsql-16/bin/postgresql-16-setup initdb >> "$LOGFILE" 2>&1 || \
+            sudo -u postgres /usr/pgsql-16/bin/initdb -D /var/lib/pgsql/16/data >> "$LOGFILE" 2>&1 || \
+            error_exit "PostgreSQL 16 initialization failed"
+        elif [[ "$PG_VERSION" == "15" ]]; then
+            print_info "Initializing PostgreSQL 15..."
+            /usr/pgsql-15/bin/postgresql-15-setup initdb >> "$LOGFILE" 2>&1 || \
+            sudo -u postgres /usr/pgsql-15/bin/initdb -D /var/lib/pgsql/15/data >> "$LOGFILE" 2>&1 || \
+            error_exit "PostgreSQL 15 initialization failed"
         else
-            print_warning "Standard initialization failed, trying manual initialization"
-            sudo -u postgres /usr/bin/initdb -D /var/lib/pgsql/data >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL initialization failed"
-            print_success "PostgreSQL manually initialized"
+            # Standard initialization for default version
+            if postgresql-setup --initdb >> "$LOGFILE" 2>&1; then
+                print_success "PostgreSQL initialized successfully"
+            elif postgresql-setup initdb >> "$LOGFILE" 2>&1; then
+                print_success "PostgreSQL initialized with alternative method"
+            else
+                print_warning "Standard initialization failed, trying manual initialization"
+                sudo -u postgres /usr/bin/initdb -D /var/lib/pgsql/data >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL initialization failed"
+                print_success "PostgreSQL manually initialized"
+            fi
         fi
     else
         print_info "PostgreSQL already initialized"
     fi
     
+    # Set the correct data directory based on version
+    if [[ "$PG_VERSION" == "17" ]]; then
+        PG_DATA_DIR="/var/lib/pgsql/17/data"
+        PG_SERVICE="postgresql-17"
+    elif [[ "$PG_VERSION" == "16" ]]; then
+        PG_DATA_DIR="/var/lib/pgsql/16/data"  
+        PG_SERVICE="postgresql-16"
+    elif [[ "$PG_VERSION" == "15" ]]; then
+        PG_DATA_DIR="/var/lib/pgsql/15/data"
+        PG_SERVICE="postgresql-15"
+    else
+        PG_DATA_DIR="/var/lib/pgsql/data"
+        PG_SERVICE="postgresql"
+    fi
+    
+    print_info "Using PostgreSQL data directory: $PG_DATA_DIR"
+    print_info "Using PostgreSQL service: $PG_SERVICE"
+    
     # Fix permissions before starting
     print_info "Setting proper PostgreSQL permissions..."
     chown -R postgres:postgres /var/lib/pgsql/ >> "$LOGFILE" 2>&1 || error_exit "Failed to set PostgreSQL permissions"
-    chmod 700 /var/lib/pgsql/data >> "$LOGFILE" 2>&1 || error_exit "Failed to set PostgreSQL data directory permissions"
+    chmod 700 "$PG_DATA_DIR" >> "$LOGFILE" 2>&1 || error_exit "Failed to set PostgreSQL data directory permissions"
     
     # Clear any stale lock files
     print_info "Clearing any stale PostgreSQL lock files..."
-    rm -f /var/lib/pgsql/data/postmaster.pid >> "$LOGFILE" 2>&1 || true
+    rm -f "$PG_DATA_DIR/postmaster.pid" >> "$LOGFILE" 2>&1 || true
     rm -f /tmp/.s.PGSQL.5432* >> "$LOGFILE" 2>&1 || true
     
     # Check for port conflicts
@@ -310,19 +368,29 @@ setup_postgresql() {
     
     # Enable PostgreSQL first
     print_info "Enabling PostgreSQL service..."
-    systemctl enable postgresql >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL enable failed"
+    systemctl enable "$PG_SERVICE" >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL enable failed"
     
     # Start PostgreSQL with better error handling
     print_info "Starting PostgreSQL service..."
-    if systemctl start postgresql >> "$LOGFILE" 2>&1; then
+    if systemctl start "$PG_SERVICE" >> "$LOGFILE" 2>&1; then
         print_success "PostgreSQL started successfully"
     else
         print_warning "Standard PostgreSQL start failed, checking service status..."
-        systemctl status postgresql >> "$LOGFILE" 2>&1 || true
-        journalctl -u postgresql --no-pager -n 20 >> "$LOGFILE" 2>&1 || true
+        systemctl status "$PG_SERVICE" >> "$LOGFILE" 2>&1 || true
+        journalctl -u "$PG_SERVICE" --no-pager -n 20 >> "$LOGFILE" 2>&1 || true
         
         print_info "Attempting alternative PostgreSQL start method..."
-        if sudo -u postgres /usr/bin/pg_ctl -D /var/lib/pgsql/data -l /var/lib/pgsql/data/log/postgresql.log start >> "$LOGFILE" 2>&1; then
+        if [[ "$PG_VERSION" == "17" ]]; then
+            sudo -u postgres /usr/pgsql-17/bin/pg_ctl -D "$PG_DATA_DIR" -l "$PG_DATA_DIR/log/postgresql.log" start >> "$LOGFILE" 2>&1
+        elif [[ "$PG_VERSION" == "16" ]]; then
+            sudo -u postgres /usr/pgsql-16/bin/pg_ctl -D "$PG_DATA_DIR" -l "$PG_DATA_DIR/log/postgresql.log" start >> "$LOGFILE" 2>&1
+        elif [[ "$PG_VERSION" == "15" ]]; then
+            sudo -u postgres /usr/pgsql-15/bin/pg_ctl -D "$PG_DATA_DIR" -l "$PG_DATA_DIR/log/postgresql.log" start >> "$LOGFILE" 2>&1
+        else
+            sudo -u postgres /usr/bin/pg_ctl -D "$PG_DATA_DIR" -l "$PG_DATA_DIR/log/postgresql.log" start >> "$LOGFILE" 2>&1
+        fi
+        
+        if pgrep postgres >/dev/null 2>&1; then
             print_success "PostgreSQL started using alternative method"
             sleep 3
         else
@@ -356,7 +424,7 @@ setup_postgresql() {
     fi
     
     # Update postgresql.conf for production
-    local pg_conf="/var/lib/pgsql/data/postgresql.conf"
+    local pg_conf="$PG_DATA_DIR/postgresql.conf"
     cp "$pg_conf" "${pg_conf}.backup" || error_exit "Failed to backup PostgreSQL config"
     
     cat >> "$pg_conf" << EOF
@@ -377,7 +445,7 @@ log_duration = on
 EOF
     
     # Configure authentication
-    local pg_hba="/var/lib/pgsql/data/pg_hba.conf"
+    local pg_hba="$PG_DATA_DIR/pg_hba.conf"
     cp "$pg_hba" "${pg_hba}.backup" || error_exit "Failed to backup pg_hba.conf"
     
     # Add application connection
@@ -385,7 +453,7 @@ EOF
     
     # Restart PostgreSQL with new configuration
     print_info "Restarting PostgreSQL with new configuration..."
-    systemctl restart postgresql >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL restart failed"
+    systemctl restart "$PG_SERVICE" >> "$LOGFILE" 2>&1 || error_exit "PostgreSQL restart failed"
     
     # Create database and user
     print_info "Creating production database and user..."
