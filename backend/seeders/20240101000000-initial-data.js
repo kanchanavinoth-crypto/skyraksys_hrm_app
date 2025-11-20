@@ -226,6 +226,8 @@ module.exports = {
         password: hashedPassword,
         role: 'admin',
         isActive: true,
+        isLocked: false,
+        loginAttempts: 0,
         createdAt: new Date(),
         updatedAt: new Date()
       },

@@ -534,7 +534,7 @@ configure_backend() {
 
 # Server Configuration
 NODE_ENV=production
-PORT=$BACKEND_PORT
+PORT=5000
 HOST=0.0.0.0
 
 # Database Configuration
@@ -562,6 +562,9 @@ BACKEND_URL=https://$PROD_SERVER_IP/api
 # CORS Configuration
 CORS_ORIGIN=https://$PROD_SERVER_IP
 CORS_CREDENTIALS=true
+CORS_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Content-Type,Authorization,X-Requested-With
+CORS_EXPOSED_HEADERS=X-Total-Count,X-Page-Count
 
 # Demo Data Configuration (Environment variable overrides)
 SEED_DEMO_DATA="${SEED_DEMO_DATA:-true}"
@@ -829,10 +832,22 @@ server {
     
     # Backend API with rate limiting
     location /api/ {
+        # Handle CORS preflight requests
+        if (\$request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' 'https://\$server_name' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, X-Requested-With' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+            add_header 'Access-Control-Max-Age' 1728000 always;
+            add_header 'Content-Type' 'text/plain charset=UTF-8' always;
+            add_header 'Content-Length' 0 always;
+            return 204;
+        }
+        
         # Rate limiting
         limit_req zone=api burst=20 nodelay;
         
-        proxy_pass http://127.0.0.1:$BACKEND_PORT;
+        proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -858,7 +873,7 @@ server {
     location /api/auth/login {
         limit_req zone=login burst=3 nodelay;
         
-        proxy_pass http://127.0.0.1:$BACKEND_PORT;
+        proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -872,7 +887,7 @@ server {
     
     # Health check endpoint
     location /health {
-        proxy_pass http://127.0.0.1:$BACKEND_PORT;
+        proxy_pass http://127.0.0.1:5000;
         access_log off;
     }
     
@@ -936,7 +951,7 @@ module.exports = {
     // Environment
     env: {
       NODE_ENV: 'production',
-      PORT: $BACKEND_PORT
+      PORT: 5000
     },
     
     // Logging
@@ -1011,9 +1026,6 @@ configure_firewall() {
     firewall-cmd --permanent --add-service=http >> "$LOGFILE" 2>&1 || error_exit "HTTP firewall rule failed"
     firewall-cmd --permanent --add-service=https >> "$LOGFILE" 2>&1 || error_exit "HTTPS firewall rule failed"
     firewall-cmd --permanent --add-service=ssh >> "$LOGFILE" 2>&1 || error_exit "SSH firewall rule failed"
-    
-    # Add backend port for internal communication
-    firewall-cmd --permanent --add-port="$BACKEND_PORT"/tcp >> "$LOGFILE" 2>&1 || error_exit "Backend port firewall rule failed"
     
     # Reload firewall
     firewall-cmd --reload >> "$LOGFILE" 2>&1 || error_exit "Firewall reload failed"
