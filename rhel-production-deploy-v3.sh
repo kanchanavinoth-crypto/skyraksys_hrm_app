@@ -160,6 +160,23 @@ validate_line_endings() {
     print_success "Line endings validated and normalized"
 }
 
+# Configure npm security settings
+configure_npm_security() {
+    print_info "Configuring global npm security settings..."
+    
+    # Set npm security configurations
+    npm config set audit-level moderate >> "$LOGFILE" 2>&1
+    npm config set fund false >> "$LOGFILE" 2>&1
+    npm config set update-notifier false >> "$LOGFILE" 2>&1
+    npm config set save-exact true >> "$LOGFILE" 2>&1
+    npm config set package-lock true >> "$LOGFILE" 2>&1
+    
+    # Set production environment
+    export NODE_ENV=production
+    
+    print_success "npm security settings configured"
+}
+
 # Create log directory
 setup_logging() {
     mkdir -p "$LOG_DIR"
@@ -265,13 +282,22 @@ install_nodejs() {
     print_success "Node.js $node_version installed successfully"
     print_info "npm version: $npm_version"
     
-    # Install PM2 globally
+    # Install PM2 globally with security fixes
     print_info "Installing PM2 process manager..."
     npm install -g pm2 >> "$LOGFILE" 2>&1 || error_exit "PM2 installation failed"
+    
+    # Configure npm for production security
+    print_info "Configuring npm for production security..."
+    npm config set audit-level moderate >> "$LOGFILE" 2>&1
+    npm config set fund false >> "$LOGFILE" 2>&1
+    npm config set update-notifier false >> "$LOGFILE" 2>&1
     
     # Setup PM2 startup script for RHEL
     print_info "Configuring PM2 startup for RHEL..."
     pm2 startup systemd -u root --hp /root >> "$LOGFILE" 2>&1 || print_warning "PM2 startup configuration may need manual setup"
+    
+    # Configure npm security
+    configure_npm_security
     
     print_success "Node.js and PM2 setup completed"
 }
@@ -488,26 +514,46 @@ setup_database_schema() {
     
     # Install backend dependencies if needed
     if [[ ! -d "node_modules" ]]; then
-        print_info "Installing backend dependencies..."
-        npm install --production >> "$LOGFILE" 2>&1 || error_exit "Backend dependency installation failed"
+        print_info "Installing backend dependencies with security fixes..."
+        # Set npm to production mode and fix security issues
+        npm ci --only=production --no-audit >> "$LOGFILE" 2>&1 || \
+        npm install --only=production >> "$LOGFILE" 2>&1 || \
+        error_exit "Backend dependency installation failed"
+        
+        # Fix security vulnerabilities
+        print_info "Fixing npm security vulnerabilities..."
+        npm audit fix --only=prod --force >> "$LOGFILE" 2>&1 || \
+        print_warning "Some npm audit fixes failed - continuing deployment"
     fi
     
     # Check if sequelize-cli is available
     if ! npm list -g sequelize-cli >/dev/null 2>&1 && ! npx sequelize-cli --version >/dev/null 2>&1; then
-        print_info "Installing sequelize-cli..."
-        npm install -g sequelize-cli >> "$LOGFILE" 2>&1 || error_exit "sequelize-cli installation failed"
+        print_info "Installing sequelize-cli with security considerations..."
+        npm install -g sequelize-cli@latest >> "$LOGFILE" 2>&1 || error_exit "sequelize-cli installation failed"
     fi
     
     # Create database backup before migrations
     print_info "Creating database backup before migrations..."
     mkdir -p "$BACKUP_DIR"
     local backup_file="$BACKUP_DIR/pre_migration_backup_$(date +%Y%m%d_%H%M%S).sql"
-    PGPASSWORD="$PROD_DB_PASSWORD" pg_dump -h localhost -U "$PROD_DB_USER" -d "$PROD_DB_NAME" > "$backup_file" 2>> "$LOGFILE"
+    
+    # Use version-specific pg_dump to match PostgreSQL version
+    local pg_dump_cmd="pg_dump"
+    if [[ "$PG_VERSION" == "17" ]] && command -v /usr/pgsql-17/bin/pg_dump >/dev/null 2>&1; then
+        pg_dump_cmd="/usr/pgsql-17/bin/pg_dump"
+    elif [[ "$PG_VERSION" == "16" ]] && command -v /usr/pgsql-16/bin/pg_dump >/dev/null 2>&1; then
+        pg_dump_cmd="/usr/pgsql-16/bin/pg_dump"
+    elif [[ "$PG_VERSION" == "15" ]] && command -v /usr/pgsql-15/bin/pg_dump >/dev/null 2>&1; then
+        pg_dump_cmd="/usr/pgsql-15/bin/pg_dump"
+    fi
+    
+    print_info "Using pg_dump: $pg_dump_cmd"
+    PGPASSWORD="$PROD_DB_PASSWORD" "$pg_dump_cmd" -h localhost -U "$PROD_DB_USER" -d "$PROD_DB_NAME" > "$backup_file" 2>> "$LOGFILE"
     
     if [[ $? -eq 0 ]]; then
         print_success "Database backup created: $backup_file"
     else
-        print_warning "Database backup failed (database may be empty)"
+        print_warning "Database backup failed (database may be empty) - continuing deployment"
     fi
     
     # Run database migrations
@@ -684,6 +730,9 @@ clone_application() {
     mkdir -p "$APP_DIR"
     cd "$APP_DIR"
     
+    # Use HTTPS instead of SSH to avoid authentication issues
+    local HTTPS_REPO="https://github.com/kanchanavinoth-crypto/skyraksys_hrm_app.git"
+    
     if [[ -d "$APP_NAME" ]]; then
         print_info "Updating existing repository..."
         cd "$APP_NAME"
@@ -695,8 +744,10 @@ clone_application() {
         mv temp_app/* .
         rm -rf temp_app
     else
-        print_info "Cloning fresh repository..."
-        git clone "$GITHUB_REPO" temp_repo >> "$LOGFILE" 2>&1 || error_exit "Git clone failed"
+        print_info "Cloning fresh repository using HTTPS..."
+        # Set git to use HTTPS and avoid SSH prompts
+        export GIT_TERMINAL_PROMPT=0
+        git clone "$HTTPS_REPO" temp_repo >> "$LOGFILE" 2>&1 || error_exit "Git clone failed"
         mv temp_repo/* .
         rm -rf temp_repo
     fi
@@ -802,9 +853,24 @@ EOF
     
     print_success "Backend environment configured"
     
-    # Install dependencies
-    print_info "Installing backend production dependencies..."
-    npm install --production >> "$LOGFILE" 2>&1 || error_exit "Backend dependency installation failed"
+    # Install dependencies with security considerations
+    print_info "Installing backend production dependencies with security fixes..."
+    # Use npm ci for production builds when package-lock.json exists
+    if [[ -f package-lock.json ]]; then
+        npm ci --only=production --no-audit >> "$LOGFILE" 2>&1 || \
+        npm install --only=production >> "$LOGFILE" 2>&1 || \
+        error_exit "Backend dependency installation failed"
+    else
+        npm install --only=production >> "$LOGFILE" 2>&1 || error_exit "Backend dependency installation failed"
+    fi
+    
+    # Fix security vulnerabilities in production dependencies
+    print_info "Applying security fixes to production dependencies..."
+    npm audit fix --only=prod >> "$LOGFILE" 2>&1 || \
+    print_warning "Some security fixes could not be applied automatically"
+    
+    # Remove development dependencies and audit issues
+    npm prune --production >> "$LOGFILE" 2>&1 || print_warning "npm prune had issues"
     
     print_success "Backend configuration completed"
 }
@@ -851,9 +917,23 @@ REACT_APP_LAZY_LOADING=true
 REACT_APP_CODE_SPLITTING=true
 EOF
     
-    # Install frontend dependencies
-    print_info "Installing frontend dependencies..."
-    npm install >> "$LOGFILE" 2>&1 || error_exit "Frontend dependency installation failed"
+    # Install frontend dependencies with security fixes
+    print_info "Installing frontend dependencies with security considerations..."
+    
+    # Use npm ci for production builds when package-lock.json exists
+    if [[ -f package-lock.json ]]; then
+        npm ci --no-audit >> "$LOGFILE" 2>&1 || \
+        npm install >> "$LOGFILE" 2>&1 || \
+        error_exit "Frontend dependency installation failed"
+    else
+        npm install >> "$LOGFILE" 2>&1 || error_exit "Frontend dependency installation failed"
+    fi
+    
+    # Fix security vulnerabilities
+    print_info "Fixing frontend security vulnerabilities..."
+    npm audit fix >> "$LOGFILE" 2>&1 || \
+    npm audit fix --force >> "$LOGFILE" 2>&1 || \
+    print_warning "Some frontend security fixes could not be applied"
     
     # Build production frontend
     print_info "Building production frontend..."
