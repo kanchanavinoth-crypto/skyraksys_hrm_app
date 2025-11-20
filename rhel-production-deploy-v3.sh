@@ -137,6 +137,29 @@ check_root() {
     fi
 }
 
+# Validate and fix line endings
+validate_line_endings() {
+    print_info "Validating file line endings for RHEL compatibility..."
+    
+    # Check if dos2unix is available, install if needed
+    if ! command -v dos2unix >/dev/null 2>&1; then
+        print_info "Installing dos2unix for line ending fixes..."
+        dnf install -y dos2unix >> "$LOGFILE" 2>&1 || {
+            print_warning "dos2unix installation failed, using sed fallback"
+            
+            # Fallback: use sed to convert CRLF to LF
+            find "$APP_DIR" -type f \( -name "*.js" -o -name "*.json" -o -name "*.env" -o -name "*.sh" \) -exec sed -i 's/\r$//' {} \; 2>/dev/null || true
+            print_success "Line endings normalized using sed"
+            return 0
+        }
+    fi
+    
+    # Convert critical files to Unix line endings
+    find "$APP_DIR" -type f \( -name "*.js" -o -name "*.json" -o -name "*.env" \) -exec dos2unix {} \; >> "$LOGFILE" 2>&1 || print_warning "Some files couldn't be converted"
+    
+    print_success "Line endings validated and normalized"
+}
+
 # Create log directory
 setup_logging() {
     mkdir -p "$LOG_DIR"
@@ -1285,6 +1308,7 @@ main() {
     install_nodejs
     setup_postgresql
     clone_application
+    validate_line_endings
     setup_database_schema
     seed_database
     configure_backend
